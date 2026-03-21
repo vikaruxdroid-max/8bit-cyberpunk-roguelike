@@ -330,6 +330,84 @@ html,body{width:100%;height:100%;overflow:hidden;background:#060618;font-family:
 .inv-sell:hover:not(:disabled){background:var(--RD);color:#fff;}
 .inv-sell:disabled{opacity:.3;cursor:default;}
 .inv-tip{font-size:clamp(5px,0.55vw,8px);color:#445566;padding:2px clamp(5px,0.6vw,8px) 4px;text-align:center;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+/* ══ UNIFIED VICTORY SCREEN ══ */
+@keyframes vicFadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+#sVIC{background:#030312;overflow:hidden;}
+#sVIC.on{animation:vicFadeIn .35s ease forwards;}
+.vic-scanlines{position:absolute;inset:0;pointer-events:none;z-index:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.07) 4px);}
+.vic-top{flex-shrink:0;background:linear-gradient(90deg,rgba(0,0,10,.98),rgba(4,0,24,.98));border-bottom:2px solid var(--C);padding:clamp(5px,.7vh,10px) clamp(12px,1.5vw,24px);display:flex;flex-direction:column;gap:3px;position:relative;z-index:10;}
+.vic-floor-title{font-size:clamp(10px,1.2vw,18px);color:var(--C);text-align:center;letter-spacing:4px;text-shadow:0 0 14px var(--C),0 0 28px rgba(0,255,255,.4);}
+.vic-stats-line{font-size:clamp(5px,.58vw,8px);color:rgba(0,255,255,.6);text-align:center;letter-spacing:1px;}
+.vic-main{flex:1;display:grid;grid-template-columns:1fr clamp(200px,22vw,290px) clamp(190px,19vw,270px);min-height:0;overflow:hidden;position:relative;z-index:10;}
+.vic-loot{display:flex;flex-direction:column;overflow:hidden;border-right:1px solid rgba(0,255,255,.13);padding:clamp(5px,.7vh,9px) clamp(8px,1vw,12px);}
+.vic-loot-hdr{flex-shrink:0;text-align:center;padding-bottom:5px;border-bottom:1px solid rgba(0,255,255,.14);margin-bottom:7px;}
+.vic-loot-title{font-size:clamp(9px,1vw,14px);color:var(--GD);text-shadow:0 0 12px var(--GD);animation:ltglow 1.6s ease infinite alternate;letter-spacing:2px;}
+.vic-loot-gold{font-size:clamp(6px,.68vw,9px);color:var(--GD);margin-top:3px;letter-spacing:1px;}
+.vic-loot-scroll{flex:1;overflow-x:auto;overflow-y:hidden;display:flex;flex-direction:row;gap:clamp(6px,.8vw,10px);align-items:flex-start;padding-bottom:4px;scrollbar-width:thin;scrollbar-color:var(--P) transparent;}
+.vic-no-loot{color:#334;font-size:clamp(7px,.8vw,11px);text-align:center;padding:24px 0;white-space:nowrap;}
+.vic-loot-card{background:rgba(4,4,28,.97);border:2px solid rgba(0,255,255,.3);padding:clamp(7px,.9vh,11px) clamp(7px,.9vw,11px);min-width:clamp(150px,15vw,210px);flex-shrink:0;display:flex;flex-direction:column;gap:4px;position:relative;transition:box-shadow .2s;}
+.vic-loot-card.rare{border-color:var(--GD);box-shadow:0 0 12px rgba(255,215,0,.3);}
+.vic-loot-card.legendary{border-color:var(--OR);animation:legborder 1.2s ease infinite alternate;}
+.vic-card-ilvl{position:absolute;top:4px;right:6px;font-size:clamp(5px,.54vw,7px);color:rgba(0,255,255,.45);}
+.vic-card-top{display:flex;align-items:center;gap:7px;}
+.vic-card-icon{font-size:clamp(18px,2vw,28px);flex-shrink:0;}
+.vic-card-info{flex:1;min-width:0;}
+.vic-card-name{font-size:clamp(7px,.82vw,11px);color:#fff;}
+.vic-card-type{font-size:clamp(5px,.58vw,8px);color:rgba(0,255,255,.6);margin-top:2px;}
+.vic-card-rarity{font-size:clamp(5px,.58vw,8px);letter-spacing:1px;margin-top:2px;}
+.vic-card-rarity.common{color:#778899;}.vic-card-rarity.rare{color:var(--GD);}.vic-card-rarity.legendary{color:var(--OR);}
+.vic-card-stats{font-size:clamp(6px,.68vw,9px);color:#aabbd0;background:rgba(0,0,0,.4);padding:3px 5px;border:1px solid rgba(0,255,255,.1);}
+.vic-card-btns{display:flex;gap:4px;margin-top:3px;}
+.vic-take{flex:1;background:rgba(0,45,0,.9);border:2px solid var(--G);color:var(--G);font-family:'Press Start 2P',monospace;font-size:clamp(5px,.6vw,8px);padding:5px 2px;cursor:pointer;transition:all .15s;text-shadow:0 0 6px var(--G);}
+.vic-take:hover:not(:disabled){background:var(--G);color:#000;}
+.vic-take.taken{background:rgba(0,30,0,.6);border-color:rgba(57,255,20,.25);color:rgba(57,255,20,.35);cursor:default;}
+.vic-disc{flex:1;background:rgba(45,0,0,.9);border:2px solid var(--RD);color:var(--RD);font-family:'Press Start 2P',monospace;font-size:clamp(5px,.6vw,8px);padding:5px 2px;cursor:pointer;transition:all .15s;}
+.vic-disc:hover:not(:disabled){background:var(--RD);color:#fff;}
+.vic-disc:disabled{opacity:.3;cursor:default;}
+.vic-paperdoll{display:flex;flex-direction:column;align-items:center;border-right:1px solid rgba(0,255,255,.13);padding:clamp(5px,.7vh,9px) clamp(5px,.6vw,8px);gap:5px;overflow:hidden;}
+.vic-pd-title{flex-shrink:0;font-size:clamp(6px,.7vw,9px);color:var(--M);letter-spacing:2px;text-shadow:0 0 8px var(--M);}
+.vic-pd-area{flex:1;position:relative;display:flex;align-items:center;justify-content:center;width:100%;min-height:0;}
+#vicPaperdollCV{image-rendering:pixelated;filter:drop-shadow(0 0 10px rgba(0,255,255,.22));}
+.vic-slot{position:absolute;background:rgba(0,0,22,.9);border:2px solid rgba(0,255,255,.2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:all .2s;width:clamp(40px,4.5vw,58px);height:clamp(34px,4vh,50px);}
+.vic-slot.can-equip{cursor:pointer;border-color:var(--M);box-shadow:0 0 14px rgba(255,0,255,.5);animation:slotPulse .8s ease infinite alternate;}
+@keyframes slotPulse{from{box-shadow:0 0 8px rgba(255,0,255,.4)}to{box-shadow:0 0 22px rgba(255,0,255,.9)}}
+.vic-slot.filled{border-color:rgba(0,255,255,.55);background:rgba(0,255,255,.05);}
+.vic-slot.filled.rare{border-color:var(--GD);}
+.vic-slot.filled.legendary{border-color:var(--OR);animation:legborder .9s ease infinite alternate;}
+.vic-slot-icon{font-size:clamp(11px,1.2vw,16px);}
+.vic-slot-lbl{font-size:clamp(3px,.38vw,5px);color:rgba(0,255,255,.4);text-align:center;line-height:1.2;}
+.vic-inventory{display:flex;flex-direction:column;overflow:hidden;}
+.vic-inv-hdr{font-size:clamp(6px,.68vw,9px);color:var(--C);padding:clamp(4px,.55vh,7px) clamp(5px,.6vw,8px);border-bottom:1px solid rgba(0,255,255,.18);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
+.vic-inv-gold{color:var(--GD);font-size:clamp(6px,.68vw,9px);}
+.vic-inv-sec{font-size:clamp(4px,.48vw,6px);color:rgba(255,0,255,.65);padding:clamp(2px,.3vh,4px) clamp(5px,.6vw,8px) 2px;letter-spacing:1px;flex-shrink:0;}
+.vic-equip-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;padding:3px clamp(4px,.5vw,7px);flex-shrink:0;}
+.vic-eqslot{aspect-ratio:1;background:rgba(0,0,22,.85);border:1.5px solid rgba(0,255,255,.18);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;overflow:hidden;position:relative;}
+.vic-eqslot.filled{border-color:rgba(0,255,255,.5);background:rgba(0,255,255,.05);}
+.vic-eqslot.filled.rare{border-color:rgba(255,215,0,.7);}
+.vic-eqslot.filled.legendary{border-color:var(--OR);animation:legborder .9s ease infinite alternate;}
+.vic-eqslot-icon{font-size:clamp(8px,.92vw,13px);}
+.vic-eqslot-lbl{font-size:clamp(3px,.36vw,5px);color:rgba(0,255,255,.4);text-align:center;line-height:1.2;}
+.vic-bag-wrap{flex:1;overflow-y:auto;padding:2px clamp(4px,.5vw,7px) 4px;min-height:0;scrollbar-width:thin;scrollbar-color:var(--P) transparent;}
+.vic-bag-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;}
+.vic-bag-slot{aspect-ratio:1;background:rgba(0,0,22,.7);border:1.5px solid rgba(0,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:clamp(10px,1.1vw,15px);position:relative;}
+.vic-bag-slot.filled{border-color:rgba(0,255,255,.22);}
+.vic-bag-slot.filled.rare{border-color:rgba(255,215,0,.55);}
+.vic-bag-slot.filled.legendary{border-color:rgba(255,100,0,.8);}
+.vic-bottom{flex-shrink:0;background:linear-gradient(180deg,rgba(6,0,18,.98),rgba(4,0,14,.97));border-top:2px solid rgba(255,0,255,.4);padding:clamp(5px,.7vh,9px) clamp(12px,1.5vw,20px);position:relative;z-index:10;}
+.vic-upg-hdr{font-size:clamp(7px,.8vw,11px);color:var(--M);letter-spacing:2px;text-align:center;text-shadow:0 0 10px var(--M);margin-bottom:7px;}
+.vic-upg-row{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(6px,.7vw,11px);margin-bottom:7px;}
+.vic-upg-card{background:rgba(20,0,34,.9);border:2px solid rgba(136,0,255,.4);padding:clamp(7px,.9vh,11px) clamp(7px,.9vw,11px);cursor:pointer;transition:all .15s;text-align:center;}
+.vic-upg-card:hover{border-color:var(--M);box-shadow:0 0 12px rgba(255,0,255,.3);transform:translateY(-2px);}
+.vic-upg-card.selected{border-color:var(--M);box-shadow:0 0 20px rgba(255,0,255,.6),inset 0 0 12px rgba(255,0,255,.08);background:rgba(40,0,54,.9);}
+.vic-upg-icon{font-size:clamp(14px,1.6vw,22px);margin-bottom:4px;}
+.vic-upg-name{font-size:clamp(6px,.7vw,10px);color:var(--GD);margin-bottom:3px;letter-spacing:1px;text-shadow:0 0 6px var(--GD);}
+.vic-upg-desc{font-size:clamp(5px,.6vw,8px);color:#aabbd0;line-height:1.7;}
+.vic-foot{display:flex;justify-content:space-between;align-items:center;}
+.vic-upg-hint{font-size:clamp(5px,.58vw,8px);color:rgba(255,0,255,.4);letter-spacing:1px;}
+#vicContinueBtn{font-family:'Press Start 2P',monospace;font-size:clamp(9px,1vw,14px);padding:clamp(7px,.9vh,11px) clamp(16px,1.8vw,26px);cursor:not-allowed;letter-spacing:2px;transition:all .2s;background:rgba(20,20,50,.5);border:3px solid rgba(0,255,255,.2);color:rgba(0,255,255,.25);text-shadow:none;}
+#vicContinueBtn.active{background:linear-gradient(135deg,rgba(136,0,255,.92),rgba(0,20,180,.92));border-color:var(--C);color:var(--C);text-shadow:0 0 10px var(--C);box-shadow:0 0 20px rgba(0,255,255,.3);cursor:pointer;}
+#vicContinueBtn.active:hover{background:var(--C);color:#020210;box-shadow:0 0 36px rgba(0,255,255,.7);}
 </style>
 </head>
 <body>
@@ -503,6 +581,51 @@ html,body{width:100%;height:100%;overflow:hidden;background:#060618;font-family:
     </div>
     <div class="lt-foot">
       <button class="lt-cont" id="ltContBtn">▶ CONTINUE ▶</button>
+    </div>
+  </div>
+
+  <!-- UNIFIED VICTORY SCREEN -->
+  <div class="scr" id="sVIC">
+    <div class="vic-scanlines"></div>
+    <!-- TOP BAR -->
+    <div class="vic-top">
+      <div class="vic-floor-title" id="vicFloorTitle">◆ FLOOR X CLEARED ◆</div>
+      <div class="vic-stats-line" id="vicStatsLine">FLOOR:0/10 · KILLS:0 · HP:0/0 · MP:0/0 · ATK:0 DEF:0 SPD:0 · TOTAL DMG:0 · QUESTS:0</div>
+    </div>
+    <!-- MAIN 3-COLUMN AREA -->
+    <div class="vic-main">
+      <!-- LEFT: LOOT ACQUIRED -->
+      <div class="vic-loot">
+        <div class="vic-loot-hdr">
+          <div class="vic-loot-title">◆ LOOT ACQUIRED ◆</div>
+          <div class="vic-loot-gold" id="vicGold">⚡ 0 CREDITS EARNED</div>
+        </div>
+        <div class="vic-loot-scroll" id="vicLootItems"></div>
+      </div>
+      <!-- CENTER: PAPERDOLL -->
+      <div class="vic-paperdoll">
+        <div class="vic-pd-title">◆ EQUIPMENT ◆</div>
+        <div class="vic-pd-area" id="vicPdArea">
+          <canvas id="vicPaperdollCV" width="90" height="112"></canvas>
+        </div>
+      </div>
+      <!-- RIGHT: INVENTORY -->
+      <div class="vic-inventory">
+        <div class="vic-inv-hdr"><span>⟐ INVENTORY</span><span class="vic-inv-gold" id="vicInvGold">⚡ 0 CR</span></div>
+        <div class="vic-inv-sec">▶ EQUIPPED</div>
+        <div class="vic-equip-grid" id="vicEquipGrid"></div>
+        <div class="vic-inv-sec">▶ BAG (4×6)</div>
+        <div class="vic-bag-wrap"><div class="vic-bag-grid" id="vicBagGrid"></div></div>
+      </div>
+    </div>
+    <!-- BOTTOM: UPGRADES + CONTINUE -->
+    <div class="vic-bottom">
+      <div class="vic-upg-hdr">◆ CHOOSE AN UPGRADE ◆</div>
+      <div class="vic-upg-row" id="vicUpgrades"></div>
+      <div class="vic-foot">
+        <span class="vic-upg-hint" id="vicUpgHint">SELECT AN UPGRADE TO CONTINUE</span>
+        <button id="vicContinueBtn" disabled>▶ CONTINUE ▶</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1866,10 +1989,10 @@ const Combat = {
     UI.flash();
     if(room?.type==='boss'){
       DM.say(`Floor ${GameState.floor} conquered! The boss falls!`);
-      setTimeout(()=>LootScreen.show(()=>Game.floorComplete()),900);
+      setTimeout(()=>VictoryScreen.show(true,()=>Game.enterFloor()),900);
     } else {
       DM.say('Room cleared! Choose your next path.');
-      setTimeout(()=>LootScreen.show(()=>Game.showExits()),900);
+      setTimeout(()=>VictoryScreen.show(false,()=>Game.showExits()),900);
     }
   },
   start(){
@@ -2490,6 +2613,7 @@ const Game={
       if(GameState.floor>=GameState.maxFloors){UI.show('sWN');UI.renderWin();}
       else{GameState.floor++;UI.show('sRS');UI.renderResults();}
     });
+    document.getElementById('vicContinueBtn').addEventListener('click',()=>VictoryScreen._continue());
   },
 
   triggerMerchant(onDone=null){
@@ -2650,7 +2774,7 @@ const Game={
         const gold=Math.floor(20+fl*8+Math.random()*20);
         LootScreen.add(items,gold);
         GameState.floorGold+=gold;
-        setTimeout(()=>LootScreen.show(()=>this.showExits()),700);
+        setTimeout(()=>VictoryScreen.show(false,()=>this.showExits()),700);
         break;
       }
       case 'rest':{
@@ -3072,6 +3196,284 @@ const LootScreen={
     const cb=this._cb;
     this.reset();
     if(cb)cb();
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════
+// UNIFIED VICTORY SCREEN — post-combat: loot + paperdoll + upgrades
+// ═══════════════════════════════════════════════════════════════
+const VictoryScreen = {
+  _cb: null,
+  _isBoss: false,
+  _takenItem: null,
+  _takenSlot: null,
+  _selectedUpgrade: null,
+  _upgrades: [],
+  _snapshot: [],
+  _gold: 0,
+
+  // Entry point — call instead of LootScreen.show()
+  // isBoss: true triggers floor advance on continue; cb: called after upgrades applied
+  show(isBoss, cb) {
+    this._cb = cb;
+    this._isBoss = isBoss;
+    this._takenItem = null;
+    this._takenSlot = null;
+    this._selectedUpgrade = null;
+    this._snapshot = [...LootScreen.pending];
+    this._gold = LootScreen.gold;
+    // Credit gold to inventory once
+    Inventory.gold += this._gold;
+    Inventory._gold();
+    this._render();
+    UI.show('sVIC');
+  },
+
+  _render() {
+    this._renderTopBar();
+    this._renderLoot();
+    this._renderPaperdoll();
+    this._renderInventory();
+    this._renderUpgrades();
+    this._updateContinue();
+  },
+
+  _renderTopBar() {
+    const p = GameState.player;
+    const fl = GameState.floor;
+    const t = document.getElementById('vicFloorTitle');
+    if (t) t.textContent = `◆ FLOOR ${fl} CLEARED ◆`;
+    const s = document.getElementById('vicStatsLine');
+    if (s) s.textContent =
+      `FLOOR:${fl}/${GameState.maxFloors} · KILLS:${GameState.totalKills} · ` +
+      `HP:${Math.max(0,p.hp)}/${p.maxHp} · MP:${Math.max(0,p.mp)}/${p.maxMp} · ` +
+      `ATK:${p.atk} DEF:${p.def} SPD:${p.spd} · ` +
+      `TOTAL DMG:${GameState.totalDmg} · QUESTS:${GameState.questsDone}`;
+    const g = document.getElementById('vicGold');
+    if (g) g.textContent = `⚡ ${this._gold} CREDITS EARNED`;
+    this._updateInvGold();
+  },
+
+  _updateInvGold() {
+    const el = document.getElementById('vicInvGold');
+    if (el) el.textContent = `⚡ ${Inventory.gold} CR`;
+  },
+
+  _renderLoot() {
+    const cont = document.getElementById('vicLootItems');
+    if (!cont) return;
+    cont.innerHTML = '';
+    if (!this._snapshot.length) {
+      const no = document.createElement('div');
+      no.className = 'vic-no-loot';
+      no.textContent = 'No items dropped this fight.';
+      cont.appendChild(no);
+      return;
+    }
+    this._snapshot.forEach((item) => {
+      const card = document.createElement('div');
+      card.className = 'vic-loot-card ' + item.rarity;
+      const statsHtml = Object.entries(item.bonuses).map(([k,v])=>`+${v} ${k.toUpperCase()}`).join(' · ');
+      card.innerHTML = `
+        <div class="vic-card-ilvl">LV${item.level}</div>
+        <div class="vic-card-top">
+          <div class="vic-card-icon" style="color:${item.color}">${item.icon}</div>
+          <div class="vic-card-info">
+            <div class="vic-card-name">${item.name}</div>
+            <div class="vic-card-type">${item.slot.toUpperCase()} SLOT</div>
+            <div class="vic-card-rarity ${item.rarity}">${item.rarity.toUpperCase()}</div>
+          </div>
+        </div>
+        <div class="vic-card-stats">${statsHtml}</div>
+        <div class="vic-card-btns">
+          <button class="vic-take">TAKE</button>
+          <button class="vic-disc">DISCARD</button>
+        </div>`;
+      cont.appendChild(card);
+      const take = card.querySelector('.vic-take');
+      const disc = card.querySelector('.vic-disc');
+      take.addEventListener('click', () => {
+        if (this._takenItem) return;
+        if (!Inventory.addItem(item)) { DM.say('Bag full!'); return; }
+        this._takenItem = item;
+        this._takenSlot = item.slot;
+        take.classList.add('taken'); take.textContent = '✓ TAKEN';
+        disc.disabled = true;
+        // Disable all other TAKE buttons
+        cont.querySelectorAll('.vic-take').forEach(b => { if (b !== take) b.disabled = true; });
+        this._renderPaperdoll();
+        this._renderInventory();
+      });
+      disc.addEventListener('click', () => {
+        if (disc.disabled) return;
+        card.style.opacity = '.35';
+        take.disabled = true; disc.disabled = true; disc.textContent = '✗ GONE';
+      });
+    });
+  },
+
+  // Paperdoll: draw player sprite + absolute equipment slots
+  _renderPaperdoll() {
+    const cv = document.getElementById('vicPaperdollCV');
+    const area = document.getElementById('vicPdArea');
+    if (!cv || !area) return;
+    const p = GameState.player;
+    // Size canvas to fit container (leave room for slots on each side)
+    const aw = area.clientWidth || 220;
+    const ah = area.clientHeight || 300;
+    const sprW = 14 * P, sprH = 22 * P;
+    const slotW = Math.min(58, Math.max(40, aw * 0.22));
+    const cvW = Math.max(sprW + 8, Math.min(aw - slotW * 2 - 8, sprW + 32));
+    const cvH = Math.max(sprH + 8, Math.min(ah - 70, sprH + 32));
+    cv.width = cvW; cv.height = cvH;
+    const ctx = cv.getContext('2d');
+    ctx.clearRect(0, 0, cvW, cvH);
+    if (SPR[p.sprite]) {
+      const ox = Math.max(0, (cvW - sprW) / 2);
+      const oy = Math.max(0, (cvH - sprH) / 2);
+      SPR[p.sprite](ctx, ox, oy, false, Date.now() * 0.05);
+    }
+    this._renderEquipSlots(area, slotW);
+  },
+
+  _renderEquipSlots(area, slotW) {
+    area.querySelectorAll('.vic-slot').forEach(s => s.remove());
+    const SLOTS = [
+      { id:'head',      icon:'⛑', lbl:'HEAD',   pos:'top:3%;left:50%;transform:translateX(-50%);' },
+      { id:'weapon',    icon:'⚔', lbl:'WEAPON',  pos:'top:28%;left:2%;' },
+      { id:'chest',     icon:'🧥', lbl:'CHEST',  pos:'top:28%;right:2%;' },
+      { id:'ring',      icon:'💍', lbl:'RING',    pos:'bottom:18%;left:2%;' },
+      { id:'accessory', icon:'📿', lbl:'ACCESS', pos:'bottom:18%;right:2%;' },
+      { id:'boots',     icon:'👟', lbl:'BOOTS',   pos:'bottom:2%;left:50%;transform:translateX(-50%);' },
+    ];
+    const slotRef = this._takenSlot;
+    const takenItem = this._takenItem;
+    SLOTS.forEach(s => {
+      const item = Inventory.equipped[s.id];
+      const canEquip = slotRef === s.id && takenItem && !item;
+      const div = document.createElement('div');
+      let cls = 'vic-slot';
+      if (canEquip) cls += ' can-equip';
+      else if (item) cls += ' filled ' + item.rarity;
+      div.className = cls;
+      div.style.cssText = s.pos;
+      if (item) {
+        div.innerHTML = `<div class="vic-slot-icon" style="color:${item.color}">${item.icon}</div><div class="vic-slot-lbl">${item.name.slice(0,6)}</div>`;
+        div.title = `${item.name}\n${LootSystem.statDesc(item.bonuses)}`;
+      } else if (canEquip) {
+        div.innerHTML = `<div class="vic-slot-icon">${takenItem.icon}</div><div class="vic-slot-lbl">EQUIP?</div>`;
+        div.title = `Click to equip ${takenItem.name}`;
+        div.addEventListener('click', () => {
+          const bagIdx = Inventory.items.findIndex(i => i === takenItem);
+          if (bagIdx >= 0) {
+            Inventory.equipFromBag(bagIdx);
+            this._takenSlot = null;
+            this._renderPaperdoll();
+            this._renderInventory();
+          }
+        });
+      } else {
+        div.innerHTML = `<div class="vic-slot-icon" style="opacity:.28">${s.icon}</div><div class="vic-slot-lbl">${s.lbl}</div>`;
+      }
+      area.appendChild(div);
+    });
+  },
+
+  _renderInventory() {
+    this._renderEquipGrid();
+    this._renderBagGrid();
+    this._updateInvGold();
+  },
+
+  _renderEquipGrid() {
+    const grid = document.getElementById('vicEquipGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    const SLOTS = [
+      {id:'head',icon:'⛑',lbl:'HEAD'},{id:'weapon',icon:'⚔',lbl:'WPN'},
+      {id:'chest',icon:'🧥',lbl:'CHST'},{id:'ring',icon:'💍',lbl:'RING'},
+      {id:'boots',icon:'👟',lbl:'BOOT'},{id:'accessory',icon:'📿',lbl:'ACC'},
+    ];
+    SLOTS.forEach(s => {
+      const item = Inventory.equipped[s.id];
+      const div = document.createElement('div');
+      div.className = 'vic-eqslot' + (item ? ' filled ' + item.rarity : '');
+      if (item) {
+        div.innerHTML = `<div class="vic-eqslot-icon" style="color:${item.color}">${item.icon}</div><div class="vic-eqslot-lbl">${s.lbl}</div>`;
+        div.title = item.name;
+      } else {
+        div.innerHTML = `<div class="vic-eqslot-icon" style="opacity:.25">${s.icon}</div><div class="vic-eqslot-lbl">${s.lbl}</div>`;
+      }
+      grid.appendChild(div);
+    });
+  },
+
+  _renderBagGrid() {
+    const grid = document.getElementById('vicBagGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    for (let i = 0; i < 24; i++) {
+      const item = Inventory.items[i];
+      const div = document.createElement('div');
+      div.className = 'vic-bag-slot' + (item ? ' filled ' + item.rarity : '');
+      if (item) {
+        div.style.color = item.color;
+        div.textContent = item.icon;
+        div.title = `${item.name} Lv${item.level} [${item.rarity.toUpperCase()}]`;
+      }
+      grid.appendChild(div);
+    }
+  },
+
+  _renderUpgrades() {
+    this._upgrades = Rogue.genUpgrades();
+    const grid = document.getElementById('vicUpgrades');
+    if (!grid) return;
+    grid.innerHTML = '';
+    this._upgrades.forEach(u => {
+      const card = document.createElement('div');
+      card.className = 'vic-upg-card';
+      card.innerHTML = `<div class="vic-upg-icon">${u.icon}</div><div class="vic-upg-name">${u.name}</div><div class="vic-upg-desc">${u.desc}</div>`;
+      card.addEventListener('click', () => {
+        this._selectedUpgrade = u;
+        grid.querySelectorAll('.vic-upg-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        this._updateContinue();
+      });
+      grid.appendChild(card);
+    });
+  },
+
+  _updateContinue() {
+    const btn = document.getElementById('vicContinueBtn');
+    const hint = document.getElementById('vicUpgHint');
+    if (!btn) return;
+    const active = !!this._selectedUpgrade;
+    btn.disabled = !active;
+    btn.classList.toggle('active', active);
+    if (hint) hint.textContent = active ? '✓ UPGRADE SELECTED' : 'SELECT AN UPGRADE TO CONTINUE';
+  },
+
+  // Called by vicContinueBtn click
+  _continue() {
+    if (!this._selectedUpgrade) return;
+    const p = GameState.player;
+    this._selectedUpgrade.apply(p);
+    UI.flash();
+    UI.updateBars();
+    DM.say(`Upgrade: ${this._selectedUpgrade.name}!`);
+    LootScreen.reset();
+    const cb = this._cb;
+    if (this._isBoss) {
+      if (GameState.floor >= GameState.maxFloors) {
+        UI.renderWin(); UI.show('sWN'); return;
+      }
+      GameState.floor++;
+      UI.updateFloor();
+      setTimeout(() => { if (cb) cb(); }, 300);
+    } else {
+      setTimeout(() => { if (cb) cb(); }, 300);
+    }
   },
 };
 
