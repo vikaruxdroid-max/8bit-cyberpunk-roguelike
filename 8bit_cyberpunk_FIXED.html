@@ -2677,6 +2677,7 @@ const Game={
 
   // Show available exits from current room as navigation buttons
   showExits(){
+    UI.show('sCM');
     const floorData=GameState.currentFloor;
     if(!floorData)return;
     const room=floorData.rooms[GameState.currentRoomIdx];
