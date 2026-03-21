@@ -412,12 +412,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:#060618;font-family:
 #vicContinueBtn.active:hover{background:var(--C);color:#020210;box-shadow:0 0 36px rgba(0,255,255,.7);}
 
 /* ══ SPEECH BUBBLES ══ */
-@keyframes sbIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
-.speech-bubble{position:absolute;background:rgba(2,2,20,.96);border:2px solid;padding:clamp(5px,.7vh,8px) clamp(8px,1vw,12px);font-family:'Press Start 2P',monospace;font-size:clamp(6px,.72vw,10px);line-height:1.7;max-width:clamp(160px,20vw,260px);pointer-events:none;z-index:45;animation:sbIn .15s ease;}
-.speech-bubble::after{content:'';position:absolute;bottom:-9px;left:16px;border:5px solid transparent;}
-#speechBubbleEnemy{top:8%;right:4%;border-color:#ff2244;box-shadow:0 0 14px rgba(255,34,68,.3);}
+@keyframes sbIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.speech-bubble{position:absolute;background:rgba(2,2,20,.96);border:2px solid;padding:clamp(5px,.7vh,8px) clamp(8px,1vw,12px);font-family:'Press Start 2P',monospace;font-size:clamp(6px,.72vw,10px);line-height:1.7;max-width:clamp(160px,20vw,260px);pointer-events:none;z-index:45;animation:sbIn .18s ease;transition:opacity .5s;}
+.speech-bubble::after{content:'';position:absolute;bottom:-9px;left:50%;transform:translateX(-50%);border:5px solid transparent;}
+#speechBubbleEnemy{border-color:#ff2244;box-shadow:0 0 14px rgba(255,34,68,.3);}
 #speechBubbleEnemy::after{border-top-color:#ff2244;}
-#speechBubblePlayer{top:8%;left:4%;border-color:#00ffff;box-shadow:0 0 14px rgba(0,255,255,.3);}
+#speechBubblePlayer{border-color:#00ffff;box-shadow:0 0 14px rgba(0,255,255,.3);}
 #speechBubblePlayer::after{border-top-color:#00ffff;}
 .sb-text{color:#ddeeff;}
 .sb-typing{color:rgba(0,255,255,.45);font-size:clamp(8px,.9vw,12px);}
@@ -2069,6 +2069,7 @@ const Combat = {
     if(idx>=0){const pos=Arena.getEnemyPos(idx);Arena.spawnVFX('explode',pos.x,pos.y,en.color||RD);}
     DM.say(`${en.name} destroyed!`);
     DialogEngine.showDeath(en);
+    AIDialog.onEnemyDeath(en);
     // Loot collection
     const drops=LootSystem.genLoot(en,GameState.floor);
     const gold=LootSystem.goldFromEnemy(en,GameState.floor);
@@ -2144,7 +2145,7 @@ const Combat = {
     const alive=enemies.filter(e=>e.hp>0);
     if(!alive.length&&!GameState.levelUpPending){this.endCombat(true);return;}
     AIDialog.onTurn(GameState.floorTurns,enemies);
-    if(p.hp/p.maxHp<=0.25&&!p.lowHpAISaid){p.lowHpAISaid=true;AIDialog.onLowHPPlayer();}
+    if(p.hp/p.maxHp<=0.30&&!p.lowHpAISaid){p.lowHpAISaid=true;AIDialog.onLowHPPlayer();}
     p.tickBuffs();
     if(p.hp<=0){this.endCombat(false);return;}
     p.spells.forEach(s=>{if(s.cd>0)s.cd--;if(s.hackedTurns>0){s.hackedTurns--;if(s.hackedTurns===0)DM.say(`${s.name} back online!`);}});
@@ -3426,12 +3427,19 @@ const AIDialog = {
   _playerEl: null,
   _enemyTimer: null,
   _playerTimer: null,
-  _lastTurnTriggered: 0,
+  _queue: [],
+  _queueTimer: null,
+  _lastShownMs: 0,
+  _minGap: 2000,
+  _fallbackHistory: {enemy:[], player:[]},
 
   init(){
     this._enemyEl  = document.getElementById('speechBubbleEnemy');
     this._playerEl = document.getElementById('speechBubblePlayer');
-    this._lastTurnTriggered = 0;
+    this._queue = [];
+    clearTimeout(this._queueTimer); this._queueTimer = null;
+    this._lastShownMs = 0;
+    this._fallbackHistory = {enemy:[], player:[]};
     this.hideAll();
   },
 
@@ -3439,7 +3447,6 @@ const AIDialog = {
     return localStorage.getItem('anthropic_key') || (typeof ANTHROPIC_API_KEY !== 'undefined' ? ANTHROPIC_API_KEY : '');
   },
 
-  // Call Claude Haiku with a 3-second timeout; returns fallback string on any failure
   async _call(systemPrompt, userMsg, fallback){
     const key = this._getKey();
     if(!key) return fallback;
@@ -3447,131 +3454,190 @@ const AIDialog = {
     const tid = setTimeout(()=>ctrl.abort(), 3000);
     try {
       const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method:'POST',
-        signal: ctrl.signal,
-        headers:{
-          'content-type':'application/json',
-          'x-api-key': key,
-          'anthropic-version':'2023-06-01',
-          'anthropic-dangerous-direct-browser-access':'true'
-        },
-        body: JSON.stringify({
-          model:'claude-haiku-4-5-20251001',
-          max_tokens:60,
-          system: systemPrompt,
-          messages:[{role:'user',content:userMsg}]
-        })
+        method:'POST', signal:ctrl.signal,
+        headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+        body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:60,system:systemPrompt,messages:[{role:'user',content:userMsg}]})
       });
       clearTimeout(tid);
       if(!res.ok) return fallback;
       const data = await res.json();
       const text = (data.content?.[0]?.text||'').trim();
       return text || fallback;
-    } catch(e) {
-      clearTimeout(tid);
-      return fallback;
-    }
+    } catch(e){ clearTimeout(tid); return fallback; }
   },
 
-  _enemyCtx(enemy){
-    return `You are ${enemy.name||'an enemy'} in a cyberpunk dungeon. HP: ${enemy.hp}/${enemy.maxHp}. Reply with ONE short combat taunt (max 10 words). No quotes, no emojis.`;
-  },
-
-  _playerCtx(){
+  _enemyPrompt(enemy, situation){
     const p = GameState.player;
-    return `You are a ${p?.className||'warrior'} in a cyberpunk dungeon. HP: ${p?.hp}/${p?.maxHp}. Reply with ONE short combat quip (max 10 words). No quotes, no emojis.`;
+    const etype = enemy.isBoss ? 'boss' : (enemy.type || 'grunt');
+    return `You are ${enemy.name||'an enemy'}, a ${etype} in a cyberpunk neon dungeon. Fighting a ${p?.className||'warrior'}. Speak ONE line only. Max 10 words. Vary your style — sometimes threatening, sometimes taunting, sometimes philosophical, sometimes glitching/corrupted speech (e.g. sy5t3m_err0r style), sometimes surprisingly calm. Never repeat yourself. Current state: ${situation}. Cyberpunk slang only. No quotes, no emojis.`;
   },
 
-  async showEnemyLine(enemy, situation, fallback){
-    const sys = this._enemyCtx(enemy);
+  _playerPrompt(situation){
+    const p = GameState.player;
+    const hp = p ? `${p.hp}/${p.maxHp} HP` : 'unknown HP';
+    return `You are a ${p?.className||'warrior'} in a cyberpunk dungeon. Respond with ONE line only. Max 10 words. Vary your tone — sometimes cocky, sometimes focused, sometimes dark humor, sometimes silent determination shown through action words. Never repeat yourself. Current state: ${situation} (${hp}). Cyberpunk slang only. No quotes, no emojis.`;
+  },
+
+  _pickFallback(pool, sideKey){
+    const p = (pool && pool.length) ? pool : (sideKey==='enemy' ? ['System error.','Prepare to die.','End protocol.'] : ['Stay focused.','Not today.','Keep going.']);
+    const hist = this._fallbackHistory[sideKey] || [];
+    const recent = hist.slice(-5);
+    const fresh = p.filter(l=>!recent.includes(l));
+    const src = fresh.length ? fresh : p;
+    const chosen = src[Math.floor(Math.random()*src.length)];
+    hist.push(chosen);
+    if(hist.length > 5) hist.shift();
+    this._fallbackHistory[sideKey] = hist;
+    return chosen;
+  },
+
+  _getFallbacks(key){
+    return GameState.dialog?.ai_fallbacks?.[key] || [];
+  },
+
+  // Core internal show methods
+  async _showEnemyDialog(enemy, situation, poolKey){
+    const pool = this._getFallbacks(poolKey);
+    const fallback = this._pickFallback(pool, 'enemy');
+    const sys = this._enemyPrompt(enemy, situation);
     const text = await this._call(sys, situation, fallback);
-    this._showBubble('enemy', text, '#ff2d78');
+    this._enqueue({side:'enemy', text, color:'#ff2d78', enemy});
   },
 
-  async showPlayerLine(situation, fallback){
-    const sys = this._playerCtx();
+  async _showPlayerDialog(situation, poolKey){
+    const pool = this._getFallbacks(poolKey);
+    const fallback = this._pickFallback(pool, 'player');
+    const sys = this._playerPrompt(situation);
     const text = await this._call(sys, situation, fallback);
-    this._showBubble('player', text, '#00ffff');
+    this._enqueue({side:'player', text, color:'#00ffff', enemy:null});
   },
 
-  _showBubble(side, text, color){
+  // Queue system — minimum 2s gap between any two bubbles
+  _enqueue(item){
+    this._queue.push(item);
+    this._drainQueue();
+  },
+
+  _drainQueue(){
+    if(this._queueTimer !== null) return;
+    if(!this._queue.length) return;
+    const now = Date.now();
+    const wait = Math.max(0, this._minGap - (now - this._lastShownMs));
+    this._queueTimer = setTimeout(()=>{
+      this._queueTimer = null;
+      if(!this._queue.length) return;
+      const item = this._queue.shift();
+      this._lastShownMs = Date.now();
+      this._displayBubble(item.side, item.text, item.color, item.enemy);
+      this._drainQueue();
+    }, wait);
+  },
+
+  _displayBubble(side, text, color, enemy){
     const el = side === 'enemy' ? this._enemyEl : this._playerEl;
     const timerKey = side === 'enemy' ? '_enemyTimer' : '_playerTimer';
     if(!el) return;
     clearTimeout(this[timerKey]);
     const textEl = el.querySelector('.sb-text');
-    if(textEl){
-      textEl.textContent = '';
-      el.style.borderColor = color;
-      el.style.display = 'block';
-      el.classList.add('sb-in');
-      this._typewrite(textEl, text);
+    if(!textEl) return;
+    textEl.textContent = '';
+    el.style.borderColor = color;
+    el.style.boxShadow = `0 0 14px ${color}66`;
+    el.style.opacity = '1';
+    el.style.display = 'block';
+    // Position after layout paint so offsetWidth is accurate
+    requestAnimationFrame(()=>this._positionBubble(side, el, enemy));
+    // Dismiss after typewrite completes + 4.5s hold
+    const twMs = text.length * 30;
+    this._typewrite(textEl, text);
+    this[timerKey] = setTimeout(()=>this._hideBubble(side), twMs + 4500);
+  },
+
+  // Converts canvas sprite position to arena-wrap DOM coordinates
+  _positionBubble(side, el, enemy){
+    const cv = Arena.cv;
+    if(!cv || !Arena.W || !Arena.H) return;
+    const scaleX = cv.clientWidth / Arena.W;
+    const scaleY = cv.clientHeight / Arena.H;
+    let cx, cy;
+    if(side === 'enemy'){
+      const idx = enemy ? GameState.enemies.indexOf(enemy) : 0;
+      const pos = Arena.getEnemyPos(Math.max(0, idx));
+      cx = pos.x; cy = pos.y;
+    } else {
+      const pos = Arena.getPlayerPos();
+      cx = pos.x; cy = pos.y;
     }
-    this[timerKey] = setTimeout(()=>this._hideBubble(side), 3000 + text.length * 30);
+    const domX = cx * scaleX;
+    const domY = cy * scaleY;
+    const bw = el.offsetWidth || 220;
+    const bh = el.offsetHeight || 70;
+    const gap = 14;
+    const parentW = (el.parentElement||document.body).clientWidth;
+    let left = domX - bw / 2;
+    let top  = domY - bh - gap;
+    left = Math.max(4, Math.min(left, parentW - bw - 4));
+    top  = Math.max(4, top);
+    el.style.left = left + 'px';
+    el.style.top  = top  + 'px';
   },
 
   _hideBubble(side){
     const el = side === 'enemy' ? this._enemyEl : this._playerEl;
-    if(el){ el.style.display = 'none'; el.classList.remove('sb-in'); }
+    if(!el) return;
+    el.style.opacity = '0';
+    setTimeout(()=>{ if(el.style.opacity==='0'){ el.style.display='none'; el.style.opacity='1'; } }, 500);
   },
 
   hideAll(){
-    if(this._enemyEl)  this._enemyEl.style.display  = 'none';
-    if(this._playerEl) this._playerEl.style.display = 'none';
-    clearTimeout(this._enemyTimer);
-    clearTimeout(this._playerTimer);
+    clearTimeout(this._queueTimer); this._queueTimer = null;
+    this._queue = [];
+    clearTimeout(this._enemyTimer); clearTimeout(this._playerTimer);
+    if(this._enemyEl){ this._enemyEl.style.display='none'; this._enemyEl.style.opacity='1'; }
+    if(this._playerEl){ this._playerEl.style.display='none'; this._playerEl.style.opacity='1'; }
   },
 
+  // Typewrite at 30ms/char; dismiss timer starts AFTER completion
   _typewrite(el, text){
     el.textContent = '';
     let i = 0;
     const iv = setInterval(()=>{
-      el.textContent += text[i++] || '';
+      el.textContent += text[i++]||'';
       if(i >= text.length) clearInterval(iv);
     }, 30);
   },
 
-  // Turn 1: enemy taunts, player responds
-  // Every 3 turns after that: random flavor
+  // ── Trigger points ──────────────────────────────────────────────
+
+  // Turn 1 only: enemy taunts then player responds after 2.2s
   onTurn(turnNum, enemies){
-    if(!enemies || !enemies.length) return;
-    const en = enemies.find(e=>e.hp>0);
-    if(!en) return;
-    if(turnNum === 1){
-      const eFallbacks = ["You dare enter my domain?","Prepare to be deleted.","I'll end you, flatline incoming."];
-      const pFallbacks = ["Bring it on.","I've faced worse.","You're already dead."];
-      this.showEnemyLine(en, "Say a short opening taunt as you encounter this hero.", eFallbacks[Math.floor(Math.random()*eFallbacks.length)]);
-      setTimeout(()=>this.showPlayerLine("Reply to an enemy's opening taunt with a confident comeback.", pFallbacks[Math.floor(Math.random()*pFallbacks.length)]), 2200);
-    } else if(turnNum > 1 && (turnNum - this._lastTurnTriggered) >= 3){
-      this._lastTurnTriggered = turnNum;
-      const fbs = ["Keep fighting!","This isn't over.","You can't win.","Error: courage detected."];
-      this.showEnemyLine(en, "Say a short mid-combat line.", fbs[Math.floor(Math.random()*fbs.length)]);
-    }
+    if(turnNum !== 1) return;
+    const en = enemies?.find(e=>e.hp>0); if(!en) return;
+    this._showEnemyDialog(en, 'battle start, first encounter with this hero', 'enemy_taunt');
+    setTimeout(()=>this._showPlayerDialog('responding to enemy opening taunt with confidence', 'player_comeback'), 2200);
   },
 
   onLowHPEnemy(enemy){
-    const fbs = ["System...critical...","I...cannot fall...","Impossible..."];
-    this.showEnemyLine(enemy, "You are badly wounded. Say a short desperate line.", fbs[Math.floor(Math.random()*fbs.length)]);
+    this._showEnemyDialog(enemy, 'critically wounded, desperate, near death', 'enemy_lowHp');
   },
 
   onLowHPPlayer(){
-    const fbs = ["Not like this...","Still standing...","Come on... fight!"];
-    this.showPlayerLine("You are badly wounded. Say a short desperate line.", fbs[Math.floor(Math.random()*fbs.length)]);
+    this._showPlayerDialog('critically wounded, fighting through pain and damage', 'player_lowHp');
   },
 
+  onEnemyDeath(enemy){
+    this._showEnemyDialog(enemy, 'dying, speaking final words before shutdown', 'enemy_death');
+  },
+
+  // Crit: one line from player only (whoever landed it)
   onCrit(enemy){
-    const pFbs = ["CRITICAL HIT!","Overclocked!","Feel the power!"];
-    const eFbs = ["Ugh!","How?!","Impossible!"];
-    this.showPlayerLine("You just landed a critical hit. React with a short victory cry.", pFbs[Math.floor(Math.random()*pFbs.length)]);
-    if(enemy && enemy.hp > 0){
-      setTimeout(()=>this.showEnemyLine(enemy, "You just took a critical hit. React with a short pained line.", eFbs[Math.floor(Math.random()*eFbs.length)]), 1800);
-    }
+    this._showPlayerDialog('you just landed a devastating critical hit on the enemy', 'player_crit');
   },
 
+  // Skill use: one line from player only
   onSpell(spell, enemy){
     if(!spell) return;
-    const pFbs = [`${spell.name}!`,"Spell cast!","Take this!"];
-    this.showPlayerLine(`You just cast ${spell.name}. Say a short spell invocation (max 8 words).`, pFbs[Math.floor(Math.random()*pFbs.length)]);
+    this._showPlayerDialog(`you just activated ${spell.name}, a powerful combat ability`, 'player_spell');
   },
 };
 
