@@ -707,6 +707,48 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
 
 /* ══ BOSS ROOM ARENA TINT ══ */
 .arena-wrap.boss-room{box-shadow:inset 0 0 80px rgba(200,0,100,.15);}
+
+/* ══ WORLD MAP SCREEN ══ */
+#sWM{background:#020208;flex-direction:column;overflow:hidden;}
+.wm-hdr{flex-shrink:0;display:flex;justify-content:space-between;align-items:center;
+  padding:clamp(8px,1vh,14px) clamp(14px,1.5vw,24px);
+  background:linear-gradient(90deg,rgba(0,0,10,.98),rgba(4,0,20,.98));
+  border-bottom:2px solid rgba(0,255,255,.4);}
+.wm-title{font-size:clamp(12px,1.4vw,20px);color:var(--C);text-shadow:0 0 14px var(--C);letter-spacing:4px;}
+.wm-sub{font-size:clamp(7px,0.8vw,11px);color:rgba(0,255,255,.55);letter-spacing:2px;}
+.wm-body{flex:1;display:flex;min-height:0;overflow:hidden;gap:0;}
+#wmCanvas{flex:1;display:block;min-width:0;cursor:crosshair;}
+.wm-zone-info{width:clamp(200px,22vw,300px);flex-shrink:0;background:rgba(3,0,14,.97);
+  border-left:2px solid rgba(0,255,255,.2);display:flex;flex-direction:column;
+  gap:clamp(8px,1vh,14px);padding:clamp(14px,1.8vh,24px) clamp(12px,1.3vw,20px);overflow-y:auto;}
+.wm-zone-name{font-size:clamp(10px,1.1vw,15px);letter-spacing:2px;text-align:center;line-height:1.5;}
+.wm-zone-desc{font-size:clamp(7px,0.78vw,11px);color:#aabbd0;text-align:center;line-height:1.9;}
+.wm-zone-meta{font-size:clamp(6px,0.68vw,9px);color:rgba(0,255,255,.55);text-align:center;line-height:2.2;}
+.wm-prereq{font-size:clamp(6px,0.68vw,9px);color:var(--RD);text-align:center;background:rgba(40,0,0,.6);
+  border:1px solid rgba(255,34,68,.3);padding:5px 8px;line-height:1.9;}
+.wm-cleared{font-size:clamp(7px,0.8vw,11px);color:#00ff44;text-align:center;
+  text-shadow:0 0 8px #00ff44;letter-spacing:2px;}
+.wm-locked{font-size:clamp(8px,0.9vw,13px);color:rgba(255,255,255,.25);text-align:center;letter-spacing:2px;}
+.wm-hint{font-size:clamp(7px,0.78vw,11px);color:rgba(0,255,255,.3);text-align:center;
+  letter-spacing:1px;margin-top:30px;}
+.wm-enter-btn{font-family:'Press Start 2P',monospace;font-size:clamp(8px,0.9vw,13px);
+  padding:clamp(10px,1.2vh,16px) clamp(12px,1.3vw,20px);cursor:pointer;letter-spacing:2px;
+  background:linear-gradient(135deg,rgba(0,100,180,.92),rgba(0,20,100,.92));
+  border:3px solid var(--C);color:var(--C);text-shadow:0 0 8px var(--C);
+  transition:all .15s;width:100%;margin-top:4px;}
+.wm-enter-btn:hover{background:var(--C);color:#020210;box-shadow:0 0 24px rgba(0,255,255,.6);}
+.wm-skulls{font-size:10px;display:block;text-align:center;margin-top:2px;}
+.wm-back-btn{font-family:'Press Start 2P',monospace;font-size:clamp(6px,0.7vw,10px);
+  padding:6px 14px;cursor:pointer;background:rgba(4,4,28,.9);
+  border:1px solid rgba(0,255,255,.3);color:rgba(0,255,255,.6);letter-spacing:1px;transition:all .15s;}
+.wm-back-btn:hover{border-color:var(--C);color:var(--C);}
+
+/* ══ MAP BUTTON IN HUD ══ */
+#mapBtn{font-family:'Press Start 2P',monospace;font-size:clamp(6px,0.68vw,9px);
+  padding:3px 8px;cursor:pointer;background:rgba(0,20,40,.9);
+  border:1px solid rgba(0,255,255,.4);color:rgba(0,255,255,.7);letter-spacing:1px;transition:all .15s;}
+#mapBtn:hover{border-color:var(--C);color:var(--C);box-shadow:0 0 8px rgba(0,255,255,.3);}
+#mapBtn.hidden{display:none;}
 </style>
 </head>
 <body>
@@ -819,7 +861,10 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
           <div class="spg" id="spgrid"></div>
         </div>
       </div>
-      <button class="entbtn" id="ebtn">▶ ENTER DUNGEON ◀</button>
+      <div style="display:flex;gap:10px;justify-content:center;width:100%;">
+        <button class="entbtn" id="continueBtn" style="display:none;background:linear-gradient(135deg,rgba(0,140,60,.92),rgba(0,80,30,.92));border-color:var(--G);color:var(--G);text-shadow:0 0 10px var(--G);">▶ CONTINUE RUN ◀</button>
+        <button class="entbtn" id="ebtn">▶ ENTER DUNGEON ◀</button>
+      </div>
     </div>
     <!-- keep old sections hidden so JS refs don't break -->
     <div class="esec" style="display:none"><div class="eg" id="egrid_old"></div></div>
@@ -830,7 +875,8 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
   <div class="scr" id="sCM">
     <!-- Top HUD -->
     <div class="chdr">
-      <span class="fb" id="fbadge">FLOOR 1/10</span>
+      <span class="fb" id="fbadge">ZONE: NEON NEXUS</span>
+      <button id="mapBtn" class="hidden">🗺 MAP</button>
       <span class="fb" style="color:var(--GD)" id="kbadge">KILLS:0</span>
       <span class="fb" style="color:var(--M)" id="dbadge">DMG:0</span>
       <span class="fb" style="color:var(--G)" id="tbadge">TURN:0</span>
@@ -1033,6 +1079,23 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
       <div class="vic-foot">
         <span class="vic-upg-hint" id="vicUpgHint">SELECT AN UPGRADE TO CONTINUE</span>
         <button id="vicContinueBtn" disabled>▶ CONTINUE ▶</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- WORLD MAP -->
+  <div class="scr" id="sWM">
+    <div class="wm-hdr">
+      <div class="wm-title">◆ WORLD MAP ◆</div>
+      <div style="display:flex;align-items:center;gap:14px;">
+        <span class="wm-sub" id="wmProgress">0/7 ZONES CLEARED</span>
+        <button class="wm-back-btn" id="wmBackBtn">↩ BACK</button>
+      </div>
+    </div>
+    <div class="wm-body">
+      <canvas id="wmCanvas"></canvas>
+      <div id="wmZoneInfo" class="wm-zone-info">
+        <div class="wm-hint">— CLICK A ZONE TO SELECT —</div>
       </div>
     </div>
   </div>
@@ -1978,73 +2041,35 @@ ctx.clearRect(0, 0, W, H);
   },
 
   drawBg(ctx, W, H, t) {
-    // Boss room tints arena deeper red/magenta
+    const zoneId=GameState.currentZoneId||'neonNexus';
     const isBoss=GameState.enemies?.some(e=>e.isBoss&&e.hp>0);
-    const bgBase=isBoss?'#0f030a':'#030314';
-    const bgMid=isBoss?'#180518':'#07072a';
-    const g = ctx.createLinearGradient(0,0,0,H);
-    g.addColorStop(0,bgBase); g.addColorStop(.55,bgMid); g.addColorStop(1,bgBase);
-    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
 
-    // Scrolling neon grid
-    const off = (t*.55) % 80;
-    const gridCol=isBoss?'rgba(255,0,100,.04)':'rgba(0,255,255,.035)';
-    ctx.strokeStyle=gridCol; ctx.lineWidth=1;
-    for(let x=-off;x<W+80;x+=80){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H*.7);ctx.stroke();}
-    for(let y=0;y<H*.68;y+=44){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
-
-    // Glow pillars
-    ctx.save(); ctx.globalAlpha=.07;
-    [.18,.5,.82].forEach(fx=>{
-      const pg2=ctx.createLinearGradient(W*fx-30,0,W*fx+30,0);
-      const pc=isBoss?'#ff0066':'#8800ff';
-      pg2.addColorStop(0,'transparent'); pg2.addColorStop(.5,pc); pg2.addColorStop(1,'transparent');
-      ctx.fillStyle=pg2; ctx.fillRect(W*fx-30,0,60,H*.65);
-    });
-    ctx.restore();
-
-    // Arched portals on back wall with neon glow pulsing
-    const archPulse=.4+Math.sin(t*.04)*.2;
-    const archColor=isBoss?`rgba(255,0,100,${archPulse})`:`rgba(136,0,255,${archPulse})`;
-    for(let a=0;a<4;a++){
-      const ax=W*.06+a*W*.24, aw=W*.14;
-      ctx.fillStyle=isBoss?'rgba(40,4,22,.55)':'rgba(22,22,55,.55)';
-      ctx.strokeStyle=archColor; ctx.lineWidth=2;
-      ctx.shadowColor=archColor;ctx.shadowBlur=8;
-      ctx.beginPath(); ctx.arc(ax+aw/2, H*.18, aw*.5, Math.PI, 0, false); ctx.lineTo(ax+aw,H*.18); ctx.lineTo(ax,H*.18); ctx.closePath();
-      ctx.fill(); ctx.stroke();
-      ctx.shadowBlur=0;
-      // Inner portal glow
-      const pg3=ctx.createRadialGradient(ax+aw/2,H*.13,0,ax+aw/2,H*.13,aw*.38);
-      pg3.addColorStop(0,isBoss?`rgba(255,0,50,.12)`:`rgba(136,0,255,.08)`);
-      pg3.addColorStop(1,'transparent');
-      ctx.fillStyle=pg3;ctx.beginPath();ctx.arc(ax+aw/2,H*.13,aw*.38,0,Math.PI*2);ctx.fill();
+    // Zone-specific background dispatch
+    switch(zoneId){
+      case 'voidSector':   this._bgVoid(ctx,W,H,t,isBoss); break;
+      case 'corporateStrip':this._bgCorp(ctx,W,H,t,isBoss); break;
+      case 'rustMarket':   this._bgRust(ctx,W,H,t,isBoss); break;
+      case 'theUndernet':  this._bgUndernet(ctx,W,H,t,isBoss); break;
+      case 'ghostDistrict':this._bgGhost(ctx,W,H,t,isBoss); break;
+      case 'dataHighway':  this._bgHighway(ctx,W,H,t,isBoss); break;
+      case 'theCore':      this._bgCore(ctx,W,H,t); break;
+      default:             this._bgNexus(ctx,W,H,t,isBoss); break;
     }
 
-    // Neon torches
-    [W*.12, W*.5, W*.88].forEach(tx=>{
-      const fl=.6+Math.sin(t*.09+tx)*.25;
-      const tc=isBoss?`rgba(255,80,20,${.3*fl})`:`rgba(255,150,30,${.3*fl})`;
-      const tg=ctx.createRadialGradient(tx,H*.18,0,tx,H*.18,40*fl);
-      tg.addColorStop(0,tc); tg.addColorStop(1,'rgba(255,80,0,0)');
-      ctx.fillStyle=tg; ctx.beginPath(); ctx.arc(tx,H*.18,40*fl,0,Math.PI*2); ctx.fill();
-      ctx.fillStyle='#553322'; ctx.fillRect(tx-2,H*.13,4,8);
-      ctx.fillStyle=isBoss?'#ff4400':'#ff8800'; ctx.fillRect(tx-2,H*.11,4,5);
-      ctx.fillStyle='#ffff88'; ctx.fillRect(tx-1,H*.09,2,4);
-    });
-
-    // Floating holographic hex particles
+    // Floating holographic hex particles (all zones)
     if(GameState.settings.particles!=='off'){
       const pCount=GameState.settings.particles==='low'?8:this.hexParticles.length;
       ctx.save();
+      const zone=ZONES[zoneId];
+      const hueShift=isBoss?120:(zone?.color==='#39FF14'?90:zone?.color==='#FF6600'?30:0);
       this.hexParticles.slice(0,pCount).forEach(hp=>{
         hp.x+=hp.vx;hp.y+=hp.vy;
         if(hp.y<-0.05)hp.y=1.05;
         if(hp.x<-0.05)hp.x=1.05;
         if(hp.x>1.05)hp.x=-0.05;
         const pulse=hp.alpha*(0.5+Math.sin(t*0.04+hp.phase)*0.5);
-        ctx.globalAlpha=pulse;
-        ctx.strokeStyle=`hsl(${hp.hue+(isBoss?120:0)},100%,70%)`;
+        ctx.globalAlpha=pulse*0.7;
+        ctx.strokeStyle=`hsl(${hp.hue+hueShift},100%,70%)`;
         ctx.lineWidth=1;
         ctx.shadowColor=ctx.strokeStyle;ctx.shadowBlur=4;
         const hx=hp.x*W,hy=hp.y*H,r=hp.size;
@@ -2067,20 +2092,334 @@ ctx.clearRect(0, 0, W, H);
     }
   },
 
+  // ── ZONE BACKGROUND METHODS ──────────────────────────────────
+
+  _bgNexus(ctx,W,H,t,isBoss){
+    // NEON NEXUS: bright cyan grid, holographic billboards, hot pink accents
+    const bg=ctx.createLinearGradient(0,0,0,H);
+    bg.addColorStop(0,isBoss?'#0f030a':'#020a1a');bg.addColorStop(.55,isBoss?'#1a051f':'#020d22');bg.addColorStop(1,isBoss?'#0f030a':'#020a1a');
+    ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+    const off=(t*.55)%80;
+    ctx.strokeStyle=isBoss?'rgba(255,0,100,.04)':'rgba(0,255,255,.04)';ctx.lineWidth=1;
+    for(let x=-off;x<W+80;x+=80){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H*.7);ctx.stroke();}
+    for(let y=0;y<H*.68;y+=44){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+    // Billboard signs
+    ctx.save();
+    [[W*.08,H*.08,70,22,'#FF00FF','NEON'],[W*.75,H*.06,60,20,'#00FFFF','SYNC'],[W*.45,H*.04,80,24,'#39FF14','GRID']].forEach(([bx,by,bw,bh,bc,txt])=>{
+      const pulse=.5+Math.sin(t*.06+bx)*.3;
+      ctx.fillStyle=bc+'22';ctx.fillRect(bx,by,bw,bh);
+      ctx.strokeStyle=bc;ctx.lineWidth=1;ctx.shadowColor=bc;ctx.shadowBlur=8*pulse;ctx.strokeRect(bx,by,bw,bh);
+      ctx.fillStyle=bc;ctx.font=`bold 7px 'Press Start 2P',monospace`;ctx.textAlign='center';ctx.fillText(txt,bx+bw/2,by+bh/2+3);
+      ctx.shadowBlur=0;
+    });
+    ctx.restore();
+    // Glow pillars
+    ctx.save();ctx.globalAlpha=.06;
+    [.18,.5,.82].forEach(fx=>{const pg2=ctx.createLinearGradient(W*fx-30,0,W*fx+30,0);pg2.addColorStop(0,'transparent');pg2.addColorStop(.5,isBoss?'#ff0066':'#8800ff');pg2.addColorStop(1,'transparent');ctx.fillStyle=pg2;ctx.fillRect(W*fx-30,0,60,H*.65);});
+    ctx.restore();
+    this._drawArches(ctx,W,H,t,isBoss?'rgba(255,0,100,':'rgba(136,0,255,');
+    this._drawTorches(ctx,W,H,t,isBoss?'#ff4400':'#ff8800');
+  },
+
+  _bgVoid(ctx,W,H,t,isBoss){
+    // VOID SECTOR: deep purple/black, glitching data rain, reality tears
+    ctx.fillStyle='#06000e';ctx.fillRect(0,0,W,H);
+    const bg=ctx.createLinearGradient(0,0,0,H);
+    bg.addColorStop(0,'#06000e');bg.addColorStop(.5,'#0d0020');bg.addColorStop(1,'#06000e');
+    ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+    // Data rain — falling columns
+    ctx.save();
+    for(let c=0;c<12;c++){
+      const cx=W*(c/12+.04);
+      const phase=(t*.8+c*7)%H;
+      const alpha=Math.random()<.04?.7:.18;
+      ctx.fillStyle=`rgba(${c%3===0?'170,0,255':c%3===1?'100,0,200':'50,0,130'},${alpha})`;
+      ctx.font=`${6+c%3}px monospace`;ctx.textAlign='center';
+      ctx.fillText(['01','10','00','11','FF','AA'][c%6],cx,phase);
+      ctx.fillText(['01','10','00','11','FF','AA'][(c+2)%6],cx,(phase+40)%H);
+    }
+    ctx.restore();
+    // Glitch tear effect
+    if(Math.floor(t/15)%8===0){
+      const gx=Math.random()*W,gy=Math.random()*H*.6,gw=20+Math.random()*80;
+      ctx.fillStyle='rgba(150,0,255,0.15)';ctx.fillRect(gx,gy,gw,2+Math.random()*4);
+    }
+    // Purple glow portals
+    const archPulse=.3+Math.sin(t*.04)*.2;
+    this._drawArches(ctx,W,H,t,`rgba(180,0,255,`);
+    this._drawTorches(ctx,W,H,t,'#8800ff');
+    // Oppressive vignette
+    const vig=ctx.createRadialGradient(W/2,H/2,H*.2,W/2,H/2,H*.8);
+    vig.addColorStop(0,'transparent');vig.addColorStop(1,'rgba(10,0,20,0.5)');
+    ctx.fillStyle=vig;ctx.fillRect(0,0,W,H);
+  },
+
+  _bgCorp(ctx,W,H,t,isBoss){
+    // CORPORATE STRIP: cold blue/silver, sterile fluorescent, security cams
+    const bg=ctx.createLinearGradient(0,0,0,H);
+    bg.addColorStop(0,'#050d18');bg.addColorStop(.5,'#08152a');bg.addColorStop(1,'#050d18');
+    ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+    // Fluorescent ceiling strips
+    ctx.save();
+    [.12,.38,.62,.88].forEach(fx=>{
+      const flicker=Math.random()<.02?.3:1;
+      ctx.fillStyle=`rgba(180,210,255,${.07*flicker})`;
+      ctx.fillRect(W*fx-2,0,4,H*.45);
+      ctx.shadowColor='#aaddff';ctx.shadowBlur=12*flicker;
+      ctx.strokeStyle=`rgba(180,210,255,${.5*flicker})`;ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(W*fx,0);ctx.lineTo(W*fx,H*.03);ctx.stroke();
+      ctx.shadowBlur=0;
+    });
+    ctx.restore();
+    // Corp logo watermarks on walls
+    ctx.save();ctx.globalAlpha=.04;
+    ctx.strokeStyle='#4499ff';ctx.lineWidth=2;
+    [W*.2,W*.6].forEach(lx=>{
+      ctx.strokeRect(lx-15,H*.08,30,30);ctx.strokeRect(lx-8,H*.08+7,16,16);
+    });
+    ctx.restore();
+    // Security camera icons (top corners)
+    ctx.save();
+    [W*.03,W*.94].forEach((cx,i)=>{
+      const scanLine=(t*1.2)%180-90;
+      ctx.fillStyle='rgba(0,100,255,0.12)';
+      ctx.beginPath();ctx.moveTo(cx,H*.05);
+      ctx.lineTo(cx+(i?-1:1)*60,H*.05+40*Math.sin((scanLine+90)*Math.PI/180));
+      ctx.lineTo(cx+(i?-1:1)*60,H*.05-40*Math.sin((scanLine+90)*Math.PI/180));
+      ctx.closePath();ctx.fill();
+      ctx.fillStyle='#4499ff';ctx.font='10px sans-serif';ctx.textAlign='center';
+      ctx.fillText('📷',cx,H*.05);
+    });
+    ctx.restore();
+    this._drawArches(ctx,W,H,t,'rgba(0,100,200,');
+    this._drawTorches(ctx,W,H,t,'#4499ff');
+  },
+
+  _bgRust(ctx,W,H,t,isBoss){
+    // RUST MARKET: warm orange/rust, fire barrel flicker, graffiti
+    const bg=ctx.createLinearGradient(0,0,0,H);
+    bg.addColorStop(0,'#110600');bg.addColorStop(.5,'#1a0a00');bg.addColorStop(1,'#110600');
+    ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+    // Fire barrel light flicker
+    ctx.save();
+    [W*.1,W*.45,W*.78].forEach((fx,i)=>{
+      const flicker=.4+Math.sin(t*.18+i*2.1)*.3+Math.random()*.1;
+      const fg=ctx.createRadialGradient(fx,H*.6,0,fx,H*.6,80+flicker*30);
+      fg.addColorStop(0,`rgba(255,120,0,${flicker*.4})`);fg.addColorStop(.5,`rgba(255,60,0,${flicker*.15})`);fg.addColorStop(1,'transparent');
+      ctx.fillStyle=fg;ctx.beginPath();ctx.arc(fx,H*.6,80+flicker*30,0,Math.PI*2);ctx.fill();
+      // Barrel silhouette
+      ctx.fillStyle='#1a0800';ctx.fillRect(fx-10,H*.6-5,20,25);
+      ctx.strokeStyle='#443300';ctx.lineWidth=1.5;ctx.strokeRect(fx-10,H*.6-5,20,25);
+    });
+    ctx.restore();
+    // Graffiti neon tags
+    ctx.save();
+    [['RUST',W*.08,H*.12,'#FF4400'],['▲',W*.7,H*.08,'#FF8800'],['HACK',W*.5,H*.15,'#FF2200']].forEach(([txt,gx,gy,gc])=>{
+      ctx.fillStyle=gc+'44';ctx.shadowColor=gc;ctx.shadowBlur=5;
+      ctx.font=`bold 11px 'Press Start 2P',monospace`;ctx.textAlign='center';ctx.fillText(txt,gx,gy);
+      ctx.shadowBlur=0;
+    });
+    ctx.restore();
+    this._drawArches(ctx,W,H,t,'rgba(255,80,0,');
+    this._drawTorches(ctx,W,H,t,'#ff6600');
+  },
+
+  _bgUndernet(ctx,W,H,t,isBoss){
+    // THE UNDERNET: toxic green, dripping, bio-mechanical pipes
+    const bg=ctx.createLinearGradient(0,0,0,H);
+    bg.addColorStop(0,'#010904');bg.addColorStop(.5,'#020e06');bg.addColorStop(1,'#010904');
+    ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+    // Dripping liquid effect
+    ctx.save();
+    for(let d=0;d<8;d++){
+      const dx=W*(.1+d*.11);
+      const dy=((t*.7+d*25)%H);
+      const dlen=8+Math.sin(d*1.3)*4;
+      const alpha=.35+Math.sin(t*.05+d)*.2;
+      ctx.strokeStyle=`rgba(0,255,${60+d*20},${alpha})`;ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.moveTo(dx,dy);ctx.lineTo(dx,Math.min(dy+dlen,H));ctx.stroke();
+      // Drip bulge
+      if(dy>10){ctx.fillStyle=`rgba(0,200,50,${alpha*.5})`;ctx.beginPath();ctx.arc(dx,dy+dlen,2.5,0,Math.PI*2);ctx.fill();}
+    }
+    ctx.restore();
+    // Pipe structures
+    ctx.save();
+    ctx.strokeStyle='rgba(0,80,20,0.6)';ctx.lineWidth=8;
+    ctx.beginPath();ctx.moveTo(0,H*.15);ctx.lineTo(W*.3,H*.15);ctx.lineTo(W*.3,H*.35);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(W,H*.12);ctx.lineTo(W*.7,H*.12);ctx.lineTo(W*.7,H*.3);ctx.stroke();
+    ctx.strokeStyle='rgba(0,120,30,0.4)';ctx.lineWidth=5;
+    ctx.beginPath();ctx.moveTo(W*.15,0);ctx.lineTo(W*.15,H*.4);ctx.stroke();
+    ctx.restore();
+    // Toxic glow
+    const tg=ctx.createRadialGradient(W/2,H*.5,0,W/2,H*.5,W*.4);
+    tg.addColorStop(0,'rgba(0,255,50,0.04)');tg.addColorStop(1,'transparent');
+    ctx.fillStyle=tg;ctx.fillRect(0,0,W,H);
+    this._drawArches(ctx,W,H,t,'rgba(0,200,50,');
+    this._drawTorches(ctx,W,H,t,'#39ff14');
+  },
+
+  _bgGhost(ctx,W,H,t,isBoss){
+    // GHOST DISTRICT: gray/white, ghostly afterimages, wind particles, abandoned
+    const bg=ctx.createLinearGradient(0,0,0,H);
+    bg.addColorStop(0,'#080810');bg.addColorStop(.5,'#0e0e1c');bg.addColorStop(1,'#080810');
+    ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+    // Building silhouettes
+    ctx.save();ctx.globalAlpha=.12;ctx.fillStyle='#aaaacc';
+    [[W*.02,H*.05,50,H*.5],[W*.15,H*.1,80,H*.4],[W*.7,H*.08,60,H*.45],[W*.85,H*.12,40,H*.42]].forEach(([bx,by,bw,bh])=>{
+      ctx.fillRect(bx,by,bw,bh);
+      // Windows
+      ctx.globalAlpha=.06;
+      for(let wx=bx+5;wx<bx+bw-5;wx+=12){for(let wy=by+8;wy<by+bh-8;wy+=14){
+        if(Math.random()<.6)ctx.fillRect(wx,wy,8,8);
+      }}
+      ctx.globalAlpha=.12;
+    });
+    ctx.restore();
+    // Ghostly afterimage streaks
+    ctx.save();ctx.globalAlpha=.06;
+    for(let s=0;s<5;s++){
+      const sx=W*(.2+s*.15),sy=H*(.2+s*.1);
+      const phase=(t*.3+s*20)%100/100;
+      ctx.fillStyle='#ccccff';
+      ctx.fillRect(sx+phase*30,sy,2,20+s*5);
+    }
+    ctx.restore();
+    // Wind particles
+    if(GameState.settings.particles!=='off'){
+      ctx.save();ctx.globalAlpha=.35;ctx.strokeStyle='rgba(200,200,220,0.4)';ctx.lineWidth=1;
+      for(let w=0;w<6;w++){
+        const wy=H*(.1+w*.13),wx=((t*1.8+w*40)%W);
+        ctx.beginPath();ctx.moveTo(wx,wy);ctx.lineTo(Math.max(0,wx-25),wy+2);ctx.stroke();
+      }
+      ctx.restore();
+    }
+    this._drawArches(ctx,W,H,t,'rgba(180,180,200,');
+    this._drawTorches(ctx,W,H,t,'#aaaacc');
+  },
+
+  _bgHighway(ctx,W,H,t,isBoss){
+    // DATA HIGHWAY: electric blue, data packet streams, speed lines
+    const bg=ctx.createLinearGradient(0,0,0,H);
+    bg.addColorStop(0,'#000812');bg.addColorStop(.5,'#001020');bg.addColorStop(1,'#000812');
+    ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+    // Speed lines
+    ctx.save();
+    for(let s=0;s<20;s++){
+      const sy=H*(s/20);const spd=3+s%4;
+      const sx=((t*spd*2+s*55)%W);
+      const alpha=.15+s%3*.08;
+      ctx.strokeStyle=`rgba(0,${120+s*5},255,${alpha})`;ctx.lineWidth=1+s%2*.5;
+      ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(sx-60-s*2,sy);ctx.stroke();
+    }
+    ctx.restore();
+    // Data packet blips (fast horizontal dashes)
+    ctx.save();
+    for(let p=0;p<8;p++){
+      const py=H*(.08+p*.1);const spd2=4+p*0.5;
+      const px=((t*spd2+p*120)%(W+80))-40;
+      ctx.fillStyle=`rgba(0,180,255,${.5+p*.04})`;ctx.shadowColor='#0088ff';ctx.shadowBlur=8;
+      ctx.fillRect(px,py,14+p*2,3);ctx.shadowBlur=0;
+    }
+    ctx.restore();
+    // Clean geometric pattern on back wall
+    ctx.save();ctx.globalAlpha=.05;ctx.strokeStyle='#0066ff';ctx.lineWidth=1;
+    for(let gx=0;gx<W;gx+=60){ctx.beginPath();ctx.moveTo(gx,0);ctx.lineTo(gx,H*.65);ctx.stroke();}
+    ctx.restore();
+    this._drawArches(ctx,W,H,t,'rgba(0,150,255,');
+    this._drawTorches(ctx,W,H,t,'#0099ff');
+  },
+
+  _bgCore(ctx,W,H,t){
+    // THE CORE: red/gold, dramatic scale, maximum particle intensity
+    const bg=ctx.createLinearGradient(0,0,0,H);
+    bg.addColorStop(0,'#120000');bg.addColorStop(.4,'#1e0500');bg.addColorStop(1,'#120000');
+    ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+    // Dramatic upward light from below
+    const ul=ctx.createLinearGradient(0,H,0,H*.4);
+    ul.addColorStop(0,'rgba(255,100,0,0.12)');ul.addColorStop(.5,'rgba(255,50,0,0.06)');ul.addColorStop(1,'transparent');
+    ctx.fillStyle=ul;ctx.fillRect(0,0,W,H);
+    // Radiating glow rings from center
+    const pulse=.4+Math.sin(t*.04)*.2;
+    for(let r=0;r<4;r++){
+      const rr=(t*0.5+r*60)%350;
+      const alpha=Math.max(0,.3-rr/350)*pulse;
+      ctx.save();ctx.globalAlpha=alpha;ctx.strokeStyle='#ff4400';ctx.lineWidth=2;ctx.shadowColor='#ff4400';ctx.shadowBlur=10;
+      ctx.beginPath();ctx.arc(W*.5,H*.45,rr,0,Math.PI*2);ctx.stroke();ctx.shadowBlur=0;
+      ctx.restore();
+    }
+    // Gold architecture columns
+    ctx.save();
+    [W*.05,W*.2,W*.8,W*.95].forEach(cx=>{
+      const cg=ctx.createLinearGradient(cx-8,0,cx+8,0);
+      cg.addColorStop(0,'transparent');cg.addColorStop(.5,'rgba(255,215,0,0.15)');cg.addColorStop(1,'transparent');
+      ctx.fillStyle=cg;ctx.fillRect(cx-8,0,16,H*.65);
+      ctx.strokeStyle='rgba(255,215,0,0.2)';ctx.lineWidth=1;ctx.strokeRect(cx-8,0,16,H*.65);
+    });
+    ctx.restore();
+    // Massive arches — red/gold
+    this._drawArches(ctx,W,H,t,'rgba(255,50,0,');
+    [W*.12, W*.5, W*.88].forEach(tx=>{
+      const fl=.6+Math.sin(t*.09+tx)*.25;
+      const tg=ctx.createRadialGradient(tx,H*.18,0,tx,H*.18,50*fl);
+      tg.addColorStop(0,`rgba(255,100,0,${.4*fl})`);tg.addColorStop(1,'rgba(255,50,0,0)');
+      ctx.fillStyle=tg;ctx.beginPath();ctx.arc(tx,H*.18,50*fl,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#662200';ctx.fillRect(tx-3,H*.12,6,10);
+      ctx.fillStyle='#ff4400';ctx.fillRect(tx-3,H*.10,6,6);
+      ctx.fillStyle='#FFD700';ctx.fillRect(tx-1,H*.08,2,5);
+    });
+  },
+
+  _drawArches(ctx,W,H,t,colorBase){
+    const archPulse=.4+Math.sin(t*.04)*.2;
+    const archColor=`${colorBase}${archPulse})`;
+    for(let a=0;a<4;a++){
+      const ax=W*.06+a*W*.24,aw=W*.14;
+      ctx.fillStyle=colorBase.replace('rgba','rgba').replace(/[\d.]+\)$/,'0.08)');
+      ctx.strokeStyle=archColor;ctx.lineWidth=2;ctx.shadowColor=archColor;ctx.shadowBlur=8;
+      ctx.beginPath();ctx.arc(ax+aw/2,H*.18,aw*.5,Math.PI,0,false);ctx.lineTo(ax+aw,H*.18);ctx.lineTo(ax,H*.18);ctx.closePath();
+      ctx.fill();ctx.stroke();ctx.shadowBlur=0;
+      const pg3=ctx.createRadialGradient(ax+aw/2,H*.13,0,ax+aw/2,H*.13,aw*.38);
+      pg3.addColorStop(0,colorBase.replace(/[\d.]+\)$/,'0.1)'));pg3.addColorStop(1,'transparent');
+      ctx.fillStyle=pg3;ctx.beginPath();ctx.arc(ax+aw/2,H*.13,aw*.38,0,Math.PI*2);ctx.fill();
+    }
+  },
+
+  _drawTorches(ctx,W,H,t,torchColor){
+    [W*.12,W*.5,W*.88].forEach(tx=>{
+      const fl=.6+Math.sin(t*.09+tx)*.25;
+      const tg=ctx.createRadialGradient(tx,H*.18,0,tx,H*.18,40*fl);
+      tg.addColorStop(0,torchColor+'44');tg.addColorStop(1,'rgba(255,80,0,0)');
+      ctx.fillStyle=tg;ctx.beginPath();ctx.arc(tx,H*.18,40*fl,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#553322';ctx.fillRect(tx-2,H*.13,4,8);
+      ctx.fillStyle=torchColor;ctx.fillRect(tx-2,H*.11,4,5);
+      ctx.fillStyle='#ffff88';ctx.fillRect(tx-1,H*.09,2,4);
+    });
+  },
+
   drawFloor(ctx, W, H) {
     const fy = H*.73;
+    const zoneId=GameState.currentZoneId||'neonNexus';
     const isBoss=GameState.enemies?.some(e=>e.isBoss&&e.hp>0);
-    const floorBase=isBoss?'#150808':'#0a0a20';
-    const floorTop=isBoss?'#1f0e0e':'#131330';
+    // Zone-specific floor colors
+    const floorColors={
+      neonNexus:['#0a0a20','#131330'],voidSector:['#0a0012','#130028'],
+      corporateStrip:['#050d18','#080f22'],rustMarket:['#180800','#221000'],
+      theUndernet:['#020a04','#040e08'],ghostDistrict:['#080810','#0e0e18'],
+      dataHighway:['#000a18','#001025'],theCore:['#180000','#220800'],
+    };
+    const [floorBase,floorTop]=isBoss?['#150808','#1f0e0e']:(floorColors[zoneId]||['#0a0a20','#131330']);
     const g = ctx.createLinearGradient(0,fy,0,H);
     g.addColorStop(0,floorBase); g.addColorStop(1,floorTop);
     ctx.fillStyle=g; ctx.fillRect(0,fy,W,H-fy);
-    // Perspective grid floor
-    const gridC=isBoss?'rgba(255,0,80,.12)':'rgba(0,255,255,.1)';
+    // Zone-specific grid color
+    const zoneGridColors={neonNexus:'rgba(0,255,255,.1)',voidSector:'rgba(150,0,255,.1)',
+      corporateStrip:'rgba(50,120,255,.08)',rustMarket:'rgba(255,100,0,.1)',
+      theUndernet:'rgba(0,255,80,.08)',ghostDistrict:'rgba(180,180,220,.06)',
+      dataHighway:'rgba(0,150,255,.1)',theCore:'rgba(255,80,0,.12)'};
+    const gridC=isBoss?'rgba(255,0,80,.12)':(zoneGridColors[zoneId]||'rgba(0,255,255,.1)');
     ctx.strokeStyle=gridC; ctx.lineWidth=1;
     for(let i=0;i<=6;i++){const y=fy+(H-fy)*i/6;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
     for(let i=-4;i<=4;i++){ctx.beginPath();ctx.moveTo(W/2+i*8,fy);ctx.lineTo(W/2+i*(W*.18),H);ctx.stroke();}
-    // Floor glow
     const floorGlow=ctx.createLinearGradient(0,fy,0,fy+20);
     floorGlow.addColorStop(0,isBoss?'rgba(255,0,80,.08)':'rgba(136,0,255,.05)');
     floorGlow.addColorStop(1,'transparent');
@@ -2193,9 +2532,13 @@ ctx.clearRect(0, 0, W, H);
     ctx.lineWidth=1;
     ctx.fillRect(mx,my,mw,mh);
     ctx.strokeRect(mx,my,mw,mh);
-    ctx.fillStyle=MG;
+    const zone=ZONES[GameState.currentZoneId];
+    ctx.fillStyle=zone?zone.color:MG;
+    if(zone){ctx.shadowColor=zone.color;ctx.shadowBlur=6;}
     ctx.font=`${P-1}px 'Press Start 2P',monospace`;ctx.textAlign='center';
-    ctx.fillText(`FL${GameState.floor} MAP`,mx+mw/2,my+8);
+    const zoneLabel=zone?zone.name.slice(0,10):`FL${GameState.floor} MAP`;
+    ctx.fillText(zoneLabel,mx+mw/2,my+8);
+    ctx.shadowBlur=0;
 
     const floorData = GameState.currentFloor;
     if (!floorData) { ctx.textAlign='left';ctx.shadowBlur=0;ctx.restore();return; }
@@ -2264,17 +2607,23 @@ ctx.clearRect(0, 0, W, H);
       ctx.shadowBlur=0;
     }
 
+    // Zone room progress label
+    const cleared2=rooms.filter(r=>r.cleared).length;
+    ctx.fillStyle=zone?zone.color+'aa':'rgba(0,255,255,0.5)';
+    ctx.font=`${P-2}px 'Press Start 2P',monospace`;ctx.textAlign='center';
+    ctx.fillText(`ROOM ${cleared2}/${rooms.length}`,mx+mw/2,my+mh-14);
+
     // XP bar
     if(p&&p.xpToNext){
-      const bx=mx+4,by=my+mh-12,bw=mw-8;
-      ctx.fillStyle='rgba(0,0,0,0.7)';ctx.fillRect(bx,by,bw,5);
-      ctx.strokeStyle='rgba(0,255,255,0.18)';ctx.lineWidth=0.5;ctx.strokeRect(bx,by,bw,5);
+      const bx=mx+4,by=my+mh-9,bw=mw-8;
+      ctx.fillStyle='rgba(0,0,0,0.7)';ctx.fillRect(bx,by,bw,4);
+      ctx.strokeStyle='rgba(0,255,255,0.18)';ctx.lineWidth=0.5;ctx.strokeRect(bx,by,bw,4);
       const xpPct=Math.min(1,p.xp/p.xpToNext);
       const xpG=ctx.createLinearGradient(bx,by,bx+bw,by);
       xpG.addColorStop(0,PU);xpG.addColorStop(1,CY);
-      ctx.fillStyle=xpG;ctx.fillRect(bx,by,bw*xpPct,5);
+      ctx.fillStyle=xpG;ctx.fillRect(bx,by,bw*xpPct,4);
       ctx.fillStyle=CY;ctx.font=`${P-2}px 'Press Start 2P',monospace`;ctx.textAlign='center';
-      ctx.fillText(`LV${p.level} XP:${p.xp}/${p.xpToNext}`,mx+mw/2,my+mh-2);
+      ctx.fillText(`LV${p.level}`,mx+mw/2,my+mh-2);
     }
     ctx.textAlign='left';ctx.shadowBlur=0;ctx.restore();
   }
@@ -2420,6 +2769,281 @@ const ETYPES = [
    }}}
 ];
 
+// ═══════════════════════════════════════════════════════════════
+// WORLD ZONES — 8 themed zones replacing floor 1-10 linear progression
+// ═══════════════════════════════════════════════════════════════
+const ZONES = {
+  neonNexus:{id:'neonNexus',name:'NEON NEXUS',color:'#00FFFF',bgKey:'nexus',difficulty:1,
+    recLevel:1,icon:'🌆',rooms:5,desc:'Central city hub — tutorial zone',
+    pos:{x:0.46,y:0.44},connections:['voidSector','corporateStrip','ghostDistrict','rustMarket'],
+    enemies:['glitchDrone','netrunner'],bossId:'neonGolem',prereqs:[]},
+  voidSector:{id:'voidSector',name:'VOID SECTOR',color:'#AA00FF',bgKey:'void',difficulty:2,
+    recLevel:3,icon:'💀',rooms:6,desc:'Corrupted data streams — reality tears',
+    pos:{x:0.38,y:0.12},connections:['neonNexus','corporateStrip'],
+    enemies:['ghostHacker','voidSpecter','dataWraith'],bossId:'circuitLich',prereqs:['neonNexus']},
+  corporateStrip:{id:'corporateStrip',name:'CORPORATE STRIP',color:'#4499FF',bgKey:'corp',difficulty:2,
+    recLevel:3,icon:'🏢',rooms:6,desc:'Corp megablock — sterile and lethal',
+    pos:{x:0.78,y:0.26},connections:['neonNexus','voidSector','rustMarket'],
+    enemies:['corporateDrone','cyberOgre'],bossId:'theArchitect',prereqs:['neonNexus']},
+  rustMarket:{id:'rustMarket',name:'RUST MARKET',color:'#FF6600',bgKey:'rust',difficulty:3,
+    recLevel:5,icon:'🔧',rooms:7,desc:'Black market district — chaotic and dangerous',
+    pos:{x:0.75,y:0.52},connections:['neonNexus','corporateStrip','theUndernet'],
+    enemies:['chromeBeast','cyberOgre','pulseHound'],bossId:'chromeBeast',prereqs:['neonNexus']},
+  theUndernet:{id:'theUndernet',name:'THE UNDERNET',color:'#39FF14',bgKey:'undernet',difficulty:3,
+    recLevel:5,icon:'🕸',rooms:7,desc:'Underground data tunnels — dark and toxic',
+    pos:{x:0.32,y:0.72},connections:['neonNexus','rustMarket','ghostDistrict','dataHighway'],
+    enemies:['neonSpider','dataWraith','glitchDrone'],bossId:'neonSpider',prereqs:['neonNexus']},
+  ghostDistrict:{id:'ghostDistrict',name:'GHOST DISTRICT',color:'#BBBBDD',bgKey:'ghost',difficulty:4,
+    recLevel:7,icon:'👻',rooms:6,desc:'Abandoned zone — echoes of the forgotten',
+    pos:{x:0.14,y:0.42},connections:['neonNexus','theUndernet','dataHighway'],
+    enemies:['ghostHacker','voidSpecter','dataWraith'],bossId:'ghostHacker',prereqs:['neonNexus']},
+  dataHighway:{id:'dataHighway',name:'DATA HIGHWAY',color:'#0099FF',bgKey:'highway',difficulty:4,
+    recLevel:8,icon:'⚡',rooms:8,desc:'High-speed data streams — blistering pace',
+    pos:{x:0.54,y:0.84},connections:['theUndernet','ghostDistrict'],
+    enemies:['pulseHound','glitchDrone','neonGolem'],bossId:'neonGolem',
+    prereqs:['theUndernet','ghostDistrict']},
+  theCore:{id:'theCore',name:'THE CORE',color:'#FFD700',bgKey:'core',difficulty:5,
+    recLevel:10,icon:'🔴',rooms:5,desc:'Final boss chamber — end of everything',
+    pos:{x:0.50,y:0.52},connections:[],
+    enemies:['quantumBoss'],bossId:'quantumBoss',
+    prereqs:['voidSector','corporateStrip','rustMarket','theUndernet','ghostDistrict','dataHighway']},
+};
+
+// ═══════════════════════════════════════════════════════════════
+// SAVE SYSTEM — localStorage persistence across sessions
+// ═══════════════════════════════════════════════════════════════
+const SaveSystem = {
+  _key:'nd_world_save',
+  hasSave(){try{return!!localStorage.getItem(this._key);}catch{return false;}},
+  save(){
+    const p=GameState.player;if(!p)return;
+    try{
+      localStorage.setItem(this._key,JSON.stringify({
+        selectedClass:GameState.selectedClass,
+        selectedEquipId:GameState.selectedEquip?.id,
+        hp:p.hp,maxHp:p.maxHp,mp:p.mp,maxMp:p.maxMp,
+        baseAtk:p.baseAtk,atk:p.atk,baseDef:p.baseDef,def:p.def,
+        baseSpd:p.baseSpd,spd:p.spd,level:p.level||1,
+        xp:p.xp||0,xpToNext:p.xpToNext||50,critBonus:p.critBonus||0,
+        spells:p.spells.map(s=>({id:s.id,cd:s.cd||0,maxCd:s.maxCd})),
+        inventoryItems:Inventory.items.map(i=>i?{...i}:null),
+        equipped:Object.fromEntries(Object.entries(Inventory.equipped).map(([k,v])=>[k,v?{...v}:null])),
+        gold:Inventory.gold,
+        zonesCleared:GameState.zonesCleared,
+        zonesUnlocked:GameState.zonesUnlocked,
+        totalDmg:GameState.totalDmg,totalKills:GameState.totalKills,
+        questsDone:GameState.questsDone,turnCount:GameState.turnCount,
+      }));
+    }catch(e){}
+  },
+  load(){
+    try{
+      const raw=localStorage.getItem(this._key);if(!raw)return false;
+      const d=JSON.parse(raw);
+      GameState.selectedClass=d.selectedClass;
+      const cls=CLASSES[d.selectedClass];if(!cls)return false;
+      const eq=EQUIP_POOL.find(e=>e.id===d.selectedEquipId)||EQUIP_POOL[0];
+      GameState.selectedEquip=eq;
+      const p=new Player(cls,eq);
+      p.hp=d.hp;p.maxHp=d.maxHp;p.mp=d.mp;p.maxMp=d.maxMp;
+      p.baseAtk=d.baseAtk;p.atk=d.atk;p.baseDef=d.baseDef;p.def=d.def;
+      p.baseSpd=d.baseSpd;p.spd=d.spd;p.level=d.level||1;
+      p.xp=d.xp||0;p.xpToNext=d.xpToNext||50;p.critBonus=d.critBonus||0;
+      if(d.spells)d.spells.forEach((ss,i)=>{
+        if(p.spells[i]){p.spells[i].cd=ss.cd||0;p.spells[i].maxCd=ss.maxCd||p.spells[i].maxCd;}
+      });
+      GameState.player=p;
+      Inventory.init();
+      Inventory.gold=d.gold||0;
+      if(d.inventoryItems)d.inventoryItems.forEach((item,i)=>{if(item)Inventory.items[i]=item;});
+      if(d.equipped)Object.entries(d.equipped).forEach(([k,v])=>{if(v)Inventory.equipped[k]=v;});
+      GameState.zonesCleared=d.zonesCleared||[];
+      GameState.zonesUnlocked=d.zonesUnlocked||['neonNexus'];
+      GameState.currentZoneId=null;
+      GameState.totalDmg=d.totalDmg||0;GameState.totalKills=d.totalKills||0;
+      GameState.questsDone=d.questsDone||0;GameState.turnCount=d.turnCount||0;
+      QM.init();
+      return true;
+    }catch(e){return false;}
+  },
+  clear(){try{localStorage.removeItem(this._key);}catch{}},
+};
+
+// ═══════════════════════════════════════════════════════════════
+// WORLD MAP — canvas-based zone map renderer and navigator
+// ═══════════════════════════════════════════════════════════════
+const WorldMap = {
+  _animFrame:null,_t:0,
+
+  show(){
+    UI.show('sWM');
+    const cleared=GameState.zonesCleared.length;
+    const prog=document.getElementById('wmProgress');
+    if(prog)prog.textContent=`${cleared}/7 ZONES CLEARED`;
+    this._clearInfo();
+    // Kill previous animation loop
+    if(this._animFrame){cancelAnimationFrame(this._animFrame);this._animFrame=null;}
+    const cv=document.getElementById('wmCanvas');
+    if(!cv)return;
+    const loop=()=>{
+      this._t++;
+      const par=cv.parentElement;
+      if(cv.clientWidth!==cv.width||cv.clientHeight!==cv.height){
+        cv.width=par.clientWidth||800;cv.height=par.clientHeight||520;
+      }
+      this._draw(cv);
+      this._animFrame=requestAnimationFrame(loop);
+    };
+    requestAnimationFrame(loop);
+    // Wire click handler
+    cv.onclick=(e)=>{
+      const rect=cv.getBoundingClientRect();
+      const mx=e.clientX-rect.left,my=e.clientY-rect.top;
+      const W=cv.width,H=cv.height;
+      let hit=null,bestDist=Infinity;
+      Object.values(ZONES).forEach(zone=>{
+        const zx=zone.pos.x*W,zy=zone.pos.y*H;
+        const r=zone.id==='theCore'?32:zone.id==='neonNexus'?28:22;
+        const dist=Math.hypot(mx-zx,my-zy);
+        if(dist<r+8&&dist<bestDist){bestDist=dist;hit=zone;}
+      });
+      if(hit)this._selectZone(hit.id);
+    };
+  },
+
+  hide(){
+    if(this._animFrame){cancelAnimationFrame(this._animFrame);this._animFrame=null;}
+    const cv=document.getElementById('wmCanvas');
+    if(cv)cv.onclick=null;
+  },
+
+  _draw(cv){
+    const ctx=cv.getContext('2d');
+    const W=cv.width,H=cv.height,t=this._t;
+    ctx.clearRect(0,0,W,H);
+    // Background
+    const bg=ctx.createLinearGradient(0,0,0,H);
+    bg.addColorStop(0,'#020208');bg.addColorStop(1,'#06061a');
+    ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+    // Subtle grid
+    ctx.strokeStyle='rgba(0,255,255,0.035)';ctx.lineWidth=1;
+    for(let x=0;x<W;x+=48){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+    for(let y=0;y<H;y+=48){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+    const zones=Object.values(ZONES);
+    // Draw connections
+    const drawn=new Set();
+    zones.forEach(zone=>{
+      zone.connections.forEach(connId=>{
+        const key=[zone.id,connId].sort().join('|');
+        if(drawn.has(key))return;drawn.add(key);
+        const conn=ZONES[connId];if(!conn)return;
+        const x1=zone.pos.x*W,y1=zone.pos.y*H;
+        const x2=conn.pos.x*W,y2=conn.pos.y*H;
+        const bothUnlocked=GameState.zonesUnlocked.includes(zone.id)&&GameState.zonesUnlocked.includes(connId);
+        const pulse=0.2+Math.sin(t*0.04)*0.15;
+        ctx.save();
+        ctx.strokeStyle=bothUnlocked?`rgba(0,255,255,${pulse})`:'rgba(255,255,255,0.05)';
+        ctx.lineWidth=bothUnlocked?2:1;
+        if(bothUnlocked){ctx.shadowColor='#00ffff';ctx.shadowBlur=6;}
+        ctx.setLineDash(bothUnlocked?[]:[4,8]);
+        ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+        ctx.shadowBlur=0;ctx.setLineDash([]);
+        ctx.restore();
+      });
+    });
+    // Draw nodes
+    zones.forEach(zone=>{
+      const x=zone.pos.x*W,y=zone.pos.y*H;
+      const unlocked=GameState.zonesUnlocked.includes(zone.id);
+      const cleared=GameState.zonesCleared.includes(zone.id);
+      const r=zone.id==='theCore'?32:zone.id==='neonNexus'?28:22;
+      const pulse=Math.sin(t*0.06+zone.pos.x*5)*0.5+0.5;
+      ctx.save();
+      // Outer glow ring
+      if(unlocked&&!cleared){
+        const gr=ctx.createRadialGradient(x,y,r,x,y,r+18+pulse*8);
+        gr.addColorStop(0,zone.color+'44');gr.addColorStop(1,'transparent');
+        ctx.fillStyle=gr;ctx.beginPath();ctx.arc(x,y,r+18+pulse*8,0,Math.PI*2);ctx.fill();
+      }
+      // Node fill
+      ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);
+      if(!unlocked){
+        ctx.fillStyle='rgba(14,14,24,0.95)';
+      }else if(cleared){
+        ctx.fillStyle='rgba(0,40,16,0.92)';
+      }else{
+        const pal=this._hexToRgb(zone.color);
+        ctx.fillStyle=`rgba(${pal},0.12)`;
+      }
+      ctx.fill();
+      // Border
+      ctx.strokeStyle=!unlocked?'rgba(255,255,255,0.08)':cleared?'#00ff44':zone.color;
+      ctx.lineWidth=cleared?3:2;
+      if(unlocked){ctx.shadowColor=cleared?'#00ff44':zone.color;ctx.shadowBlur=cleared?10:16+pulse*8;}
+      ctx.stroke();
+      ctx.shadowBlur=0;
+      // Icon
+      ctx.font=`${zone.id==='theCore'?22:16}px sans-serif`;
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.globalAlpha=unlocked?1:0.22;
+      ctx.fillText(zone.icon,x,y);
+      ctx.globalAlpha=1;
+      // Lock overlay
+      if(!unlocked){
+        ctx.font='12px sans-serif';ctx.fillText('🔒',x+r*0.65,y-r*0.65);
+      }
+      // Cleared check
+      if(cleared){
+        ctx.font='11px sans-serif';ctx.fillText('✓',x+r*0.7,y-r*0.7);
+      }
+      // Name label
+      ctx.font=`bold ${zone.id==='theCore'?7:6}px 'Press Start 2P',monospace`;
+      ctx.fillStyle=unlocked?zone.color:'rgba(255,255,255,0.18)';
+      ctx.shadowColor=unlocked?zone.color:'transparent';ctx.shadowBlur=6;
+      ctx.fillText(zone.name,x,y+r+11);
+      ctx.shadowBlur=0;
+      // Difficulty dots
+      if(unlocked&&!cleared){
+        ctx.font='8px sans-serif';
+        ctx.fillText('★'.repeat(zone.difficulty)+'☆'.repeat(5-zone.difficulty),x,y+r+22);
+      }
+      ctx.restore();
+    });
+  },
+
+  _hexToRgb(hex){
+    const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+    return `${r},${g},${b}`;
+  },
+
+  _clearInfo(){
+    const el=document.getElementById('wmZoneInfo');
+    if(el)el.innerHTML='<div class="wm-hint">— CLICK A ZONE TO SELECT —</div>';
+  },
+
+  _selectZone(zoneId){
+    const zone=ZONES[zoneId];if(!zone)return;
+    const el=document.getElementById('wmZoneInfo');if(!el)return;
+    const unlocked=GameState.zonesUnlocked.includes(zoneId);
+    const cleared=GameState.zonesCleared.includes(zoneId);
+    const missing=zone.prereqs.filter(p=>!GameState.zonesCleared.includes(p));
+    el.innerHTML=`
+      <div class="wm-zone-name" style="color:${zone.color};text-shadow:0 0 12px ${zone.color}">${zone.icon} ${zone.name}</div>
+      <div class="wm-zone-desc">${zone.desc}</div>
+      <div class="wm-zone-meta">
+        DIFFICULTY: ${'★'.repeat(zone.difficulty)}${'☆'.repeat(5-zone.difficulty)}<br>
+        ROOMS: ${zone.rooms} &nbsp;·&nbsp; REC LEVEL: ${zone.recLevel}
+      </div>
+      ${missing.length?`<div class="wm-prereq">🔒 REQUIRES:<br>${missing.map(p=>ZONES[p]?.name||p).join('<br>')}</div>`:''}
+      ${cleared?'<div class="wm-cleared">✓ ZONE CLEARED</div>':''}
+      ${unlocked&&!cleared?`<button class="wm-enter-btn" id="wmEnterBtn">▶ ENTER ZONE ◀</button>`:''}
+      ${!unlocked?'<div class="wm-locked">🔒 ZONE LOCKED</div>':''}
+    `;
+    const btn=document.getElementById('wmEnterBtn');
+    if(btn)btn.onclick=()=>{ this.hide(); Game.enterZone(zoneId); };
+  },
+};
+
 const EQUIP_POOL = [
   {id:'plasmaBlade',name:'Plasma Blade',icon:'⚔',bonus:{atk:8},desc:'+8 ATK'},
   {id:'nanoVest',name:'Nano Vest',icon:'🛡',bonus:{def:10},desc:'+10 DEF'},
@@ -2491,6 +3115,10 @@ const GameState = {
   blockCd:0, isBlocking:false,
   // Settings
   settings:{particles:'high',shake:true,volume:80},
+  // Zone system
+  currentZoneId:null,
+  zonesCleared:[],
+  zonesUnlocked:['neonNexus'],
 };
 
 class Player {
@@ -2815,9 +3443,11 @@ const Combat = {
     if(GameState.floorTurns<=10)QM.track('fastWins',1);
     QM.track('floorsCleared',1);QM.check();
     UI.flash();
+    SaveSystem.save();
     if(room?.type==='boss'){
-      DM.say(`Floor ${GameState.floor} conquered! The boss falls!`);
-      setTimeout(()=>VictoryScreen.show(true,()=>Game.enterFloor()),900);
+      const zoneName=ZONES[GameState.currentZoneId]?.name||'ZONE';
+      DM.say(`${zoneName} BOSS DEFEATED! Zone cleared!`);
+      setTimeout(()=>VictoryScreen.show(true,()=>WorldMap.show()),900);
     } else {
       DM.say('Room cleared! Choose your next path.');
       setTimeout(()=>VictoryScreen.show(false,()=>Game.showExits()),900);
@@ -3168,7 +3798,20 @@ const UI={
     document.getElementById('wnstats').innerHTML=`<div>ALL 10 FLOORS CONQUERED!</div><div>KILLS:${GameState.totalKills}</div><div>DMG:${GameState.totalDmg}</div><div>QUESTS:${GameState.questsDone}</div><div style="color:${GD};margin-top:6px">LEGENDARY CHAMPION!</div>`;
     Records.saveRun();
   },
-  updateFloor(){document.getElementById('fbadge').textContent=`FLOOR ${GameState.floor}/${GameState.maxFloors}`;},
+  updateFloor(){
+    const zone=ZONES[GameState.currentZoneId];
+    const badge=document.getElementById('fbadge');
+    if(badge){
+      if(zone){
+        badge.textContent=zone.name;
+        badge.style.color=zone.color;
+        badge.style.textShadow=`0 0 8px ${zone.color}`;
+      } else {
+        badge.textContent='ZONE: —';
+        badge.style.color='';badge.style.textShadow='';
+      }
+    }
+  },
   // Combo display
   updateCombo(){
     const c=GameState.combo;
@@ -3347,9 +3990,9 @@ const DungeonGen = {
   },
 
   // Generate a floor: branching path with guaranteed rest + merchant, boss at end
-  generate(floor) {
+  generate(floor, overrideRooms) {
     const fc = this.getFloorCfg(floor);
-    const n  = Math.max(5, Math.min(fc.rooms||8, 12));
+    const n  = overrideRooms ? Math.max(5, Math.min(overrideRooms, 12)) : Math.max(5, Math.min(fc.rooms||8, 12));
 
     // Build type list: [combat, ...shuffled middle..., boss]
     // Middle must contain at least one rest and one merchant
@@ -3731,7 +4374,7 @@ const Game={
     const shakeToggle=document.getElementById('shakeToggle');
     if(shakeToggle)shakeToggle.addEventListener('click',()=>{GameState.settings.shake=!GameState.settings.shake;shakeToggle.classList.toggle('on',GameState.settings.shake);});
     const resetSaveBtn=document.getElementById('resetSaveBtn');
-    if(resetSaveBtn)resetSaveBtn.addEventListener('click',()=>{if(confirm('Reset all save data?')){Records.reset();DM.say('Save data cleared.');}});
+    if(resetSaveBtn)resetSaveBtn.addEventListener('click',()=>{if(confirm('Reset all save data?')){Records.reset();SaveSystem.clear();const cb=document.getElementById('continueBtn');if(cb)cb.style.display='none';DM.say('Save data cleared.');}});
     // Records modal
     const recordsBtn=document.getElementById('recordsBtn');
     if(recordsBtn)recordsBtn.addEventListener('click',()=>{Records.renderModal();document.getElementById('recordsModal').classList.add('show');});
@@ -3755,6 +4398,36 @@ const Game={
       });
       apiKeyClose && apiKeyClose.addEventListener('click',()=>{ apiModal.style.display='none'; });
       apiModal.addEventListener('click',(e)=>{ if(e.target===apiModal) apiModal.style.display='none'; });
+    }
+    // CONTINUE button — load save and go to world map
+    const continueBtn=document.getElementById('continueBtn');
+    if(continueBtn){
+      if(SaveSystem.hasSave())continueBtn.style.display='';
+      continueBtn.addEventListener('click',()=>{
+        if(SaveSystem.load())WorldMap.show();
+        else{continueBtn.style.display='none';DM.say('No save found.');}
+      });
+    }
+    // MAP button — show world map between rooms (not during active combat)
+    const mapBtn=document.getElementById('mapBtn');
+    if(mapBtn){
+      mapBtn.addEventListener('click',()=>{
+        if(GameState.combatRunning)return;
+        WorldMap.show();
+      });
+    }
+    // World map back button
+    const wmBackBtn=document.getElementById('wmBackBtn');
+    if(wmBackBtn){
+      wmBackBtn.addEventListener('click',()=>{
+        WorldMap.hide();
+        // If mid-run (zone set), return to combat screen; otherwise class select
+        if(GameState.currentZoneId&&GameState.currentFloor?.rooms?.length){
+          UI.show('sCM');
+        } else {
+          UI.show('sCS');
+        }
+      });
     }
   },
 
@@ -3871,12 +4544,22 @@ const Game={
     GameState.questsDone=0;GameState.turnCount=0;GameState.levelUpPending=false;
     GameState.combo=0;GameState.blockCd=0;GameState.isBlocking=false;
     GameState._maxCombo=0;
-    QM.init();Inventory.init();LootScreen.reset();this.enterFloor();
+    GameState.zonesCleared=[];
+    GameState.zonesUnlocked=['neonNexus'];
+    GameState.currentZoneId=null;
+    QM.init();Inventory.init();LootScreen.reset();
+    SaveSystem.save();
+    WorldMap.show();
   },
 
-  enterFloor(){
-    // Generate procedural dungeon layout for this floor
-    GameState.currentFloor=DungeonGen.generate(GameState.floor);
+  enterZone(zoneId){
+    const zone=ZONES[zoneId];if(!zone)return;
+    if(!GameState.zonesUnlocked.includes(zoneId))return;
+    GameState.currentZoneId=zoneId;
+    GameState.floor=zone.difficulty;
+    // Generate dungeon for this zone using zone room count
+    const customRooms=zone.rooms;
+    GameState.currentFloor=DungeonGen.generate(GameState.floor,customRooms);
     GameState.currentRoomIdx=0;
     GameState.floorGold=0;
     LootScreen.reset();
@@ -3893,8 +4576,18 @@ const Game={
     SPR.dm(dmctx,2,2);
     UI.renderSpells();UI.updateBars();UI.renderBuffs();UI.renderQuests();UI.updateFloor();
     Inventory.render();
-    // Enter starting room (always combat type, index 0)
+    // Show MAP button during zone exploration
+    const mb=document.getElementById('mapBtn');if(mb)mb.classList.remove('hidden');
     this.enterRoom(0);
+  },
+
+  // Legacy enterFloor kept for compatibility — redirects through enterZone
+  enterFloor(){
+    if(GameState.currentZoneId){
+      // Already in a zone, re-enter same zone (called after boss upgrade)
+      // This should not normally be reached; WorldMap.show() handles zone end
+    }
+    WorldMap.show();
   },
 
   // Enter a specific room by index and trigger its event
@@ -4015,42 +4708,46 @@ const Game={
     return '↔ BRANCH';
   },
 
-  // Boss spawn: use dungeon config multipliers on top of base Enemy scaling
+  // Boss spawn: zone-aware boss with appropriate HP/ATK scaling
   _spawnBoss(){
+    const zone=ZONES[GameState.currentZoneId];
     const fl=GameState.floor;
-    // Floor 5 = The Architect, Floor 10 = Quantum Boss
-    const bossType=fl===5?ETYPES.find(e=>e.id==='theArchitect'):ETYPES.find(e=>e.id==='quantumBoss');
+    const bossId=zone?.bossId||'quantumBoss';
+    let bossType=ETYPES.find(e=>e.id===bossId)||ETYPES.find(e=>e.id==='quantumBoss');
     const en=new Enemy(bossType,fl);
-    const cfg=GameState.dungeonConfig?.enemy_types?.boss;
-    if(cfg){
-      en.maxHp=Math.floor(en.maxHp*(cfg.hp_mult||3.0));
-      en.hp=en.maxHp;
-      en.atk=Math.floor(en.atk*(cfg.atk_mult||1.8));
-      en.baseAtk=en.atk;
+    // Scale boss based on zone difficulty
+    const hpMult=zone?1.8+zone.difficulty*0.5:3.0;
+    const atkMult=zone?1.2+zone.difficulty*0.15:1.8;
+    en.maxHp=Math.floor(bossType.hp*hpMult*(1+fl*0.12));
+    en.hp=en.maxHp;
+    en.atk=Math.floor(bossType.atk*atkMult*(1+fl*0.08));
+    en.baseAtk=en.atk;
+    // Always mark as boss for phase/special behavior
+    en.isBoss=true;
+    // The Architect keeps its scripted HP
+    if(bossId==='theArchitect'){en.maxHp=420+fl*30;en.hp=en.maxHp;}
+    // The Core: maximum threat level
+    if(GameState.currentZoneId==='theCore'){
+      en.maxHp=Math.max(en.maxHp,800);en.hp=en.maxHp;
+      en.atk=Math.floor(bossType.atk*2.2);en.baseAtk=en.atk;
     }
-    // Architect doesn't use config multipliers (built-in large HP)
-    if(fl===5){en.maxHp=420+fl*30;en.hp=en.maxHp;}
     return [en];
   },
 
-  // Regular combat room spawn: use enemy_level from floor config for scaling
+  // Regular combat room spawn: zone-aware enemy selection
   _spawnCombatEnemies(){
-    const cfg=GameState.dungeonConfig?.room_types?.combat;
-    const fc=GameState.currentFloor?.floorCfg;
-    const level=fc?.enemy_level||GameState.floor;
-    const maxEn=cfg?.max_enemies||3;
-    const count=Math.min(maxEn,1+Math.floor(level/2));
-    const pool=ETYPES.filter(e=>!e.isBoss);
-    // Apply enemy_type multipliers from dungeonConfig
-    return Array.from({length:count},()=>{
-      const type=pool[Math.floor(Math.random()*pool.length)];
-      const en=new Enemy(type,level);
-      const typeCfg=GameState.dungeonConfig?.enemy_types?.[type.id==='netrunner'?'netrunner':'grunt'];
-      if(typeCfg){
-        en.maxHp=Math.floor(en.maxHp*(typeCfg.hp_mult||1));en.hp=en.maxHp;
-        en.atk=Math.floor(en.atk*(typeCfg.atk_mult||1));en.baseAtk=en.atk;
-      }
-      return en;
+    const zone=ZONES[GameState.currentZoneId];
+    const fl=GameState.floor;
+    const level=fl;
+    const maxEn=Math.min(3,1+Math.floor(fl/2));
+    // Zone enemy pool
+    const zoneEnemyIds=zone?.enemies||['glitchDrone'];
+    const pool=ETYPES.filter(e=>!e.isBoss&&zoneEnemyIds.includes(e.id));
+    const fallback=ETYPES.filter(e=>!e.isBoss);
+    const src=pool.length?pool:fallback;
+    return Array.from({length:maxEn},()=>{
+      const type=src[Math.floor(Math.random()*src.length)];
+      return new Enemy(type,level);
     });
   },
 
@@ -4076,14 +4773,18 @@ const Game={
     GameState.combatRunning=false;
     Object.assign(GameState,{selectedClass:null,selectedEquip:null,totalDmg:0,totalKills:0,
       questsDone:0,turnCount:0,levelUpPending:false,
-      currentFloor:null,currentRoomIdx:0,floorGold:0,combo:0,blockCd:0,isBlocking:false,_maxCombo:0});
+      currentFloor:null,currentRoomIdx:0,floorGold:0,combo:0,blockCd:0,isBlocking:false,_maxCombo:0,
+      currentZoneId:null,zonesCleared:[],zonesUnlocked:['neonNexus'],floor:1});
     const exEl=document.getElementById('roomExits');if(exEl)exEl.style.display='none';
-    // Hide pause menu if open
     const pm=document.getElementById('pauseMenu');if(pm)pm.classList.remove('show');
-    // Clear boss room tint
     const aw=document.getElementById('arenaWrap');if(aw)aw.classList.remove('boss-room');
+    const mb=document.getElementById('mapBtn');if(mb)mb.classList.add('hidden');
+    WorldMap.hide();
     Inventory.init();LootScreen.reset();
     Arena.time=0;Arena._initHexParticles&&Arena._initHexParticles();
+    // Show CONTINUE button only if save exists
+    const contBtn=document.getElementById('continueBtn');
+    if(contBtn)contBtn.style.display=SaveSystem.hasSave()?'':'none';
     UI.show('sCS');this.buildClassSelect();
   }
 };
@@ -4861,12 +5562,26 @@ const VictoryScreen = {
     LootScreen.reset();
     const cb = this._cb;
     if (this._isBoss) {
-      if (GameState.floor >= GameState.maxFloors) {
+      // Mark zone as cleared and unlock adjacent zones
+      const zoneId = GameState.currentZoneId;
+      if (zoneId && !GameState.zonesCleared.includes(zoneId)) {
+        GameState.zonesCleared.push(zoneId);
+        const zone = ZONES[zoneId];
+        // Unlock adjacent zones whose prereqs are now met
+        Object.values(ZONES).forEach(z => {
+          if (GameState.zonesUnlocked.includes(z.id)) return;
+          if (z.prereqs.every(pre => GameState.zonesCleared.includes(pre))) {
+            GameState.zonesUnlocked.push(z.id);
+            DM.say(`${z.name} UNLOCKED!`);
+          }
+        });
+      }
+      SaveSystem.save();
+      // Win condition: THE CORE cleared
+      if (zoneId === 'theCore') {
         UI.renderWin(); UI.show('sWN'); return;
       }
-      GameState.floor++;
-      UI.updateFloor();
-      setTimeout(() => { if (cb) cb(); }, 300);
+      setTimeout(() => { if (cb) cb(); }, 300); // cb = WorldMap.show
     } else {
       setTimeout(() => { if (cb) cb(); }, 300);
     }
