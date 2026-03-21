@@ -408,6 +408,35 @@ html,body{width:100%;height:100%;overflow:hidden;background:#060618;font-family:
 #vicContinueBtn{font-family:'Press Start 2P',monospace;font-size:clamp(9px,1vw,14px);padding:clamp(7px,.9vh,11px) clamp(16px,1.8vw,26px);cursor:not-allowed;letter-spacing:2px;transition:all .2s;background:rgba(20,20,50,.5);border:3px solid rgba(0,255,255,.2);color:rgba(0,255,255,.25);text-shadow:none;}
 #vicContinueBtn.active{background:linear-gradient(135deg,rgba(136,0,255,.92),rgba(0,20,180,.92));border-color:var(--C);color:var(--C);text-shadow:0 0 10px var(--C);box-shadow:0 0 20px rgba(0,255,255,.3);cursor:pointer;}
 #vicContinueBtn.active:hover{background:var(--C);color:#020210;box-shadow:0 0 36px rgba(0,255,255,.7);}
+
+/* ══ SPEECH BUBBLES ══ */
+@keyframes sbIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.speech-bubble{position:absolute;background:rgba(2,2,20,.96);border:2px solid;padding:clamp(5px,.7vh,8px) clamp(8px,1vw,12px);font-family:'Press Start 2P',monospace;font-size:clamp(6px,.72vw,10px);line-height:1.7;max-width:clamp(160px,20vw,260px);pointer-events:none;z-index:45;animation:sbIn .15s ease;}
+.speech-bubble::after{content:'';position:absolute;bottom:-9px;left:16px;border:5px solid transparent;}
+#speechBubbleEnemy{top:8%;right:4%;border-color:#ff2244;box-shadow:0 0 14px rgba(255,34,68,.3);}
+#speechBubbleEnemy::after{border-top-color:#ff2244;}
+#speechBubblePlayer{top:8%;left:4%;border-color:#00ffff;box-shadow:0 0 14px rgba(0,255,255,.3);}
+#speechBubblePlayer::after{border-top-color:#00ffff;}
+.sb-text{color:#ddeeff;}
+.sb-typing{color:rgba(0,255,255,.45);font-size:clamp(8px,.9vw,12px);}
+
+/* ══ API GEAR BUTTON ══ */
+#apiGearBtn{position:absolute;top:8px;right:8px;z-index:20;background:rgba(4,4,20,.9);border:1px solid rgba(0,255,255,.25);color:rgba(0,255,255,.55);font-size:clamp(10px,1.1vw,15px);padding:4px 9px;cursor:pointer;font-family:'Press Start 2P',monospace;transition:all .15s;}
+#apiGearBtn:hover{border-color:var(--C);color:var(--C);box-shadow:0 0 10px rgba(0,255,255,.25);}
+
+/* ══ API KEY MODAL ══ */
+#apiModal{position:fixed;inset:0;z-index:500;background:rgba(0,0,16,.92);align-items:center;justify-content:center;}
+.api-modal-box{background:#06060e;border:2px solid var(--C);padding:clamp(16px,2vh,28px) clamp(20px,2.2vw,34px);max-width:440px;width:90%;display:flex;flex-direction:column;gap:12px;box-shadow:0 0 40px rgba(0,255,255,.15);}
+.api-modal-title{font-size:clamp(10px,1.1vw,15px);color:var(--C);text-shadow:0 0 10px var(--C);letter-spacing:2px;}
+.api-modal-desc{font-size:clamp(6px,.7vw,9px);color:#668899;line-height:1.9;}
+.api-key-input{background:#030312;border:1.5px solid rgba(0,255,255,.3);color:var(--C);font-family:monospace;font-size:12px;padding:8px;width:100%;outline:none;}
+.api-key-input:focus{border-color:var(--C);box-shadow:0 0 8px rgba(0,255,255,.25);}
+.api-modal-btns{display:flex;gap:8px;}
+.api-btn-save{flex:1;background:rgba(0,38,0,.9);border:2px solid var(--G);color:var(--G);font-family:'Press Start 2P',monospace;font-size:clamp(6px,.72vw,9px);padding:8px;cursor:pointer;transition:all .15s;}
+.api-btn-save:hover{background:var(--G);color:#000;}
+.api-btn-close{background:rgba(20,0,0,.9);border:2px solid rgba(0,255,255,.25);color:rgba(0,255,255,.5);font-family:'Press Start 2P',monospace;font-size:clamp(6px,.72vw,9px);padding:8px;cursor:pointer;transition:all .15s;}
+.api-btn-close:hover{border-color:var(--C);color:var(--C);}
+.api-status{font-size:clamp(5px,.6vw,8px);color:var(--G);min-height:12px;}
 </style>
 </head>
 <body>
@@ -419,6 +448,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#060618;font-family:
   <!-- CLASS SELECT -->
   <div class="scr on" id="sCS">
     <canvas id="cityCV"></canvas>
+    <button id="apiGearBtn" title="Configure AI API Key">⚙ AI</button>
     <div class="stitle">
       <span class="gtitle-main">8BIT CYBERPUNK</span>
       <span class="gtitle-sub">⚡ NEON DUNGEON ROGUELIKE ⚡</span>
@@ -471,6 +501,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#060618;font-family:
         <div class="arena-wrap">
           <canvas id="arenaCV"></canvas>
           <div id="dmgOv"></div>
+          <!-- AI Speech Bubbles -->
+          <div id="speechBubbleEnemy" class="speech-bubble" style="display:none"><div class="sb-text"></div></div>
+          <div id="speechBubblePlayer" class="speech-bubble" style="display:none"><div class="sb-text"></div></div>
           <!-- Dialog Engine overlay -->
           <div id="dlgBox" style="display:none">
             <div class="dlg-inner">
@@ -628,10 +661,31 @@ html,body{width:100%;height:100%;overflow:hidden;background:#060618;font-family:
       </div>
     </div>
   </div>
+
+  <!-- API KEY MODAL -->
+  <div id="apiModal" style="display:none">
+    <div class="api-modal-box">
+      <div class="api-modal-title">⚙ AI DIALOG CONFIG</div>
+      <div class="api-modal-desc">Enter your Anthropic API key to enable AI-powered battle dialog. Leave blank to use static dialog. Key is saved in localStorage only.</div>
+      <input type="password" id="apiKeyInput" class="api-key-input" placeholder="sk-ant-api03-..." autocomplete="off"/>
+      <div class="api-status" id="apiStatus"></div>
+      <div class="api-modal-btns">
+        <button id="apiKeySave" class="api-btn-save">✓ SAVE KEY</button>
+        <button id="apiKeyClose" class="api-btn-close">CLOSE</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
 'use strict';
+// ═══════════════════════════════════════════════════════════════
+// AI DIALOG CONFIG — enter key in-game via ⚙ button on title screen
+// ═══════════════════════════════════════════════════════════════
+const ANTHROPIC_API_KEY = ''; // overridden by localStorage 'anthropic_key'
+// Splatoon-style saturated color palette for battle particles
+const SPLAT = ['#ff2d78','#b4f000','#ff7800','#00e5ff','#fff000','#7b00ff'];
+
 // ═══════════════════════════════════════════════════════════════
 // PIXEL ART — P=4px per pixel, all sprites drawn with fillRect
 // ═══════════════════════════════════════════════════════════════
@@ -1280,7 +1334,8 @@ const SPRITE_SIZE = {
 // ARENA CANVAS RENDERER
 // ═══════════════════════════════════════════════════════════════
 const Arena = {
-  cv:null, ctx:null, W:0, H:0, time:0, vfx:[],
+  cv:null, ctx:null, W:0, H:0, time:0, vfx:[], particles:[],
+  shake:{frames:0,intensity:0}, bgPulse:{color:'',alpha:0}, screenFlash:{color:'',alpha:0},
 
   init() {
     this.cv = document.getElementById('arenaCV');
@@ -1314,6 +1369,8 @@ ctx.shadowBlur = 0;
 ctx.shadowColor = 'transparent';
 
 ctx.clearRect(0, 0, W, H);
+    // Screen shake
+    if(this.shake.frames>0){ctx.translate((Math.random()-.5)*this.shake.intensity,(Math.random()-.5)*this.shake.intensity);this.shake.frames--;if(!this.shake.frames)this.shake.intensity=0;}
     this.drawBg(ctx, W, H, t);
     this.drawFloor(ctx, W, H);
     if (GameState.currentScreen !== 'sCM') return;
@@ -1375,14 +1432,29 @@ ctx.clearRect(0, 0, W, H);
       const slotW = eAreaW / Math.max(eCount, 1);
       const ex = Math.floor(eStartX + i * slotW + (slotW - sz.w) / 2);
       const ey = FLOOR_Y - sz.h;
-      // Death fade
+      // Death animation — white flash then dissolve with particle burst
       if (en.hp <= 0) {
-        if (!en.deathTimer) en.deathTimer = 18;
-        ctx.save(); ctx.globalAlpha = en.deathTimer / 18;
-        const sc = en.deathTimer / 18;
-        ctx.translate(ex + sz.w/2, ey + sz.h/2); ctx.scale(sc, sc); ctx.translate(-(ex+sz.w/2), -(ey+sz.h/2));
-        if (SPR[en.sprite]) SPR[en.sprite](ctx, ex, ey, true, t);
-        ctx.restore();
+        if (!en.deathTimer) {
+          en.deathTimer = 28;
+          this.spawnBurst(ex+sz.w/2, ey+sz.h/2, en.color||RD, 55, 1.5);
+          this.triggerShake(7, 14);
+          this.triggerScreenFlash(en.color||RD, 0.32);
+        }
+        ctx.save();
+        const dp = en.deathTimer / 28;
+        if (dp > 0.6) {
+          // Flash white phase
+          ctx.globalAlpha = (dp-0.6)/0.4;
+          ctx.filter = 'brightness(999%)';
+          if (SPR[en.sprite]) SPR[en.sprite](ctx, ex, ey, true, t);
+        } else {
+          // Shrink/dissolve phase
+          const sc = dp / 0.6;
+          ctx.globalAlpha = sc * 0.9;
+          ctx.translate(ex+sz.w/2, ey+sz.h/2); ctx.scale(sc, sc); ctx.translate(-(ex+sz.w/2), -(ey+sz.h/2));
+          if (SPR[en.sprite]) SPR[en.sprite](ctx, ex, ey, true, t);
+        }
+        ctx.restore(); ctx.filter='none';
         en.deathTimer--;
         return;
       }
@@ -1456,9 +1528,60 @@ ctx.clearRect(0, 0, W, H);
           const a=i/6*Math.PI*2+prog*2, r2=prog*38;
           ctx.beginPath(); ctx.arc(v.x+Math.cos(a)*r2, v.y+Math.sin(a)*r2, 2.5, 0, Math.PI*2); ctx.fill();
         }
+      } else if (v.type === 'ring') {
+        const rr=(v.maxR||55)*prog;
+        ctx.globalAlpha=(1-prog)*.85; ctx.strokeStyle=v.c; ctx.shadowColor=v.c;
+        ctx.lineWidth=3-prog*2; ctx.shadowBlur=12;
+        ctx.beginPath(); ctx.arc(v.x,v.y,rr,0,Math.PI*2); ctx.stroke();
+        ctx.globalAlpha=(1-prog)*.3; ctx.lineWidth=8;
+        ctx.beginPath(); ctx.arc(v.x,v.y,rr,0,Math.PI*2); ctx.stroke();
+      } else if (v.type === 'lightning') {
+        ctx.globalAlpha=(1-prog*.6)*.9; ctx.strokeStyle=v.c; ctx.shadowColor=v.c; ctx.shadowBlur=14;
+        ctx.lineWidth=2.5-prog; ctx.setLineDash([6,4]);
+        const steps=7;
+        ctx.beginPath(); ctx.moveTo(v.x,v.y);
+        for(let s=1;s<=steps;s++){
+          const px=v.x+(v.x2-v.x)*s/steps+(s<steps?(Math.random()-.5)*18:0);
+          const py=v.y+(v.y2-v.y)*s/steps+(s<steps?(Math.random()-.5)*18:0);
+          ctx.lineTo(px,py);
+        }
+        ctx.stroke(); ctx.setLineDash([]);
       }
       ctx.restore(); v.t++;
     });
+
+    // Particle system — Splatoon-style burst particles
+    this.particles = this.particles.filter(pt => pt.alpha > 0.02);
+    this.particles.forEach(pt => {
+      pt.vy += pt.gravity||0.12; pt.x+=pt.vx; pt.y+=pt.vy;
+      pt.alpha = Math.max(0, pt.alpha - (pt.fade||0.032));
+      ctx.save(); ctx.globalAlpha=pt.alpha;
+      ctx.fillStyle=pt.color||'#fff'; ctx.shadowColor=pt.color||'#fff'; ctx.shadowBlur=pt.glow||5;
+      ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.size||3, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+    });
+
+    // Vignettes
+    const pv = GameState.player;
+    if(pv&&pv.hp>0&&pv.hp/pv.maxHp<0.25){
+      const pulse=0.1+Math.sin(t*0.13)*0.09;
+      const vg=ctx.createRadialGradient(W/2,H/2,H*.15,W/2,H/2,H*.88);
+      vg.addColorStop(0,'transparent'); vg.addColorStop(1,`rgba(255,20,20,${pulse})`);
+      ctx.save(); ctx.fillStyle=vg; ctx.fillRect(0,0,W,H); ctx.restore();
+    }
+    if(GameState.enemies.some(e=>e.isBoss&&e.hp>0)){
+      const bp=0.07+Math.sin(t*0.07)*0.04;
+      const bg2=ctx.createRadialGradient(W/2,H/2,H*.22,W/2,H/2,H*0.95);
+      bg2.addColorStop(0,'transparent'); bg2.addColorStop(1,`rgba(255,0,255,${bp})`);
+      ctx.save(); ctx.fillStyle=bg2; ctx.fillRect(0,0,W,H); ctx.restore();
+    }
+
+    // Screen flash overlay (on top of everything)
+    if(this.screenFlash.alpha>0){
+      ctx.save(); ctx.globalAlpha=this.screenFlash.alpha;
+      ctx.fillStyle=this.screenFlash.color; ctx.fillRect(0,0,W,H);
+      ctx.restore(); this.screenFlash.alpha=Math.max(0,this.screenFlash.alpha-0.08);
+    }
   },
 
   drawBg(ctx, W, H, t) {
@@ -1495,6 +1618,12 @@ ctx.clearRect(0, 0, W, H);
       ctx.fillStyle='#ff8800'; ctx.fillRect(tx-2,H*.11,4,5);
       ctx.fillStyle='#ffff88'; ctx.fillRect(tx-1,H*.09,2,4);
     });
+    // Background hit pulse
+    if(this.bgPulse.alpha>0){
+      ctx.save(); ctx.globalAlpha=this.bgPulse.alpha;
+      ctx.fillStyle=this.bgPulse.color; ctx.fillRect(0,0,W,H);
+      ctx.restore(); this.bgPulse.alpha=Math.max(0,this.bgPulse.alpha-0.055);
+    }
   },
 
   drawFloor(ctx, W, H) {
@@ -1521,6 +1650,50 @@ ctx.clearRect(0, 0, W, H);
   },
 
   spawnVFX(type, x, y, c) { this.vfx.push({type,x,y,c:c||'#fff',t:0,maxT:type==='explode'?30:20}); },
+
+  // Splatoon-style particle burst — loud, saturated colors
+  spawnBurst(x, y, baseColor, count=25, sizeMult=1) {
+    for(let i=0;i<count;i++){
+      const angle=Math.random()*Math.PI*2;
+      const speed=2+Math.random()*7;
+      const c=Math.random()<0.45?baseColor:SPLAT[Math.floor(Math.random()*SPLAT.length)];
+      this.particles.push({
+        x,y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed-1.5,
+        alpha:1,fade:0.022+Math.random()*0.02,
+        color:c,size:(2+Math.random()*5)*sizeMult,
+        gravity:0.1+Math.random()*0.15,glow:6,
+      });
+    }
+  },
+
+  // Expanding ring VFX (Nano Shield etc.)
+  spawnRing(x, y, color, maxR=55) {
+    this.vfx.push({type:'ring',x,y,c:color||CY,t:0,maxT:22,maxR});
+  },
+
+  // Upward heal sparkles
+  spawnHeal(x, y) {
+    for(let i=0;i<18;i++){
+      this.particles.push({
+        x:x+(Math.random()-.5)*30,y:y+Math.random()*10,
+        vx:(Math.random()-.5)*1.2,vy:-1.5-Math.random()*2,
+        alpha:1,fade:0.03,color:Math.random()<0.5?'#39FF14':'#b4f000',
+        size:2+Math.random()*3,gravity:-0.04,glow:7,
+      });
+    }
+  },
+
+  // Lightning bolt VFX from player to enemy
+  spawnLightning(x1,y1,x2,y2,color) {
+    this.vfx.push({type:'lightning',x:x1,y:y1,x2,y2,c:color||CY,t:0,maxT:12});
+  },
+
+  triggerShake(intensity, frames) {
+    this.shake.intensity=Math.max(this.shake.intensity,intensity);
+    this.shake.frames=Math.max(this.shake.frames,frames);
+  },
+  triggerBgPulse(color) { this.bgPulse.color=color;this.bgPulse.alpha=0.28; },
+  triggerScreenFlash(color,alpha=0.4) { this.screenFlash.color=color;this.screenFlash.alpha=alpha; },
 
   triggerAttack(isPlayer, en) {
     if (isPlayer && GameState.player) { GameState.player.animState='attack'; GameState.player.animTimer=0; }
@@ -1873,9 +2046,16 @@ const Combat = {
     QM.track('totalDmg',dmg); QM.track('dmgBlocked',blocked);
     Arena.triggerHurt(false,enemy);
     const idx=GameState.enemies.indexOf(enemy);
-    if(idx>=0){const pos=Arena.getEnemyPos(idx);UI.dmgNumAt(pos.x,pos.y,dmg,isCrit?'crit':'enemy');}
+    if(idx>=0){
+      const pos=Arena.getEnemyPos(idx);
+      UI.dmgNumAt(pos.x,pos.y,dmg,isCrit?'crit':'enemy');
+      const burstColor=GameState.player?.accent||CY;
+      Arena.spawnBurst(pos.x,pos.y,burstColor,isCrit?42:22,isCrit?1.4:1.0);
+      Arena.triggerBgPulse(burstColor);
+      if(isCrit){Arena.triggerShake(8,10);Arena.triggerScreenFlash('#ffffff',0.38);Arena.spawnBurst(pos.x,pos.y,'#fff000',16,1.2);AIDialog.onCrit(enemy);}
+    }
     if(enemy.hp<=0)this.killEnemy(enemy);
-    else{if(enemy.checkPhase)enemy.checkPhase();if(!enemy.lowHpSaid&&enemy.hp/enemy.maxHp<=0.3){enemy.lowHpSaid=true;DialogEngine.showLowHp(enemy);}}
+    else{if(enemy.checkPhase)enemy.checkPhase();if(!enemy.lowHpSaid&&enemy.hp/enemy.maxHp<=0.3){enemy.lowHpSaid=true;DialogEngine.showLowHp(enemy);AIDialog.onLowHPEnemy(enemy);}}
     return dmg;
   },
   killEnemy(en){
@@ -1920,6 +2100,8 @@ const Combat = {
     p.hp=Math.max(0,p.hp-dmg);
     Arena.triggerHurt(true);Arena.triggerAttack(false,en);
     UI.dmgNumPlayer(dmg,'phit');
+    Arena.triggerBgPulse(en.color||RD);Arena.triggerShake(4,8);
+    const pp2=Arena.getPlayerPos();Arena.spawnBurst(pp2.x,pp2.y,en.color||RD,20,0.9);
     if(en.ability.trigger==='onhit')en.ability.fn(en,p);
   },
   autoSpell(p,enemies){
@@ -1939,8 +2121,17 @@ const Combat = {
     const prevSize=p.spellsCast.size;
     p.spellsCast.add(spell.id);
     if(p.spellsCast.size>prevSize)QM.track('spellsCast',1);
-    spell.effect(p,enemies.filter(e=>e.hp>0));
+    const aliveEn=enemies.filter(e=>e.hp>0);
+    spell.effect(p,aliveEn);
     Arena.triggerCast();
+    // Spell-specific particle effects
+    const pp3=Arena.getPlayerPos();
+    if(spell.id==='nanoShield'||spell.id==='ghostStep'){Arena.spawnRing(pp3.x,pp3.y,'#4499ff',65);}
+    else if(spell.id==='bioPulse'||spell.id==='symbioticSurge'){Arena.spawnHeal(pp3.x,pp3.y);}
+    else if(spell.id==='plasmaStrike'&&aliveEn[0]){const ep=Arena.getEnemyPos(GameState.enemies.indexOf(aliveEn[0]));Arena.spawnLightning(pp3.x,pp3.y,ep.x,ep.y,CY);}
+    else if(spell.id==='voidDrain'&&aliveEn[0]){const ep2=Arena.getEnemyPos(GameState.enemies.indexOf(aliveEn[0]));Arena.spawnLightning(ep2.x,ep2.y,pp3.x,pp3.y,PU);}
+    else{Arena.spawnBurst(pp3.x,pp3.y,p.accent||CY,16,0.85);}
+    AIDialog.onSpell(spell,aliveEn[0]);
     UI.updateBars();UI.updateSpells();
   },
   tick(){
@@ -1950,6 +2141,8 @@ const Combat = {
     document.getElementById('tbadge').textContent='TURN:'+GameState.turnCount;
     const alive=enemies.filter(e=>e.hp>0);
     if(!alive.length&&!GameState.levelUpPending){this.endCombat(true);return;}
+    AIDialog.onTurn(GameState.floorTurns,enemies);
+    if(p.hp/p.maxHp<=0.25&&!p.lowHpAISaid){p.lowHpAISaid=true;AIDialog.onLowHPPlayer();}
     p.tickBuffs();
     if(p.hp<=0){this.endCombat(false);return;}
     p.spells.forEach(s=>{if(s.cd>0)s.cd--;if(s.hackedTurns>0){s.hackedTurns--;if(s.hackedTurns===0)DM.say(`${s.name} back online!`);}});
@@ -1998,6 +2191,8 @@ const Combat = {
   start(){
     GameState.combatRunning=true;GameState.floorTurns=0;
     GameState.player.healedThisFloor=false;
+    GameState.player.lowHpAISaid=false;
+    AIDialog.init();
     GameState.combatInterval=setInterval(()=>Combat.tick(),500);
   }
 };
@@ -2186,15 +2381,18 @@ const QM={
 };
 
 const UI={
-  show(id){document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));document.getElementById(id).classList.add('on');GameState.currentScreen=id;if(id!=='sCM')DialogEngine._cancel();},
+  show(id){document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));document.getElementById(id).classList.add('on');GameState.currentScreen=id;if(id!=='sCM'){DialogEngine._cancel();AIDialog.hideAll();}},
   flash(){const f=document.getElementById('fl');f.style.opacity='.65';setTimeout(()=>f.style.opacity='0',320);},
   dmgNumAt(x,y,val,type){
     const ov=document.getElementById('dmgOv');if(!ov)return;
     const d=document.createElement('div');d.className='dn '+(type||'');
     d.textContent=type==='miss'?'MISS':type==='crit'?`💥${val}`:type==='heal'?`+${val}`:val;
     const rect=ov.getBoundingClientRect();
-    d.style.cssText=`left:${x-rect.left-16}px;top:${y-rect.top-10}px;`;
-    ov.appendChild(d);setTimeout(()=>d.remove(),950);
+    const n=typeof val==='number'?val:0;
+    const sz=type==='crit'?Math.min(30,14+Math.floor(n/12)):type==='miss'?10:type==='heal'?Math.min(22,11+Math.floor(n/10)):Math.min(22,10+Math.floor(n/14));
+    const drift=(Math.random()-.5)*22;
+    d.style.cssText=`left:${x-rect.left-14+drift}px;top:${y-rect.top-10}px;font-size:${sz}px;`;
+    ov.appendChild(d);setTimeout(()=>d.remove(),1000);
   },
   dmgNumPlayer(val,type){const pp=Arena.getPlayerPos();this.dmgNumAt(pp.x,pp.y,val,type);},
   updateBars(){
@@ -2614,6 +2812,25 @@ const Game={
       else{GameState.floor++;UI.show('sRS');UI.renderResults();}
     });
     document.getElementById('vicContinueBtn').addEventListener('click',()=>VictoryScreen._continue());
+    // API key modal
+    const apiGearBtn = document.getElementById('apiGearBtn');
+    const apiModal   = document.getElementById('apiModal');
+    const apiKeyInput= document.getElementById('apiKeyInput');
+    const apiKeySave = document.getElementById('apiKeySave');
+    const apiKeyClose= document.getElementById('apiKeyClose');
+    if(apiGearBtn && apiModal){
+      // Pre-fill saved key
+      const saved = localStorage.getItem('anthropic_key');
+      if(saved && apiKeyInput) apiKeyInput.value = saved;
+      apiGearBtn.addEventListener('click',()=>{ apiModal.style.display='flex'; });
+      apiKeySave && apiKeySave.addEventListener('click',()=>{
+        const k = apiKeyInput ? apiKeyInput.value.trim() : '';
+        if(k) localStorage.setItem('anthropic_key', k);
+        apiModal.style.display='none';
+      });
+      apiKeyClose && apiKeyClose.addEventListener('click',()=>{ apiModal.style.display='none'; });
+      apiModal.addEventListener('click',(e)=>{ if(e.target===apiModal) apiModal.style.display='none'; });
+    }
   },
 
   triggerMerchant(onDone=null){
@@ -3196,6 +3413,163 @@ const LootScreen={
     const cb=this._cb;
     this.reset();
     if(cb)cb();
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════
+// AI BATTLE DIALOG — Claude-powered enemy/player speech bubbles
+// ═══════════════════════════════════════════════════════════════
+const AIDialog = {
+  _enemyEl: null,
+  _playerEl: null,
+  _enemyTimer: null,
+  _playerTimer: null,
+  _lastTurnTriggered: 0,
+
+  init(){
+    this._enemyEl  = document.getElementById('speechBubbleEnemy');
+    this._playerEl = document.getElementById('speechBubblePlayer');
+    this._lastTurnTriggered = 0;
+    this.hideAll();
+  },
+
+  _getKey(){
+    return localStorage.getItem('anthropic_key') || (typeof ANTHROPIC_API_KEY !== 'undefined' ? ANTHROPIC_API_KEY : '');
+  },
+
+  // Call Claude Haiku with a 3-second timeout; returns fallback string on any failure
+  async _call(systemPrompt, userMsg, fallback){
+    const key = this._getKey();
+    if(!key) return fallback;
+    const ctrl = new AbortController();
+    const tid = setTimeout(()=>ctrl.abort(), 3000);
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method:'POST',
+        signal: ctrl.signal,
+        headers:{
+          'content-type':'application/json',
+          'x-api-key': key,
+          'anthropic-version':'2023-06-01',
+          'anthropic-dangerous-direct-browser-access':'true'
+        },
+        body: JSON.stringify({
+          model:'claude-haiku-4-5-20251001',
+          max_tokens:60,
+          system: systemPrompt,
+          messages:[{role:'user',content:userMsg}]
+        })
+      });
+      clearTimeout(tid);
+      if(!res.ok) return fallback;
+      const data = await res.json();
+      const text = (data.content?.[0]?.text||'').trim();
+      return text || fallback;
+    } catch(e) {
+      clearTimeout(tid);
+      return fallback;
+    }
+  },
+
+  _enemyCtx(enemy){
+    return `You are ${enemy.name||'an enemy'} in a cyberpunk dungeon. HP: ${enemy.hp}/${enemy.maxHp}. Reply with ONE short combat taunt (max 10 words). No quotes, no emojis.`;
+  },
+
+  _playerCtx(){
+    const p = GameState.player;
+    return `You are a ${p?.className||'warrior'} in a cyberpunk dungeon. HP: ${p?.hp}/${p?.maxHp}. Reply with ONE short combat quip (max 10 words). No quotes, no emojis.`;
+  },
+
+  async showEnemyLine(enemy, situation, fallback){
+    const sys = this._enemyCtx(enemy);
+    const text = await this._call(sys, situation, fallback);
+    this._showBubble('enemy', text, '#ff2d78');
+  },
+
+  async showPlayerLine(situation, fallback){
+    const sys = this._playerCtx();
+    const text = await this._call(sys, situation, fallback);
+    this._showBubble('player', text, '#00ffff');
+  },
+
+  _showBubble(side, text, color){
+    const el = side === 'enemy' ? this._enemyEl : this._playerEl;
+    const timerKey = side === 'enemy' ? '_enemyTimer' : '_playerTimer';
+    if(!el) return;
+    clearTimeout(this[timerKey]);
+    const textEl = el.querySelector('.sb-text');
+    if(textEl){
+      textEl.textContent = '';
+      el.style.borderColor = color;
+      el.style.display = 'block';
+      el.classList.add('sb-in');
+      this._typewrite(textEl, text);
+    }
+    this[timerKey] = setTimeout(()=>this._hideBubble(side), 3000 + text.length * 30);
+  },
+
+  _hideBubble(side){
+    const el = side === 'enemy' ? this._enemyEl : this._playerEl;
+    if(el){ el.style.display = 'none'; el.classList.remove('sb-in'); }
+  },
+
+  hideAll(){
+    if(this._enemyEl)  this._enemyEl.style.display  = 'none';
+    if(this._playerEl) this._playerEl.style.display = 'none';
+    clearTimeout(this._enemyTimer);
+    clearTimeout(this._playerTimer);
+  },
+
+  _typewrite(el, text){
+    el.textContent = '';
+    let i = 0;
+    const iv = setInterval(()=>{
+      el.textContent += text[i++] || '';
+      if(i >= text.length) clearInterval(iv);
+    }, 30);
+  },
+
+  // Turn 1: enemy taunts, player responds
+  // Every 3 turns after that: random flavor
+  onTurn(turnNum, enemies){
+    if(!enemies || !enemies.length) return;
+    const en = enemies.find(e=>e.hp>0);
+    if(!en) return;
+    if(turnNum === 1){
+      const eFallbacks = ["You dare enter my domain?","Prepare to be deleted.","I'll end you, flatline incoming."];
+      const pFallbacks = ["Bring it on.","I've faced worse.","You're already dead."];
+      this.showEnemyLine(en, "Say a short opening taunt as you encounter this hero.", eFallbacks[Math.floor(Math.random()*eFallbacks.length)]);
+      setTimeout(()=>this.showPlayerLine("Reply to an enemy's opening taunt with a confident comeback.", pFallbacks[Math.floor(Math.random()*pFallbacks.length)]), 2200);
+    } else if(turnNum > 1 && (turnNum - this._lastTurnTriggered) >= 3){
+      this._lastTurnTriggered = turnNum;
+      const fbs = ["Keep fighting!","This isn't over.","You can't win.","Error: courage detected."];
+      this.showEnemyLine(en, "Say a short mid-combat line.", fbs[Math.floor(Math.random()*fbs.length)]);
+    }
+  },
+
+  onLowHPEnemy(enemy){
+    const fbs = ["System...critical...","I...cannot fall...","Impossible..."];
+    this.showEnemyLine(enemy, "You are badly wounded. Say a short desperate line.", fbs[Math.floor(Math.random()*fbs.length)]);
+  },
+
+  onLowHPPlayer(){
+    const fbs = ["Not like this...","Still standing...","Come on... fight!"];
+    this.showPlayerLine("You are badly wounded. Say a short desperate line.", fbs[Math.floor(Math.random()*fbs.length)]);
+  },
+
+  onCrit(enemy){
+    const pFbs = ["CRITICAL HIT!","Overclocked!","Feel the power!"];
+    const eFbs = ["Ugh!","How?!","Impossible!"];
+    this.showPlayerLine("You just landed a critical hit. React with a short victory cry.", pFbs[Math.floor(Math.random()*pFbs.length)]);
+    if(enemy && enemy.hp > 0){
+      setTimeout(()=>this.showEnemyLine(enemy, "You just took a critical hit. React with a short pained line.", eFbs[Math.floor(Math.random()*eFbs.length)]), 1800);
+    }
+  },
+
+  onSpell(spell, enemy){
+    if(!spell) return;
+    const pFbs = [`${spell.name}!`,"Spell cast!","Take this!"];
+    this.showPlayerLine(`You just cast ${spell.name}. Say a short spell invocation (max 8 words).`, pFbs[Math.floor(Math.random()*pFbs.length)]);
   },
 };
 
