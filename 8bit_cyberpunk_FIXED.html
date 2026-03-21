@@ -191,6 +191,31 @@ html,body{width:100%;height:100%;overflow:hidden;background:#060618;font-family:
 ::-webkit-scrollbar-track{background:#0a0a14;}
 ::-webkit-scrollbar-thumb{background:var(--P);}
 
+/* ══ DIALOG ENGINE ══ */
+#dlgBox{
+  position:absolute;bottom:8px;left:8px;right:8px;
+  background:rgba(2,2,20,.97);
+  border:2px solid var(--C);
+  box-shadow:0 0 20px rgba(0,255,255,.22),inset 0 0 10px rgba(0,255,255,.04);
+  padding:clamp(8px,1vh,14px) clamp(10px,1.2vw,16px);
+  z-index:50;display:flex;flex-direction:column;gap:6px;
+  animation:dlgIn .18s ease;
+}
+@keyframes dlgIn{from{transform:translateY(8px);opacity:0}to{transform:translateY(0);opacity:1}}
+.dlg-inner{display:flex;align-items:center;gap:clamp(8px,1vw,14px);}
+.dlg-portrait{font-size:clamp(20px,2.4vw,32px);flex-shrink:0;width:clamp(30px,3vw,46px);text-align:center;filter:drop-shadow(0 0 6px rgba(0,255,255,.45));}
+.dlg-content{flex:1;min-width:0;}
+.dlg-name{color:var(--C);font-size:clamp(7px,0.75vw,10px);letter-spacing:2px;margin-bottom:4px;text-shadow:0 0 6px var(--C);text-transform:uppercase;}
+.dlg-text{color:#cce8ff;font-size:clamp(9px,0.95vw,13px);line-height:1.9;min-height:clamp(14px,1.8vh,22px);}
+.dlg-skip{font-size:clamp(6px,0.65vw,9px);color:rgba(0,255,255,.3);cursor:pointer;flex-shrink:0;padding:4px 2px;transition:color .12s;user-select:none;}
+.dlg-skip:hover{color:var(--C);}
+.dlg-choices{display:flex;gap:8px;padding-top:6px;border-top:1px solid rgba(0,255,255,.18);}
+.dlg-btn{flex:1;font-family:'Press Start 2P',monospace;font-size:clamp(7px,0.75vw,10px);padding:clamp(6px,0.7vh,10px) 4px;cursor:pointer;letter-spacing:1px;transition:all .14s;}
+.dlg-btn-yes{background:rgba(0,38,0,.9);border:2px solid var(--G);color:var(--G);text-shadow:0 0 6px var(--G);}
+.dlg-btn-yes:hover{background:var(--G);color:#000;}
+.dlg-btn-no{background:rgba(38,0,0,.9);border:2px solid var(--RD);color:var(--RD);}
+.dlg-btn-no:hover{background:var(--RD);color:#fff;}
+
 /* ══ LOOT SCREEN ══ */
 #sLT{background:rgba(2,2,18,.98);overflow:hidden;}
 .lt-hd{flex-shrink:0;text-align:center;padding:clamp(14px,1.8vh,24px) 0 clamp(6px,0.8vh,10px);}
@@ -318,6 +343,18 @@ html,body{width:100%;height:100%;overflow:hidden;background:#060618;font-family:
         <div class="arena-wrap">
           <canvas id="arenaCV"></canvas>
           <div id="dmgOv"></div>
+          <!-- Dialog Engine overlay -->
+          <div id="dlgBox" style="display:none">
+            <div class="dlg-inner">
+              <div class="dlg-portrait" id="dlgPortrait">👾</div>
+              <div class="dlg-content">
+                <div class="dlg-name" id="dlgName">ENEMY</div>
+                <div class="dlg-text" id="dlgText"></div>
+              </div>
+              <div class="dlg-skip" id="dlgSkip" title="Click to skip">▶▶</div>
+            </div>
+            <div class="dlg-choices" id="dlgChoices" style="display:none"></div>
+          </div>
         </div>
         <!-- Player HUD -->
         <div class="phud">
@@ -1636,7 +1673,7 @@ const Combat = {
     const idx=GameState.enemies.indexOf(enemy);
     if(idx>=0){const pos=Arena.getEnemyPos(idx);UI.dmgNumAt(pos.x,pos.y,dmg,isCrit?'crit':'enemy');}
     if(enemy.hp<=0)this.killEnemy(enemy);
-    else{if(enemy.checkPhase)enemy.checkPhase();if(!enemy.lowHpSaid&&enemy.hp/enemy.maxHp<=0.5){enemy.lowHpSaid=true;DM.lowHp(enemy);}}
+    else{if(enemy.checkPhase)enemy.checkPhase();if(!enemy.lowHpSaid&&enemy.hp/enemy.maxHp<=0.3){enemy.lowHpSaid=true;DialogEngine.showLowHp(enemy);}}
     return dmg;
   },
   killEnemy(en){
@@ -1646,7 +1683,8 @@ const Combat = {
     if(en.isBoss)QM.track('bossKills',1);
     const idx=GameState.enemies.indexOf(en);
     if(idx>=0){const pos=Arena.getEnemyPos(idx);Arena.spawnVFX('explode',pos.x,pos.y,en.color||RD);}
-    DM.death(en);
+    DM.say(`${en.name} destroyed!`);
+    DialogEngine.showDeath(en);
     // Loot collection
     const drops=LootSystem.genLoot(en,GameState.floor);
     const gold=LootSystem.goldFromEnemy(en,GameState.floor);
@@ -1785,6 +1823,138 @@ const DM={
   },
 };
 
+// ═══════════════════════════════════════════════════════════════
+// DIALOG ENGINE — typewriter dialog box with trigger system
+// ═══════════════════════════════════════════════════════════════
+const ENEMY_PORTRAITS={
+  glitchDrone:'🤖',neonGolem:'🗿',voidSpecter:'👻',cyberOgre:'👹',
+  dataWraith:'💀',pulseHound:'🐕',circuitLich:'☠',netrunner:'💻',quantumBoss:'⚡'
+};
+
+const DialogEngine={
+  _tw:null,_dt:null,_clickFn:null,_onDismiss:null,
+  _fullText:'',_choices:null,_lastIdx:{},
+
+  show({speaker='',portrait='👾',text='',choices=null,onDismiss=null}){
+    this._cancel();
+    this._onDismiss=onDismiss;this._fullText=text;this._choices=choices;
+    const box=document.getElementById('dlgBox');if(!box)return;
+    document.getElementById('dlgPortrait').textContent=portrait;
+    document.getElementById('dlgName').textContent=speaker;
+    const textEl=document.getElementById('dlgText');textEl.textContent='';
+    const choicesEl=document.getElementById('dlgChoices');
+    choicesEl.style.display='none';choicesEl.innerHTML='';
+    box.style.display='flex';box.style.animation='none';
+    void box.offsetHeight;box.style.animation='dlgIn .18s ease';
+    this._clickFn=()=>this._complete();
+    box.addEventListener('click',this._clickFn);
+    let i=0;
+    this._tw=setInterval(()=>{
+      i++;textEl.textContent=text.slice(0,i);
+      if(i>=text.length)this._complete();
+    },40);
+  },
+
+  _complete(){
+    if(this._tw){
+      // First call: finish typewriter, start auto-dismiss
+      clearInterval(this._tw);this._tw=null;
+      const textEl=document.getElementById('dlgText');
+      if(textEl)textEl.textContent=this._fullText;
+      if(this._choices&&this._choices.length){this._renderChoices();return;}
+      this._dt=setTimeout(()=>this.dismiss(),2500);
+    } else {
+      // Second call (click after text done): dismiss immediately unless choices shown
+      if(!(this._choices&&this._choices.length))this.dismiss();
+    }
+  },
+
+  _renderChoices(){
+    const el=document.getElementById('dlgChoices');if(!el)return;
+    el.innerHTML='';el.style.display='flex';
+    this._choices.forEach(ch=>{
+      const btn=document.createElement('button');
+      btn.className='dlg-btn dlg-btn-'+(ch.style||'yes');
+      btn.textContent=ch.label;
+      btn.addEventListener('click',e=>{
+        e.stopPropagation();this.dismiss();if(ch.action)ch.action();
+      });
+      el.appendChild(btn);
+    });
+  },
+
+  _cancel(){
+    if(this._tw){clearInterval(this._tw);this._tw=null;}
+    if(this._dt){clearTimeout(this._dt);this._dt=null;}
+    const box=document.getElementById('dlgBox');
+    if(box&&this._clickFn){box.removeEventListener('click',this._clickFn);this._clickFn=null;}
+  },
+
+  dismiss(){
+    this._cancel();
+    const box=document.getElementById('dlgBox');if(box)box.style.display='none';
+    if(this._onDismiss){const cb=this._onDismiss;this._onDismiss=null;cb();}
+  },
+
+  // Pick without immediate repeat; key scopes the last-index tracking
+  _pickLine(arr,key){
+    if(!arr||!arr.length)return null;
+    if(arr.length===1)return arr[0];
+    let idx,tries=0;
+    do{idx=Math.floor(Math.random()*arr.length);tries++;}
+    while(idx===this._lastIdx[key]&&tries<10);
+    this._lastIdx[key]=idx;return arr[idx];
+  },
+
+  // Resolve dialog key: use enemy's own id if defined in JSON, else "default"
+  _enemyKey(enemy){
+    return(GameState.dialog?.enemies?.[enemy.id])?enemy.id:'default';
+  },
+
+  showEncounter(enemy){
+    const key=this._enemyKey(enemy);
+    const lines=GameState.dialog?.enemies?.[key]?.encounter;
+    const text=lines?this._pickLine(lines,key+'_enc'):`${enemy.name} appears!`;
+    this.show({speaker:enemy.name,portrait:ENEMY_PORTRAITS[enemy.sprite]||'👾',text});
+  },
+
+  showLowHp(enemy){
+    const key=this._enemyKey(enemy);
+    const lines=GameState.dialog?.enemies?.[key]?.combat_low_hp;
+    if(!lines)return;
+    const text=this._pickLine(lines,key+'_lhp');
+    if(text)this.show({speaker:enemy.name,portrait:ENEMY_PORTRAITS[enemy.sprite]||'👾',text});
+  },
+
+  showDeath(enemy){
+    const key=this._enemyKey(enemy);
+    const lines=GameState.dialog?.enemies?.[key]?.death;
+    const text=lines?this._pickLine(lines,key+'_dth'):`${enemy.name} destroyed!`;
+    this.show({speaker:enemy.name,portrait:ENEMY_PORTRAITS[enemy.sprite]||'👾',text});
+  },
+
+  showFloorEvent(floor){
+    const events=GameState.dialog?.floor_events?.[`floor_${floor}`]
+               ||GameState.dialog?.floor_events?.floor_1;
+    if(!events)return;
+    const text=this._pickLine(events,'floor_'+floor);
+    if(text)this.show({speaker:`⚡ FLOOR ${floor}`,portrait:'🌆',text});
+  },
+
+  // npcKey: 'merchant' | 'rest_node'
+  showNPCGreeting(npcKey,choices=null){
+    const lines=GameState.dialog?.npcs?.[npcKey]?.greeting;
+    const text=lines?this._pickLine(lines,npcKey+'_greet'):'...';
+    const names={merchant:'MERCHANT',rest_node:'REST NODE'};
+    const portraits={merchant:'🛒',rest_node:'💊'};
+    this.show({
+      speaker:names[npcKey]||npcKey.toUpperCase(),
+      portrait:portraits[npcKey]||'❓',
+      text,choices
+    });
+  },
+};
+
 const QM={
   active:[],stats:{},
   init(){
@@ -1810,7 +1980,7 @@ const QM={
 };
 
 const UI={
-  show(id){document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));document.getElementById(id).classList.add('on');GameState.currentScreen=id;},
+  show(id){document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));document.getElementById(id).classList.add('on');GameState.currentScreen=id;if(id!=='sCM')DialogEngine._cancel();},
   flash(){const f=document.getElementById('fl');f.style.opacity='.65';setTimeout(()=>f.style.opacity='0',320);},
   dmgNumAt(x,y,val,type){
     const ov=document.getElementById('dmgOv');if(!ov)return;
@@ -2152,6 +2322,19 @@ const Game={
       if(Inventory.selBag>=0)Inventory.sell(Inventory.selBag);
     });
     document.getElementById('ltContBtn').addEventListener('click',()=>LootScreen.continue());
+    // Expose NPC greeting triggers for future room system
+    // Call Game.triggerMerchant() or Game.triggerRestNode() from room entry logic
+  },
+
+  triggerMerchant(){
+    DialogEngine.showNPCGreeting('merchant',[
+      {label:'BROWSE WARES',style:'yes',action:()=>{/* merchant shop — stub for future room */DM.say('The merchant spreads their wares...');}},
+      {label:'LEAVE',style:'no',action:()=>DialogEngine.dismiss()},
+    ]);
+  },
+
+  triggerRestNode(){
+    DialogEngine.showNPCGreeting('rest_node');
   },
 
   buildClassSelect(){
@@ -2253,8 +2436,14 @@ const Game={
     SPR.dm(dmctx,2,2);
     UI.renderSpells();UI.updateBars();UI.renderBuffs();UI.renderQuests();UI.updateFloor();
     Inventory.render();
-    if(GameState.floor===10){DM.say('⚠ THE QUANTUM BOSS! YOUR FINAL TRIAL!');}
-    else{const fe=DM.floorEvent(GameState.floor);if(fe){DM.say(fe);}else{DM.encounter(GameState.enemies[0]);}}
+    // Narrator bubble: ambient floor text
+    const _fe=DM.floorEvent(GameState.floor);
+    DM.say(_fe||(GameState.floor===10?'⚠ THE QUANTUM BOSS! YOUR FINAL TRIAL!':DM.rand()));
+    // Dialog box: enemy encounter (600ms delay so arena has settled)
+    setTimeout(()=>{
+      if(GameState.floor===10)DialogEngine.showFloorEvent(10);
+      else DialogEngine.showEncounter(GameState.enemies[0]);
+    },600);
 
     p.mp=Math.min(p.maxMp,p.mp+Math.floor(p.maxMp*.3));
     p.spells.forEach(s=>s.cd=Math.max(0,(s.cd||0)-1));
