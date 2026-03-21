@@ -1818,26 +1818,34 @@ const Arena = {
 
   loop() {
     this.time++;
+    // Auto-resize if canvas buffer doesn't match container
+    if (this.cv && this.cv.parentElement) {
+      const pw = this.cv.parentElement.clientWidth, ph = this.cv.parentElement.clientHeight;
+      if (pw > 40 && ph > 40 && (Math.abs(this.W - pw) > 2 || Math.abs(this.H - ph) > 2)) {
+        this.W = pw; this.H = ph; this.cv.width = pw; this.cv.height = ph;
+      }
+    }
     this.render();
     requestAnimationFrame(() => this.loop());
   },
 
   render() {
     const ctx = this.ctx, W = this.W, H = this.H, t = this.time;
+    if (!ctx || W < 10 || H < 10) return;
     ctx.setTransform(1,0,0,1,0,0);
-ctx.globalAlpha = 1;
-ctx.filter = 'none';
-ctx.shadowBlur = 0;
-ctx.shadowColor = 'transparent';
+    ctx.globalAlpha = 1;
+    ctx.filter = 'none';
+    ctx.shadowBlur = 0;
+    ctx.shadowColor = 'transparent';
 
-ctx.clearRect(0, 0, W, H);
+    ctx.clearRect(0, 0, W, H);
     // Screen shake
     if(this.shake.frames>0){ctx.translate((Math.random()-.5)*this.shake.intensity,(Math.random()-.5)*this.shake.intensity);this.shake.frames--;if(!this.shake.frames)this.shake.intensity=0;}
     this.drawBg(ctx, W, H, t);
     this.drawFloor(ctx, W, H);
     if (GameState.currentScreen !== 'sCM') return;
     const p = GameState.player;
-    const enemies = GameState.enemies;
+    const enemies = GameState.enemies || [];
     const FLOOR_Y = Math.floor(H * 0.73);
 
     // Player
@@ -1845,6 +1853,7 @@ ctx.clearRect(0, 0, W, H);
       const sz = SPRITE_SIZE[p.sprite] || {w:56,h:88};
       const px2 = Math.floor(W * 0.14);
       const py2 = FLOOR_Y - sz.h;
+
       // Shadow
       ctx.save(); ctx.globalAlpha=.25; ctx.fillStyle='#000';
       ctx.beginPath(); ctx.ellipse(px2+sz.w/2, FLOOR_Y+2, sz.w*.38, 4, 0, 0, Math.PI*2); ctx.fill();
@@ -2414,12 +2423,12 @@ ctx.clearRect(0, 0, W, H);
     const archColor=`${colorBase}${archPulse})`;
     for(let a=0;a<4;a++){
       const ax=W*.06+a*W*.24,aw=W*.14;
-      ctx.fillStyle=colorBase.replace('rgba','rgba').replace(/[\d.]+\)$/,'0.08)');
+      ctx.fillStyle=colorBase+'0.08)';
       ctx.strokeStyle=archColor;ctx.lineWidth=2;ctx.shadowColor=archColor;ctx.shadowBlur=8;
       ctx.beginPath();ctx.arc(ax+aw/2,H*.18,aw*.5,Math.PI,0,false);ctx.lineTo(ax+aw,H*.18);ctx.lineTo(ax,H*.18);ctx.closePath();
       ctx.fill();ctx.stroke();ctx.shadowBlur=0;
       const pg3=ctx.createRadialGradient(ax+aw/2,H*.13,0,ax+aw/2,H*.13,aw*.38);
-      pg3.addColorStop(0,colorBase.replace(/[\d.]+\)$/,'0.1)'));pg3.addColorStop(1,'transparent');
+      pg3.addColorStop(0,colorBase+'0.1)');pg3.addColorStop(1,'transparent');
       ctx.fillStyle=pg3;ctx.beginPath();ctx.arc(ax+aw/2,H*.13,aw*.38,0,Math.PI*2);ctx.fill();
     }
   },
