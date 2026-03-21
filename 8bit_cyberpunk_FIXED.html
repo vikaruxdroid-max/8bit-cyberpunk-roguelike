@@ -216,6 +216,56 @@ html,body{width:100%;height:100%;overflow:hidden;background:#060618;font-family:
 .dlg-btn-no{background:rgba(38,0,0,.9);border:2px solid var(--RD);color:var(--RD);}
 .dlg-btn-no:hover{background:var(--RD);color:#fff;}
 
+/* ══ ROOM EXITS OVERLAY ══ */
+#roomExits{
+  position:absolute;inset:0;background:rgba(0,0,16,.88);backdrop-filter:blur(2px);
+  z-index:80;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:clamp(10px,1.4vh,20px);padding:16px;
+}
+.exits-title{
+  font-size:clamp(9px,1.1vw,15px);color:var(--C);
+  text-shadow:0 0 14px var(--C);letter-spacing:3px;
+}
+.exits-grid{display:flex;flex-wrap:wrap;gap:clamp(8px,1vw,14px);justify-content:center;max-width:640px;}
+.exit-btn{
+  background:rgba(2,2,22,.97);border:2px solid rgba(0,255,255,.3);
+  padding:clamp(10px,1.3vh,18px) clamp(12px,1.5vw,22px);
+  cursor:pointer;font-family:'Press Start 2P',monospace;
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  transition:all .15s;min-width:clamp(88px,10vw,138px);position:relative;
+}
+.exit-btn:hover{transform:translateY(-3px);}
+.exit-btn-combat{border-color:#ff2244;}.exit-btn-combat:hover{background:rgba(40,0,12,.97);box-shadow:0 0 16px rgba(255,34,68,.4);}
+.exit-btn-loot{border-color:#FFD700;}.exit-btn-loot:hover{background:rgba(30,22,0,.97);box-shadow:0 0 16px rgba(255,215,0,.4);}
+.exit-btn-rest{border-color:#39FF14;}.exit-btn-rest:hover{background:rgba(0,28,0,.97);box-shadow:0 0 16px rgba(57,255,20,.4);}
+.exit-btn-merchant{border-color:#00FFFF;}.exit-btn-merchant:hover{background:rgba(0,18,28,.97);box-shadow:0 0 16px rgba(0,255,255,.4);}
+.exit-btn-boss{border-color:#FF00FF;animation:legborder 1s ease infinite alternate;}
+.exit-btn-boss:hover{background:rgba(30,0,28,.97);}
+.exit-btn.visited{opacity:.72;}
+.exit-icon{font-size:clamp(18px,2.3vw,30px);}
+.exit-name{font-size:clamp(7px,0.78vw,11px);color:#cce8ff;letter-spacing:1px;}
+.exit-dir{font-size:clamp(6px,0.7vw,10px);color:rgba(0,255,255,.55);}
+.exit-badge{position:absolute;top:4px;right:6px;font-size:clamp(6px,0.7vw,9px);color:var(--OR);animation:flick .8s infinite;}
+
+/* ══ FLOOR COMPLETE SCREEN ══ */
+#sFC{align-items:center;justify-content:center;gap:clamp(12px,1.6vh,24px);
+  padding:clamp(20px,2.5vh,36px);background:rgba(2,0,18,.98);}
+.fc-title{font-size:clamp(14px,1.8vw,26px);color:var(--M);
+  text-shadow:0 0 22px var(--M),0 0 44px rgba(255,0,255,.4);text-align:center;line-height:1.9;}
+.fc-sub{font-size:clamp(9px,1vw,14px);color:rgba(255,0,255,.6);letter-spacing:2px;text-align:center;}
+.fc-stats{background:rgba(20,20,40,.9);border:2px solid rgba(255,0,255,.35);
+  padding:clamp(14px,1.6vh,22px) clamp(16px,1.8vw,26px);
+  font-size:clamp(10px,1.1vw,15px);line-height:2.4;
+  width:100%;max-width:clamp(400px,44vw,640px);}
+.fc-btn{font-family:'Press Start 2P',monospace;font-size:clamp(11px,1.4vw,19px);
+  padding:clamp(10px,1.2vh,16px) clamp(22px,2.4vw,38px);
+  cursor:pointer;letter-spacing:2px;margin-top:clamp(4px,0.6vh,10px);
+  background:linear-gradient(135deg,rgba(136,0,255,.92),rgba(80,0,180,.92));
+  border:3px solid var(--M);color:var(--M);
+  text-shadow:0 0 10px var(--M);transition:all .15s;}
+.fc-btn:hover{background:var(--M);color:#000;box-shadow:0 0 32px rgba(255,0,255,.6);}
+
 /* ══ LOOT SCREEN ══ */
 #sLT{background:rgba(2,2,18,.98);overflow:hidden;}
 .lt-hd{flex-shrink:0;text-align:center;padding:clamp(14px,1.8vh,24px) 0 clamp(6px,0.8vh,10px);}
@@ -400,6 +450,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#060618;font-family:
         <div class="ql" id="qlist"></div>
       </div>
     </div>
+    <!-- Room exit navigation — absolute overlay over full combat screen -->
+    <div id="roomExits" style="display:none"></div>
   </div>
 
   <!-- RESULTS -->
@@ -423,6 +475,14 @@ html,body{width:100%;height:100%;overflow:hidden;background:#060618;font-family:
     <div class="gotitle">☠ GAME OVER ☠</div>
     <div class="gostats" id="gostats"></div>
     <button class="rbtn red" onclick="Game.restart()">RESTART</button>
+  </div>
+
+  <!-- FLOOR COMPLETE -->
+  <div class="scr" id="sFC">
+    <div class="fc-title" id="fcTitle">✦ FLOOR CONQUERED ✦</div>
+    <div class="fc-sub" id="fcSub">THE NEON ABYSS YIELDS</div>
+    <div class="fc-stats" id="fcStats"></div>
+    <button class="fc-btn" id="fcBtn">⬇ DESCEND DEEPER ⬇</button>
   </div>
 
   <!-- WIN -->
@@ -1369,72 +1429,90 @@ ctx.clearRect(0, 0, W, H);
   },
 
   drawMinimap(ctx, W, H) {
-    const floor = GameState.floor, maxF = GameState.maxFloors;
     const p = GameState.player;
-    const mw=96, mh=72, mx=W-mw-6, my=6;
+    const mw=114, mh=92, mx=W-mw-6, my=6;
     ctx.save();
-    // Background panel
-    ctx.fillStyle='rgba(2,2,20,0.88)';
-    ctx.strokeStyle='rgba(0,255,255,0.25)';
+    ctx.fillStyle='rgba(2,2,20,0.92)';
+    ctx.strokeStyle='rgba(0,255,255,0.22)';
     ctx.lineWidth=1;
     ctx.fillRect(mx,my,mw,mh);
     ctx.strokeRect(mx,my,mw,mh);
-    // Title
-    ctx.fillStyle=MG;ctx.font=`${P-1}px 'Press Start 2P',monospace`;ctx.textAlign='center';
-    ctx.fillText('FLOOR MAP',mx+mw/2,my+8);
-    // Floor nodes: 2 rows of 5
-    const cols=5,rows=2,cellW=(mw-16)/cols,cellH=22;
-    const blink=Math.floor(this.time/18)%2===0;
-    for(let i=0;i<maxF;i++){
-      const col=i%cols,row=Math.floor(i/cols);
-      const fx=mx+8+col*cellW+cellW/2;
-      const fy=my+16+row*cellH;
-      const fn=i+1;
-      const isCur=fn===floor,isCleared=fn<floor,isBoss=fn===maxF;
-      // Connector line to next node in same row
-      if(col<cols-1){
-        ctx.strokeStyle=isCleared?'rgba(57,255,20,0.5)':'rgba(30,30,70,0.9)';
-        ctx.lineWidth=1;ctx.beginPath();
-        ctx.moveTo(fx+5,fy);ctx.lineTo(fx+cellW-5,fy);ctx.stroke();
-      }
-      // Connector line between row ends (floor 5→6)
-      if(i===4){
-        const fx2=mx+8+4*cellW+cellW/2, fy2=my+16+cellH;
-        ctx.strokeStyle=floor>5?'rgba(57,255,20,0.5)':'rgba(30,30,70,0.9)';
-        ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(fx2,fy+5);ctx.lineTo(fx2,fy2-5);ctx.stroke();
-      }
-      // Node circle
+    ctx.fillStyle=MG;
+    ctx.font=`${P-1}px 'Press Start 2P',monospace`;ctx.textAlign='center';
+    ctx.fillText(`FL${GameState.floor} MAP`,mx+mw/2,my+8);
+
+    const floorData = GameState.currentFloor;
+    if (!floorData) { ctx.textAlign='left';ctx.shadowBlur=0;ctx.restore();return; }
+
+    const rooms = floorData.rooms;
+    const conns = floorData.connections;
+    const cur   = GameState.currentRoomIdx;
+    const blink = Math.floor(this.time/18)%2===0;
+
+    // Map room grid positions → minimap canvas coords
+    const xs=rooms.map(r=>r.position.x), ys=rooms.map(r=>r.position.y);
+    const minX=Math.min(...xs),maxX=Math.max(...xs);
+    const minY=Math.min(...ys),maxY=Math.max(...ys);
+    const rangeX=Math.max(1,maxX-minX), rangeY=Math.max(1,maxY-minY);
+    const pad=11, titleH=12, xpH=14;
+    const areaW=mw-pad*2, areaH=mh-titleH-xpH;
+    const toC = pos=>({
+      x: rangeX===0 ? mx+mw/2 : mx+pad + (pos.x-minX)/rangeX*areaW,
+      y: rangeY===0 ? mx+titleH+areaH/2 : my+titleH + (pos.y-minY)/rangeY*areaH,
+    });
+
+    const TYPE_COL={combat:'#ff2244',loot:'#FFD700',rest:'#39FF14',merchant:'#00FFFF',boss:'#FF00FF'};
+
+    // Draw connections
+    rooms.forEach(room=>{
+      const a=toC(room.position);
+      (conns[room.id]||[]).forEach(tid=>{
+        if(tid<=room.id)return;
+        const b=toC(rooms[tid].position);
+        const lit=room.visited&&rooms[tid].visited;
+        ctx.strokeStyle=lit?'rgba(0,255,255,0.35)':'rgba(20,20,60,0.7)';
+        ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+      });
+    });
+
+    // Draw room nodes
+    rooms.forEach(room=>{
+      const pos=toC(room.position);
+      const isCur=room.id===cur;
+      const col=TYPE_COL[room.type]||'#fff';
+      const r=room.type==='boss'?5.5:4;
       ctx.shadowBlur=0;
-      if(isCur&&blink){ctx.shadowColor=CY;ctx.shadowBlur=8;ctx.fillStyle=CY;}
-      else if(isCur){ctx.fillStyle=CY;}
-      else if(isCleared){ctx.fillStyle='#1a4422';}
-      else if(isBoss){ctx.fillStyle='#2a0018';}
-      else{ctx.fillStyle='#080820';}
-      ctx.beginPath();ctx.arc(fx,fy,isBoss?5.5:4,0,Math.PI*2);ctx.fill();
-      // Node border
-      ctx.shadowBlur=0;
-      ctx.strokeStyle=isCur?CY:isCleared?'#39ff14':isBoss?MG:'#222244';
-      ctx.lineWidth=isCur?1.5:1;ctx.beginPath();ctx.arc(fx,fy,isBoss?5.5:4,0,Math.PI*2);ctx.stroke();
-      // Floor label
-      ctx.fillStyle=isCur?'#000':isCleared?GR:isBoss?MG:'#334466';
-      ctx.font=`${P-2}px 'Press Start 2P',monospace`;ctx.textAlign='center';
-      ctx.fillText(isBoss?'B':fn,fx,fy+2);
-      // Enemy count dots on current floor node
+      if(!room.visited){
+        ctx.fillStyle='#06060e';ctx.strokeStyle='#1a1a30';
+      } else if(room.cleared){
+        ctx.fillStyle=col+'33';ctx.strokeStyle=col+'88';
+      } else {
+        ctx.fillStyle=col+'66';ctx.strokeStyle=col;
+      }
+      if(isCur&&blink){ctx.shadowColor=col;ctx.shadowBlur=10;}
+      ctx.lineWidth=isCur?2:1;
+      ctx.beginPath();ctx.arc(pos.x,pos.y,r,0,Math.PI*2);ctx.fill();ctx.stroke();
+      // Pulsing white ring on current room
       if(isCur){
-        const alive=GameState.enemies.filter(e=>e.hp>0);
-        alive.forEach((_,di)=>{
-          const dx=fx-((alive.length-1)*4/2)+di*4;
-          ctx.fillStyle=RD;ctx.shadowColor=RD;ctx.shadowBlur=4;
-          ctx.beginPath();ctx.arc(dx,fy+9,1.5,0,Math.PI*2);ctx.fill();
-        });
-        ctx.shadowBlur=0;
+        ctx.shadowBlur=0;ctx.strokeStyle='rgba(255,255,255,'+(blink?.9:.5)+')';
+        ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(pos.x,pos.y,r+2.5,0,Math.PI*2);ctx.stroke();
       }
+      ctx.shadowBlur=0;
+    });
+
+    // Player dot on current room
+    if(cur>=0&&cur<rooms.length){
+      const pos=toC(rooms[cur].position);
+      ctx.fillStyle='#fff';ctx.shadowColor='#fff';ctx.shadowBlur=7;
+      ctx.beginPath();ctx.arc(pos.x,pos.y,2,0,Math.PI*2);ctx.fill();
+      ctx.shadowBlur=0;
     }
-    // XP bar (if player has xp system)
+
+    // XP bar
     if(p&&p.xpToNext){
-      const bx=mx+4,by=my+mh-10,bw=mw-8;
+      const bx=mx+4,by=my+mh-12,bw=mw-8;
       ctx.fillStyle='rgba(0,0,0,0.7)';ctx.fillRect(bx,by,bw,5);
-      ctx.strokeStyle='rgba(0,255,255,0.2)';ctx.lineWidth=0.5;ctx.strokeRect(bx,by,bw,5);
+      ctx.strokeStyle='rgba(0,255,255,0.18)';ctx.lineWidth=0.5;ctx.strokeRect(bx,by,bw,5);
       const xpPct=Math.min(1,p.xp/p.xpToNext);
       const xpG=ctx.createLinearGradient(bx,by,bx+bw,by);
       xpG.addColorStop(0,PU);xpG.addColorStop(1,CY);
@@ -1579,6 +1657,7 @@ const GameState = {
   totalDmg:0, totalKills:0, questsDone:0, turnCount:0, floorTurns:0,
   levelUpPending:false,
   dialog:null, dungeonConfig:null,
+  currentFloor:null, currentRoomIdx:0, floorGold:0,
 };
 
 class Player {
@@ -1778,16 +1857,20 @@ const Combat = {
     clearInterval(GameState.combatInterval);GameState.combatRunning=false;
     const p=GameState.player;
     if(!won){UI.flash();setTimeout(()=>{UI.show('sGO');UI.renderGO();},600);return;}
+    // Mark current room cleared
+    const room=GameState.currentFloor?.rooms[GameState.currentRoomIdx];
+    if(room)room.cleared=true;
     if(!p.healedThisFloor)QM.track('floorsNoHeal',1);
     if(GameState.floorTurns<=10)QM.track('fastWins',1);
     QM.track('floorsCleared',1);QM.check();
-    UI.flash();DM.say(`Floor ${GameState.floor} cleared!`);
-    setTimeout(()=>{
-      LootScreen.show(()=>{
-        if(GameState.floor>=GameState.maxFloors){UI.show('sWN');UI.renderWin();}
-        else{GameState.floor++;UI.show('sRS');UI.renderResults();}
-      });
-    },900);
+    UI.flash();
+    if(room?.type==='boss'){
+      DM.say(`Floor ${GameState.floor} conquered! The boss falls!`);
+      setTimeout(()=>LootScreen.show(()=>Game.floorComplete()),900);
+    } else {
+      DM.say('Room cleared! Choose your next path.');
+      setTimeout(()=>LootScreen.show(()=>Game.showExits()),900);
+    }
   },
   start(){
     GameState.combatRunning=true;GameState.floorTurns=0;
@@ -2135,9 +2218,90 @@ const Rogue={
   }
 };
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// TITLE SCREEN â€” synthwave / retrowave animated background
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ═══════════════════════════════════════════════════════════════
+// DUNGEON GENERATOR — procedural floor layout as a room graph
+// ═══════════════════════════════════════════════════════════════
+const DungeonGen = {
+
+  // Return floor config, scaling up 20% per floor beyond the last defined entry
+  getFloorCfg(floor) {
+    const base = { rooms:8, enemy_level:floor, loot_tier:'common' };
+    const cfg = GameState.dungeonConfig?.floors;
+    if (!cfg) return base;
+    const keys = Object.keys(cfg).map(Number).sort((a,b)=>a-b);
+    const maxKey = Math.max(...keys);
+    if (floor <= maxKey) return { ...base, ...cfg[String(floor)] };
+    const last = cfg[String(maxKey)];
+    const scale = Math.pow(1.2, floor - maxKey);
+    return {
+      rooms: Math.round((last.rooms||8) * scale),
+      enemy_level: Math.round((last.enemy_level||1) * scale),
+      loot_tier: 'legendary',
+    };
+  },
+
+  // Weighted random room type, excluding given types
+  _pickType(exclude=[]) {
+    const defs = { combat:{weight:50}, loot:{weight:20}, rest:{weight:15}, merchant:{weight:10} };
+    const types = GameState.dungeonConfig?.room_types || defs;
+    const pool = Object.entries(types).filter(([t])=>!exclude.includes(t));
+    const total = pool.reduce((s,[,v])=>s+(v.weight||10), 0);
+    let r = Math.random() * total;
+    for (const [type, v] of pool) { r -= (v.weight||10); if (r<=0) return type; }
+    return 'combat';
+  },
+
+  // Generate a floor: branching path with guaranteed rest + merchant, boss at end
+  generate(floor) {
+    const fc = this.getFloorCfg(floor);
+    const n  = Math.max(5, Math.min(fc.rooms||8, 12));
+
+    // Build type list: [combat, ...shuffled middle..., boss]
+    // Middle must contain at least one rest and one merchant
+    const mid = ['rest', 'merchant'];
+    while (mid.length < n - 2) mid.push(this._pickType(['boss']));
+    for (let i = mid.length-1; i > 0; i--) {
+      const j = Math.floor(Math.random()*(i+1));
+      [mid[i], mid[j]] = [mid[j], mid[i]];
+    }
+    const types = ['combat', ...mid, 'boss'];
+
+    // Assign snake-layout grid positions (3 columns)
+    const COLS = 3;
+    const rooms = types.map((type, i) => {
+      const row = Math.floor(i / COLS);
+      const col = row % 2 === 0 ? i % COLS : COLS - 1 - i % COLS;
+      return { id:i, type, visited:i===0, cleared:false,
+               enemies:[], loot:[], position:{x:col, y:row} };
+    });
+
+    // Main-path connections (each room ↔ next)
+    const connections = {};
+    rooms.forEach(r => connections[r.id] = []);
+    for (let i = 0; i < rooms.length-1; i++) {
+      connections[i].push(i+1);
+      connections[i+1].push(i);
+    }
+
+    // Add 1 optional shortcut between non-adjacent middle rooms
+    const mids = rooms.slice(1, -1);
+    if (mids.length >= 4) {
+      for (let attempt = 0; attempt < 8; attempt++) {
+        const ai = 1 + Math.floor(Math.random() * (mids.length - 2));
+        const bi = ai + 2;
+        if (bi < rooms.length-1 && !connections[ai].includes(bi)) {
+          connections[ai].push(bi); connections[bi].push(ai); break;
+        }
+      }
+    }
+
+    return { rooms, connections, floorCfg:fc, totalRooms:n };
+  },
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TITLE SCREEN — synthwave / retrowave animated background
+// ─────────────────────────────────────────────────────────────────────────────
 const City = {
   cv:null, ctx:null, W:0, H:0, t:0,
   stars:[],
@@ -2322,14 +2486,21 @@ const Game={
       if(Inventory.selBag>=0)Inventory.sell(Inventory.selBag);
     });
     document.getElementById('ltContBtn').addEventListener('click',()=>LootScreen.continue());
-    // Expose NPC greeting triggers for future room system
-    // Call Game.triggerMerchant() or Game.triggerRestNode() from room entry logic
+    document.getElementById('fcBtn').addEventListener('click',()=>{
+      if(GameState.floor>=GameState.maxFloors){UI.show('sWN');UI.renderWin();}
+      else{GameState.floor++;UI.show('sRS');UI.renderResults();}
+    });
   },
 
-  triggerMerchant(){
+  triggerMerchant(onDone=null){
     DialogEngine.showNPCGreeting('merchant',[
-      {label:'BROWSE WARES',style:'yes',action:()=>{/* merchant shop — stub for future room */DM.say('The merchant spreads their wares...');}},
-      {label:'LEAVE',style:'no',action:()=>DialogEngine.dismiss()},
+      {label:'BROWSE WARES',style:'yes',action:()=>{
+        DM.say('The merchant spreads their wares...');
+        if(onDone)setTimeout(onDone,400);
+      }},
+      {label:'LEAVE',style:'no',action:()=>{
+        if(onDone)setTimeout(onDone,200);
+      }},
     ]);
   },
 
@@ -2420,40 +2591,202 @@ const Game={
   },
 
   enterFloor(){
-    GameState.enemies=Rogue.getEnemies(GameState.floor);
+    // Generate procedural dungeon layout for this floor
+    GameState.currentFloor=DungeonGen.generate(GameState.floor);
+    GameState.currentRoomIdx=0;
+    GameState.floorGold=0;
+    LootScreen.reset();
     Arena.time=0;
     UI.show('sCM');
-    // Resize arena after paint so layout is settled
     requestAnimationFrame(()=>{ Arena.resize(); requestAnimationFrame(()=>Arena.resize()); });
     const p=GameState.player;
     document.getElementById('pnm').textContent=p.className;
     document.getElementById('pnm').style.color=p.accent;
     document.getElementById('eqbadge').textContent=p.equip.icon+' '+p.equip.name;
-    // Redraw DM sprite
     const dmc=document.getElementById('dmcv');
     const dmctx=dmc.getContext('2d');
     dmctx.clearRect(0,0,dmc.width,dmc.height);
     SPR.dm(dmctx,2,2);
     UI.renderSpells();UI.updateBars();UI.renderBuffs();UI.renderQuests();UI.updateFloor();
     Inventory.render();
-    // Narrator bubble: ambient floor text
-    const _fe=DM.floorEvent(GameState.floor);
-    DM.say(_fe||(GameState.floor===10?'⚠ THE QUANTUM BOSS! YOUR FINAL TRIAL!':DM.rand()));
-    // Dialog box: enemy encounter (600ms delay so arena has settled)
-    setTimeout(()=>{
-      if(GameState.floor===10)DialogEngine.showFloorEvent(10);
-      else DialogEngine.showEncounter(GameState.enemies[0]);
-    },600);
+    // Enter starting room (always combat type, index 0)
+    this.enterRoom(0);
+  },
 
-    p.mp=Math.min(p.maxMp,p.mp+Math.floor(p.maxMp*.3));
-    p.spells.forEach(s=>s.cd=Math.max(0,(s.cd||0)-1));
-    setTimeout(()=>Combat.start(),1400);
+  // Enter a specific room by index and trigger its event
+  enterRoom(idx){
+    const floorData=GameState.currentFloor;
+    if(!floorData)return;
+    const room=floorData.rooms[idx];
+    if(!room)return;
+    room.visited=true;
+    GameState.currentRoomIdx=idx;
+    const exEl=document.getElementById('roomExits');
+    if(exEl)exEl.style.display='none';
+    DialogEngine._cancel();
+    const p=GameState.player;
+    const fl=GameState.floor;
+
+    switch(room.type){
+      case 'combat':
+      case 'boss':{
+        const isBoss=room.type==='boss';
+        GameState.enemies=isBoss?this._spawnBoss():this._spawnCombatEnemies();
+        const fe=DM.floorEvent(fl);
+        DM.say(fe||(isBoss?`⚠ BOSS CHAMBER! PREPARE FOR TRIAL!`:DM.rand()));
+        setTimeout(()=>{
+          if(isBoss)DialogEngine.showFloorEvent(fl);
+          else DialogEngine.showEncounter(GameState.enemies[0]);
+        },600);
+        p.mp=Math.min(p.maxMp,p.mp+Math.floor(p.maxMp*.3));
+        p.spells.forEach(s=>s.cd=Math.max(0,(s.cd||0)-1));
+        setTimeout(()=>Combat.start(),1400);
+        break;
+      }
+      case 'loot':{
+        room.cleared=true;
+        DM.say('A loot cache — supplies from fallen runners.');
+        const items=[LootSystem.roll(fl),LootSystem.roll(fl)];
+        const gold=Math.floor(20+fl*8+Math.random()*20);
+        LootScreen.add(items,gold);
+        GameState.floorGold+=gold;
+        setTimeout(()=>LootScreen.show(()=>this.showExits()),700);
+        break;
+      }
+      case 'rest':{
+        room.cleared=true;
+        const heal=Math.floor(p.maxHp*0.3);
+        p.hp=Math.min(p.maxHp,p.hp+heal);
+        UI.updateBars();
+        DM.say(`Rest node active. Restored ${heal} HP.`);
+        // Show NPC greeting dialog, then exits after it auto-dismisses
+        setTimeout(()=>{
+          DialogEngine.showNPCGreeting('rest_node');
+          setTimeout(()=>this.showExits(),3200);
+        },400);
+        break;
+      }
+      case 'merchant':{
+        room.cleared=true;
+        DM.say('Merchant node detected. Cyberware available.');
+        setTimeout(()=>this.triggerMerchant(()=>this.showExits()),400);
+        break;
+      }
+    }
+  },
+
+  // Show available exits from current room as navigation buttons
+  showExits(){
+    const floorData=GameState.currentFloor;
+    if(!floorData)return;
+    const room=floorData.rooms[GameState.currentRoomIdx];
+    const exits=floorData.connections[room.id]||[];
+    const overlay=document.getElementById('roomExits');
+    if(!overlay)return;
+    overlay.innerHTML='';
+    overlay.style.display='flex';
+
+    const title=document.createElement('div');
+    title.className='exits-title';
+    title.textContent='▶ CHOOSE YOUR PATH ◀';
+    overlay.appendChild(title);
+
+    const grid=document.createElement('div');
+    grid.className='exits-grid';
+    const ICONS={combat:'⚔',loot:'💰',rest:'💊',merchant:'🛒',boss:'💀'};
+    const NAMES={combat:'COMBAT ZONE',loot:'LOOT CACHE',rest:'REST NODE',merchant:'MERCHANT',boss:'BOSS CHAMBER'};
+
+    exits.forEach(exitIdx=>{
+      const target=floorData.rooms[exitIdx];
+      if(!target)return;
+      const btn=document.createElement('button');
+      btn.className='exit-btn exit-btn-'+target.type+(target.visited?' visited':'');
+      const dir=this._exitDir(room.position,target.position);
+      btn.innerHTML=`<span class="exit-icon">${ICONS[target.type]||'❓'}</span>`+
+        `<span class="exit-name">${NAMES[target.type]||target.type.toUpperCase()}</span>`+
+        `<span class="exit-dir">${dir}</span>`;
+      if(target.visited&&!target.cleared){
+        const badge=document.createElement('span');
+        badge.className='exit-badge';badge.textContent='!';btn.appendChild(badge);
+      }
+      btn.addEventListener('click',()=>Game.enterRoom(exitIdx));
+      grid.appendChild(btn);
+    });
+    overlay.appendChild(grid);
+  },
+
+  // Direction label from position a to position b
+  _exitDir(a,b){
+    const dx=b.x-a.x,dy=b.y-a.y;
+    if(dy<0&&dx===0)return '↑ NORTH';
+    if(dy>0&&dx===0)return '↓ SOUTH';
+    if(dx>0&&dy===0)return '→ EAST';
+    if(dx<0&&dy===0)return '← WEST';
+    if(dy<0)return '↑ NORTH';
+    if(dy>0)return '↓ SOUTH';
+    return '↔ BRANCH';
+  },
+
+  // Boss spawn: use dungeon config multipliers on top of base Enemy scaling
+  _spawnBoss(){
+    const boss=ETYPES.find(e=>e.id==='quantumBoss');
+    const fl=GameState.floor;
+    const en=new Enemy(boss,fl);
+    const cfg=GameState.dungeonConfig?.enemy_types?.boss;
+    if(cfg){
+      en.maxHp=Math.floor(en.maxHp*(cfg.hp_mult||3.0));
+      en.hp=en.maxHp;
+      en.atk=Math.floor(en.atk*(cfg.atk_mult||1.8));
+      en.baseAtk=en.atk;
+    }
+    return [en];
+  },
+
+  // Regular combat room spawn: use enemy_level from floor config for scaling
+  _spawnCombatEnemies(){
+    const cfg=GameState.dungeonConfig?.room_types?.combat;
+    const fc=GameState.currentFloor?.floorCfg;
+    const level=fc?.enemy_level||GameState.floor;
+    const maxEn=cfg?.max_enemies||3;
+    const count=Math.min(maxEn,1+Math.floor(level/2));
+    const pool=ETYPES.filter(e=>!e.isBoss);
+    // Apply enemy_type multipliers from dungeonConfig
+    return Array.from({length:count},()=>{
+      const type=pool[Math.floor(Math.random()*pool.length)];
+      const en=new Enemy(type,level);
+      const typeCfg=GameState.dungeonConfig?.enemy_types?.[type.id==='netrunner'?'netrunner':'grunt'];
+      if(typeCfg){
+        en.maxHp=Math.floor(en.maxHp*(typeCfg.hp_mult||1));en.hp=en.maxHp;
+        en.atk=Math.floor(en.atk*(typeCfg.atk_mult||1));en.baseAtk=en.atk;
+      }
+      return en;
+    });
+  },
+
+  // Show floor complete screen after boss is defeated
+  floorComplete(){
+    const p=GameState.player;
+    const fl=GameState.floor;
+    const rooms=GameState.currentFloor?.rooms||[];
+    const clearedRooms=rooms.filter(r=>r.cleared).length;
+    document.getElementById('fcTitle').textContent=`✦ FLOOR ${fl} CONQUERED ✦`;
+    document.getElementById('fcSub').textContent=fl>=GameState.maxFloors?'THE ABYSS IS YOURS':'THE NEON ABYSS YIELDS';
+    document.getElementById('fcStats').innerHTML=
+      `<div>FLOOR: ${fl} / ${GameState.maxFloors}</div>`+
+      `<div>ROOMS CLEARED: ${clearedRooms} / ${rooms.length}</div>`+
+      `<div>ENEMIES DEFEATED: ${GameState.totalKills}</div>`+
+      `<div>HP: ${p.hp} / ${p.maxHp} &nbsp;·&nbsp; MP: ${p.mp} / ${p.maxMp}</div>`+
+      `<div>CREDITS EARNED: ${GameState.floorGold} CR</div>`;
+    UI.show('sFC');
   },
 
   restart(){
     if(GameState.combatInterval)clearInterval(GameState.combatInterval);
     GameState.combatRunning=false;
-    Object.assign(GameState,{selectedClass:null,selectedEquip:null,totalDmg:0,totalKills:0,questsDone:0,turnCount:0,levelUpPending:false});
+    Object.assign(GameState,{selectedClass:null,selectedEquip:null,totalDmg:0,totalKills:0,
+      questsDone:0,turnCount:0,levelUpPending:false,
+      currentFloor:null,currentRoomIdx:0,floorGold:0});
+    const exEl=document.getElementById('roomExits');if(exEl)exEl.style.display='none';
     Inventory.init();LootScreen.reset();
     Arena.time=0;UI.show('sCS');this.buildClassSelect();
   }
