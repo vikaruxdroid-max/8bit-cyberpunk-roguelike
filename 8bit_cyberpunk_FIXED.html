@@ -339,30 +339,32 @@ html,body{width:100%;height:100%;overflow:hidden;background:#060618;font-family:
 .vic-top{flex-shrink:0;background:linear-gradient(90deg,rgba(0,0,10,.98),rgba(4,0,24,.98));border-bottom:2px solid var(--C);padding:clamp(5px,.7vh,10px) clamp(12px,1.5vw,24px);display:flex;flex-direction:column;gap:3px;position:relative;z-index:10;}
 .vic-floor-title{font-size:clamp(10px,1.2vw,18px);color:var(--C);text-align:center;letter-spacing:4px;text-shadow:0 0 14px var(--C),0 0 28px rgba(0,255,255,.4);}
 .vic-stats-line{font-size:clamp(5px,.58vw,8px);color:rgba(0,255,255,.6);text-align:center;letter-spacing:1px;}
-.vic-main{flex:1;display:grid;grid-template-columns:1fr clamp(200px,22vw,290px) clamp(190px,19vw,270px);min-height:0;overflow:hidden;position:relative;z-index:10;}
-.vic-loot{display:flex;flex-direction:column;overflow:hidden;border-right:1px solid rgba(0,255,255,.13);padding:clamp(5px,.7vh,9px) clamp(8px,1vw,12px);}
-.vic-loot-hdr{flex-shrink:0;text-align:center;padding-bottom:5px;border-bottom:1px solid rgba(0,255,255,.14);margin-bottom:7px;}
-.vic-loot-title{font-size:clamp(9px,1vw,14px);color:var(--GD);text-shadow:0 0 12px var(--GD);animation:ltglow 1.6s ease infinite alternate;letter-spacing:2px;}
-.vic-loot-gold{font-size:clamp(6px,.68vw,9px);color:var(--GD);margin-top:3px;letter-spacing:1px;}
-.vic-loot-scroll{flex:1;overflow-x:auto;overflow-y:hidden;display:flex;flex-direction:row;gap:clamp(6px,.8vw,10px);align-items:flex-start;padding-bottom:4px;scrollbar-width:thin;scrollbar-color:var(--P) transparent;}
-.vic-no-loot{color:#334;font-size:clamp(7px,.8vw,11px);text-align:center;padding:24px 0;white-space:nowrap;}
-.vic-loot-card{background:rgba(4,4,28,.97);border:2px solid rgba(0,255,255,.3);padding:clamp(7px,.9vh,11px) clamp(7px,.9vw,11px);min-width:clamp(150px,15vw,210px);flex-shrink:0;display:flex;flex-direction:column;gap:4px;position:relative;transition:box-shadow .2s;}
-.vic-loot-card.rare{border-color:var(--GD);box-shadow:0 0 12px rgba(255,215,0,.3);}
-.vic-loot-card.legendary{border-color:var(--OR);animation:legborder 1.2s ease infinite alternate;}
-.vic-card-ilvl{position:absolute;top:4px;right:6px;font-size:clamp(5px,.54vw,7px);color:rgba(0,255,255,.45);}
-.vic-card-top{display:flex;align-items:center;gap:7px;}
-.vic-card-icon{font-size:clamp(18px,2vw,28px);flex-shrink:0;}
-.vic-card-info{flex:1;min-width:0;}
-.vic-card-name{font-size:clamp(7px,.82vw,11px);color:#fff;}
-.vic-card-type{font-size:clamp(5px,.58vw,8px);color:rgba(0,255,255,.6);margin-top:2px;}
-.vic-card-rarity{font-size:clamp(5px,.58vw,8px);letter-spacing:1px;margin-top:2px;}
-.vic-card-rarity.common{color:#778899;}.vic-card-rarity.rare{color:var(--GD);}.vic-card-rarity.legendary{color:var(--OR);}
-.vic-card-stats{font-size:clamp(6px,.68vw,9px);color:#aabbd0;background:rgba(0,0,0,.4);padding:3px 5px;border:1px solid rgba(0,255,255,.1);}
-.vic-card-btns{display:flex;gap:4px;margin-top:3px;}
-.vic-take{flex:1;background:rgba(0,45,0,.9);border:2px solid var(--G);color:var(--G);font-family:'Press Start 2P',monospace;font-size:clamp(5px,.6vw,8px);padding:5px 2px;cursor:pointer;transition:all .15s;text-shadow:0 0 6px var(--G);}
+.vic-main{flex:1;display:grid;grid-template-columns:3fr minmax(200px,1fr) minmax(190px,1fr);min-height:0;overflow:hidden;position:relative;z-index:10;}
+.vic-loot{display:flex;flex-direction:column;overflow:hidden;border:1px solid rgba(0,255,255,.35);background:rgba(0,4,18,.85);margin:8px 4px 8px 8px;box-shadow:0 0 18px rgba(0,255,255,.08) inset;}
+.vic-loot-hdr{flex-shrink:0;text-align:center;padding:10px 14px 8px;border-bottom:1px solid rgba(0,255,255,.22);background:rgba(0,20,42,.7);}
+.vic-loot-title{font-size:clamp(10px,1.05vw,15px);color:var(--C);text-shadow:0 0 12px var(--C);letter-spacing:2px;}
+.vic-loot-gold{font-size:clamp(7px,.72vw,10px);color:var(--GD);margin-top:5px;letter-spacing:1px;}
+.vic-loot-scroll{flex:1;overflow-x:hidden;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));grid-auto-rows:min-content;gap:16px;padding:14px;scrollbar-width:thin;scrollbar-color:var(--C) rgba(0,0,30,.8);}
+.vic-loot-scroll::-webkit-scrollbar{width:6px;}.vic-loot-scroll::-webkit-scrollbar-track{background:rgba(0,0,30,.8);}.vic-loot-scroll::-webkit-scrollbar-thumb{background:var(--C);border-radius:3px;}
+.vic-no-loot{grid-column:1/-1;color:rgba(0,255,255,.35);font-size:clamp(9px,.9vw,13px);text-align:center;padding:50px 0;letter-spacing:3px;}
+.vic-loot-card{background:rgba(4,4,28,.97);border:2px solid rgba(0,255,255,.3);padding:12px 10px 10px;min-width:200px;min-height:280px;display:flex;flex-direction:column;gap:6px;position:relative;transition:box-shadow .2s;box-shadow:0 0 8px rgba(0,255,255,.1);}
+.vic-loot-card.rare{border-color:var(--GD);box-shadow:0 0 16px rgba(255,215,0,.35);}
+.vic-loot-card.legendary{border-color:var(--OR);box-shadow:0 0 22px rgba(255,100,0,.5);animation:legborder 1.2s ease infinite alternate;}
+.vic-card-lvl-badge{position:absolute;top:5px;left:6px;font-size:clamp(6px,.62vw,9px);color:#fff;background:rgba(0,0,40,.9);border:1px solid rgba(0,255,255,.4);padding:2px 5px;letter-spacing:1px;}
+.vic-card-rar-badge{position:absolute;top:5px;right:6px;font-size:clamp(6px,.62vw,9px);padding:2px 6px;letter-spacing:1px;font-weight:bold;}
+.vic-card-rar-badge.common{background:rgba(80,100,120,.5);color:#aabbd0;border:1px solid #556677;}
+.vic-card-rar-badge.rare{background:rgba(160,120,0,.5);color:var(--GD);border:1px solid var(--GD);}
+.vic-card-rar-badge.legendary{background:rgba(180,60,0,.5);color:var(--OR);border:1px solid var(--OR);}
+.vic-card-icon-wrap{display:flex;align-items:center;justify-content:center;height:64px;margin-top:18px;flex-shrink:0;}
+.vic-card-icon{font-size:48px;line-height:1;}
+.vic-card-name{font-size:1.1rem;color:#fff;font-weight:bold;text-align:center;line-height:1.3;word-break:break-word;}
+.vic-card-type{font-size:0.85rem;color:var(--C);text-align:center;letter-spacing:1px;opacity:.85;}
+.vic-card-stats{font-size:1rem;color:var(--G);font-weight:bold;background:rgba(0,0,0,.45);padding:5px 7px;border:1px solid rgba(57,255,20,.22);text-align:center;margin-top:auto;word-break:break-word;}
+.vic-card-btns{display:flex;flex-direction:column;gap:6px;margin-top:6px;flex-shrink:0;}
+.vic-take{width:100%;height:36px;background:rgba(0,45,0,.9);border:2px solid var(--G);color:var(--G);font-family:'Press Start 2P',monospace;font-size:clamp(7px,.72vw,10px);cursor:pointer;transition:all .15s;text-shadow:0 0 6px var(--G);}
 .vic-take:hover:not(:disabled){background:var(--G);color:#000;}
 .vic-take.taken{background:rgba(0,30,0,.6);border-color:rgba(57,255,20,.25);color:rgba(57,255,20,.35);cursor:default;}
-.vic-disc{flex:1;background:rgba(45,0,0,.9);border:2px solid var(--RD);color:var(--RD);font-family:'Press Start 2P',monospace;font-size:clamp(5px,.6vw,8px);padding:5px 2px;cursor:pointer;transition:all .15s;}
+.vic-disc{width:100%;height:36px;background:rgba(45,0,0,.9);border:2px solid var(--RD);color:var(--RD);font-family:'Press Start 2P',monospace;font-size:clamp(7px,.72vw,10px);cursor:pointer;transition:all .15s;}
 .vic-disc:hover:not(:disabled){background:var(--RD);color:#fff;}
 .vic-disc:disabled{opacity:.3;cursor:default;}
 .vic-paperdoll{display:flex;flex-direction:column;align-items:center;border-right:1px solid rgba(0,255,255,.13);padding:clamp(5px,.7vh,9px) clamp(5px,.6vw,8px);gap:5px;overflow:hidden;}
@@ -630,7 +632,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#060618;font-family:
       <!-- LEFT: LOOT ACQUIRED -->
       <div class="vic-loot">
         <div class="vic-loot-hdr">
-          <div class="vic-loot-title">◆ LOOT ACQUIRED ◆</div>
+          <div class="vic-loot-title" id="vicLootTitle">◆ LOOT ACQUIRED ◆</div>
           <div class="vic-loot-gold" id="vicGold">⚡ 0 CREDITS EARNED</div>
         </div>
         <div class="vic-loot-scroll" id="vicLootItems"></div>
@@ -3635,29 +3637,30 @@ const VictoryScreen = {
 
   _renderLoot() {
     const cont = document.getElementById('vicLootItems');
+    const titleEl = document.getElementById('vicLootTitle');
     if (!cont) return;
     cont.innerHTML = '';
-    if (!this._snapshot.length) {
+    const count = this._snapshot.length;
+    if (titleEl) titleEl.textContent = count ? `◆ LOOT ACQUIRED (${count} ITEM${count===1?'':'S'}) ◆` : '◆ LOOT ACQUIRED ◆';
+    if (!count) {
       const no = document.createElement('div');
       no.className = 'vic-no-loot';
-      no.textContent = 'No items dropped this fight.';
+      no.textContent = '— NO LOOT DROPPED —';
       cont.appendChild(no);
       return;
     }
     this._snapshot.forEach((item) => {
       const card = document.createElement('div');
       card.className = 'vic-loot-card ' + item.rarity;
-      const statsHtml = Object.entries(item.bonuses).map(([k,v])=>`+${v} ${k.toUpperCase()}`).join(' · ');
+      const statsHtml = Object.entries(item.bonuses).map(([k,v])=>`+${v} ${k.toUpperCase()}`).join(' · ') || '—';
       card.innerHTML = `
-        <div class="vic-card-ilvl">LV${item.level}</div>
-        <div class="vic-card-top">
+        <div class="vic-card-lvl-badge">LV${item.level}</div>
+        <div class="vic-card-rar-badge ${item.rarity}">${item.rarity.toUpperCase()}</div>
+        <div class="vic-card-icon-wrap">
           <div class="vic-card-icon" style="color:${item.color}">${item.icon}</div>
-          <div class="vic-card-info">
-            <div class="vic-card-name">${item.name}</div>
-            <div class="vic-card-type">${item.slot.toUpperCase()} SLOT</div>
-            <div class="vic-card-rarity ${item.rarity}">${item.rarity.toUpperCase()}</div>
-          </div>
         </div>
+        <div class="vic-card-name">${item.name}</div>
+        <div class="vic-card-type">${item.slot.toUpperCase()} SLOT</div>
         <div class="vic-card-stats">${statsHtml}</div>
         <div class="vic-card-btns">
           <button class="vic-take">TAKE</button>
