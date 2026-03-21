@@ -1541,6 +1541,7 @@ const GameState = {
   combatRunning:false, combatInterval:null,
   totalDmg:0, totalKills:0, questsDone:0, turnCount:0, floorTurns:0,
   levelUpPending:false,
+  dialog:null, dungeonConfig:null,
 };
 
 class Player {
@@ -1587,7 +1588,7 @@ class Enemy {
     this.baseDef=type.def||0; this.def=this.baseDef; this.baseSpd=type.spd;
     this.actionCounter=0; this.buffs=[]; this.debuffs=[];
     this.turnCount=0; this.phase=1; this.deathTimer=0;
-    this.animState='idle'; this.animTimer=0;
+    this.animState='idle'; this.animTimer=0; this.lowHpSaid=false;
   }
   addBuff(id,p){this.buffs=this.buffs.filter(b=>b.id!==id);this.buffs.push({id,...p});this.recalc();}
   addDebuff(id,p){this.debuffs=this.debuffs.filter(d=>d.id!==id);this.debuffs.push({id,...p});}
@@ -1635,7 +1636,7 @@ const Combat = {
     const idx=GameState.enemies.indexOf(enemy);
     if(idx>=0){const pos=Arena.getEnemyPos(idx);UI.dmgNumAt(pos.x,pos.y,dmg,isCrit?'crit':'enemy');}
     if(enemy.hp<=0)this.killEnemy(enemy);
-    else if(enemy.checkPhase)enemy.checkPhase();
+    else{if(enemy.checkPhase)enemy.checkPhase();if(!enemy.lowHpSaid&&enemy.hp/enemy.maxHp<=0.5){enemy.lowHpSaid=true;DM.lowHp(enemy);}}
     return dmg;
   },
   killEnemy(en){
@@ -1645,7 +1646,7 @@ const Combat = {
     if(en.isBoss)QM.track('bossKills',1);
     const idx=GameState.enemies.indexOf(en);
     if(idx>=0){const pos=Arena.getEnemyPos(idx);Arena.spawnVFX('explode',pos.x,pos.y,en.color||RD);}
-    DM.say(`${en.name} destroyed!`);
+    DM.death(en);
     // Loot collection
     const drops=LootSystem.genLoot(en,GameState.floor);
     const gold=LootSystem.goldFromEnemy(en,GameState.floor);
@@ -1763,7 +1764,25 @@ const DM={
     el.textContent=t;el.style.animation='none';void el.offsetHeight;el.style.animation='dmPop .18s ease';
   },
   lines:['The dungeon pulses with neon corruption...','Your enemies sense your approach!','Beware the shadows in the grid lines...','Every floor deeper tests your resolve!','The circuits hum with dark power...','Roll for initiative! Battle joined!','Data streams grow hostile ahead!','Press on! Glory awaits the worthy!'],
-  rand(){return this.lines[Math.floor(Math.random()*this.lines.length)];}
+  rand(){return this.lines[Math.floor(Math.random()*this.lines.length)];},
+  _pick(arr){return arr[Math.floor(Math.random()*arr.length)];},
+  _key(enemy){return enemy.id==='netrunner'?'netrunner':'default';},
+  encounter(enemy){
+    const lines=GameState.dialog?.enemies?.[this._key(enemy)]?.encounter;
+    this.say(lines?this._pick(lines):`${enemy.name} appears!`);
+  },
+  death(enemy){
+    const lines=GameState.dialog?.enemies?.[this._key(enemy)]?.death;
+    this.say(lines?this._pick(lines):`${enemy.name} destroyed!`);
+  },
+  lowHp(enemy){
+    const lines=GameState.dialog?.enemies?.[this._key(enemy)]?.combat_low_hp;
+    if(lines)this.say(this._pick(lines));
+  },
+  floorEvent(floor){
+    const events=GameState.dialog?.floor_events?.[`floor_${floor}`];
+    return events?this._pick(events):null;
+  },
 };
 
 const QM={
@@ -1938,7 +1957,9 @@ const Rogue={
   getEnemies(floor){
     const boss=ETYPES.find(e=>e.id==='quantumBoss');
     if(floor===10)return[new Enemy(boss,floor)];
-    const count=Math.min(4,1+Math.floor(floor/3));
+    const cfg=GameState.dungeonConfig?.floors?.[String(floor)];
+    const maxEn=GameState.dungeonConfig?.room_types?.combat?.max_enemies||3;
+    const count=cfg?Math.min(maxEn,1+Math.floor(cfg.enemy_level/2)):Math.min(4,1+Math.floor(floor/3));
     const pool=ETYPES.filter(e=>!e.isBoss);
     return Array.from({length:count},()=>new Enemy(pool[Math.floor(Math.random()*pool.length)],floor));
   }
@@ -2106,6 +2127,14 @@ const City = {
 
 const Game={
   init(){
+    // Load generative content JSON — non-blocking; fallback to null defaults if offline
+    Promise.all([
+      fetch('dialog_db.json').then(r=>r.json()),
+      fetch('dungeon_gen.json').then(r=>r.json())
+    ]).then(([dialog,dungeonConfig])=>{
+      GameState.dialog=dialog;
+      GameState.dungeonConfig=dungeonConfig;
+    }).catch(()=>{/* offline: GameState.dialog and dungeonConfig stay null, hardcoded fallbacks apply */});
     City.init();
     Arena.init();
     this.buildClassSelect();
@@ -2224,7 +2253,9 @@ const Game={
     SPR.dm(dmctx,2,2);
     UI.renderSpells();UI.updateBars();UI.renderBuffs();UI.renderQuests();UI.updateFloor();
     Inventory.render();
-    DM.say(GameState.floor===10?'⚠ THE QUANTUM BOSS! YOUR FINAL TRIAL!':DM.rand());
+    if(GameState.floor===10){DM.say('⚠ THE QUANTUM BOSS! YOUR FINAL TRIAL!');}
+    else{const fe=DM.floorEvent(GameState.floor);if(fe){DM.say(fe);}else{DM.encounter(GameState.enemies[0]);}}
+
     p.mp=Math.min(p.maxMp,p.mp+Math.floor(p.maxMp*.3));
     p.spells.forEach(s=>s.cd=Math.max(0,(s.cd||0)-1));
     setTimeout(()=>Combat.start(),1400);

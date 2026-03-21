@@ -1,0 +1,30 @@
+{
+  "enemies": {
+    "netrunner": {
+      "encounter": ["Jacking in, flatline incoming.", "Your wetware is mine.", "Hack initiated. Resistance futile."],
+      "combat_low_hp": ["System... critical...", "Rerouting... can't hold...", "Firewall... breached..."],
+      "death": ["Disconnecting... permanently.", "Flatlined. Ghost... gone.", "Connection... terminated."]
+    },
+    "default": {
+      "encounter": ["You dare enter my domain?", "Prepare to be deleted.", "This floor belongs to me."],
+      "combat_low_hp": ["Impossible... I cannot fall.", "You are stronger than expected...", "Not yet... not yet!"],
+      "death": ["Defeated... in the neon dark.", "The dungeon... claims me.", "You win... this time."]
+    }
+  },
+  "npcs": {
+    "merchant": {
+      "greeting": ["Credits talk. What do you need?", "Fresh cyberware, just arrived.", "Buy fast, the corp patrols are close."],
+      "buy": ["Smart choice.", "Good doing business.", "Come back when you have more credits."],
+      "no_credits": ["No credits, no gear. Move along.", "Come back when you're not broke."]
+    },
+    "rest_node": {
+      "greeting": ["Safe zone detected. Rest here.", "Neural uplink available. Recharge?", "Sanctuary found. Restore systems?"],
+      "rest": ["Systems restored. Back to full power.", "Recharged. The dungeon awaits.", "Neural sync complete."]
+    }
+  },
+  "floor_events": {
+    "floor_1": ["Neon light flickers above you.", "The dungeon hums with corrupted data.", "Distant combat echoes through the corridors."],
+    "floor_5": ["The air crackles with ICE.", "Corporate logos litter the walls.", "Something powerful stirs deeper below."],
+    "floor_10": ["You feel the boss presence nearby.", "The dungeon warps around you.", "Final systems online. Boss chamber ahead."]
+  }
+}
