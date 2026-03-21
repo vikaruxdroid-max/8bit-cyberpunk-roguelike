@@ -102,12 +102,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:#060618;font-family:
 #dmgOv{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:10;}
 
 /* Damage numbers */
-.dn{position:absolute;font-family:'Press Start 2P',monospace;font-size:clamp(12px,1.3vw,18px);font-weight:bold;pointer-events:none;white-space:nowrap;animation:floUp .9s ease forwards;z-index:11;}
-.dn.crit{font-size:clamp(16px,1.8vw,24px);color:var(--GD);text-shadow:0 0 10px var(--GD),0 0 20px rgba(255,215,0,.5);}
-.dn.heal{color:var(--G);font-size:clamp(13px,1.4vw,20px);text-shadow:0 0 8px var(--G);}
-.dn.miss{color:#555;font-size:clamp(10px,1.1vw,15px);}
-.dn.phit{color:var(--RD);text-shadow:0 0 6px var(--RD);}
-@keyframes floUp{0%{transform:translateY(0) scale(1);opacity:1}60%{opacity:1}100%{transform:translateY(-55px) scale(.8);opacity:0}}
+.dn{position:absolute;font-family:'Press Start 2P',monospace;font-size:clamp(12px,1.3vw,18px);font-weight:bold;pointer-events:none;white-space:nowrap;animation:floUp 2.4s ease forwards;z-index:11;}
+.dn.crit{font-size:clamp(18px,2vw,28px);color:var(--GD);text-shadow:0 0 12px var(--GD),0 0 24px rgba(255,215,0,.6);}
+.dn.heal{color:var(--G);font-size:clamp(13px,1.4vw,20px);text-shadow:0 0 10px var(--G);}
+.dn.miss{color:#777;font-size:clamp(11px,1.2vw,16px);}
+.dn.phit{color:var(--RD);text-shadow:0 0 8px var(--RD);}
+@keyframes floUp{0%{transform:translateY(0) scale(1);opacity:1}50%{opacity:1}85%{transform:translateY(-80px) scale(.85);opacity:.6}100%{transform:translateY(-95px) scale(.75);opacity:0}}
 
 /* Player HUD — bottom strip */
 .phud{
@@ -1778,7 +1778,7 @@ const SPRITE_SIZE = {
 // ARENA CANVAS RENDERER
 // ═══════════════════════════════════════════════════════════════
 const Arena = {
-  cv:null, ctx:null, W:0, H:0, time:0, vfx:[], particles:[],
+  cv:null, ctx:null, W:0, H:0, time:0, vfx:[], particles:[], floatTexts:[],
   shake:{frames:0,intensity:0}, bgPulse:{color:'',alpha:0}, screenFlash:{color:'',alpha:0},
   hexParticles:[],
 
@@ -1849,32 +1849,40 @@ ctx.clearRect(0, 0, W, H);
       ctx.save(); ctx.globalAlpha=.25; ctx.fillStyle='#000';
       ctx.beginPath(); ctx.ellipse(px2+sz.w/2, FLOOR_Y+2, sz.w*.38, 4, 0, 0, Math.PI*2); ctx.fill();
       ctx.restore();
-      // Attack lunge
+      // Attack lunge — 22 frames for cinematic weight
       let lunge = 0;
       if (p.animState === 'attack' && p.animTimer !== undefined) {
-        lunge = Math.sin(p.animTimer / 10 * Math.PI) * 45;
+        lunge = Math.sin(p.animTimer / 22 * Math.PI) * 54;
         p.animTimer++;
-        if (p.animTimer >= 10) { p.animState = 'idle'; p.animTimer = 0; }
+        if (p.animTimer >= 22) { p.animState = 'idle'; p.animTimer = 0; }
       }
-      // Hurt flash
-      if (p.animState === 'hurt') {
-        ctx.save(); ctx.globalAlpha = .5 + Math.sin(p.animTimer * 1.8) * .45;
-        p.animTimer++; if (p.animTimer > 12) { p.animState = 'idle'; p.animTimer = 0; }
+      // Hurt flash — FIX: capture animState BEFORE incrementing timer so restore check is reliable
+      const pWasHurt = p.animState === 'hurt';
+      if (pWasHurt) {
+        ctx.save();
+        ctx.globalAlpha = .55 + Math.sin(p.animTimer * 1.2) * .44;
+        ctx.filter = 'brightness(200%) saturate(0%)';
+        p.animTimer++; if (p.animTimer > 25) { p.animState = 'idle'; p.animTimer = 0; }
       }
-      // Cast glow
+      // Cast glow — 30 frames
       if (p.animState === 'cast') {
         const ac = CLASSES[GameState.selectedClass]?.accent || CY;
-        ctx.save(); ctx.globalAlpha = .4 - p.animTimer/50;
-        const g = ctx.createRadialGradient(px2+sz.w/2, py2+sz.h/2, 0, px2+sz.w/2, py2+sz.h/2, 50);
+        ctx.save(); ctx.globalAlpha = .45 - p.animTimer/66;
+        const g = ctx.createRadialGradient(px2+sz.w/2, py2+sz.h/2, 0, px2+sz.w/2, py2+sz.h/2, 65);
         g.addColorStop(0, ac); g.addColorStop(1, 'transparent');
-        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(px2+sz.w/2, py2+sz.h/2, 50, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(px2+sz.w/2, py2+sz.h/2, 65, 0, Math.PI*2); ctx.fill();
         ctx.restore();
-        p.animTimer++; if (p.animTimer > 20) { p.animState = 'idle'; p.animTimer = 0; }
+        p.animTimer++; if (p.animTimer > 30) { p.animState = 'idle'; p.animTimer = 0; }
       }
       const bob = Math.sin(t * .055) * 2;
-      if (p.hp <= 0) { ctx.save(); ctx.globalAlpha = .35; }
+      const pDead = p.hp <= 0;
+      if (pDead) { ctx.save(); ctx.globalAlpha = .35; }
+      // Sprite glow for visibility against dark/busy backgrounds
+      ctx.save(); ctx.shadowColor = p.accent||CY; ctx.shadowBlur = 14;
       if (SPR[p.sprite]) SPR[p.sprite](ctx, px2 + lunge, py2 + bob, false, t);
-      if (p.hp <= 0 || p.animState === 'hurt') ctx.restore();
+      ctx.restore();
+      if (pDead) ctx.restore();
+      if (pWasHurt) ctx.restore();
       // HP bar
       this.hpBar(ctx, px2, py2 - 12, sz.w, p.hp, p.maxHp, CY);
       ctx.fillStyle = CLASSES[GameState.selectedClass]?.accent || CY;
@@ -1897,22 +1905,24 @@ ctx.clearRect(0, 0, W, H);
       // Death animation — white flash then dissolve with particle burst
       if (en.hp <= 0) {
         if (!en.deathTimer) {
-          en.deathTimer = 28;
-          this.spawnBurst(ex+sz.w/2, ey+sz.h/2, en.color||RD, 55, 1.5);
-          this.triggerShake(7, 14);
-          this.triggerScreenFlash(en.color||RD, 0.32);
+          en.deathTimer = 65;
+          this.spawnBurst(ex+sz.w/2, ey+sz.h/2, en.color||RD, 85, 2.2);
+          setTimeout(()=>this.spawnBurst(ex+sz.w/2, ey+sz.h/2, '#ffffff', 45, 1.3), 130);
+          this.triggerShake(12, 20);
+          this.triggerScreenFlash(en.color||RD, 0.5);
+          this.spawnText('DEFEATED', ex+sz.w/2, ey-10, en.color||RD, 13);
         }
         ctx.save();
-        const dp = en.deathTimer / 28;
-        if (dp > 0.6) {
-          // Flash white phase
-          ctx.globalAlpha = (dp-0.6)/0.4;
+        const dp = en.deathTimer / 65;
+        if (dp > 0.72) {
+          // Freeze + white flash phase
+          ctx.globalAlpha = Math.min(1, (dp-0.72)/0.28 + 0.3);
           ctx.filter = 'brightness(999%)';
           if (SPR[en.sprite]) SPR[en.sprite](ctx, ex, ey, true, t);
         } else {
           // Shrink/dissolve phase
-          const sc = dp / 0.6;
-          ctx.globalAlpha = sc * 0.9;
+          const sc = dp / 0.72;
+          ctx.globalAlpha = sc * 0.88;
           ctx.translate(ex+sz.w/2, ey+sz.h/2); ctx.scale(sc, sc); ctx.translate(-(ex+sz.w/2), -(ey+sz.h/2));
           if (SPR[en.sprite]) SPR[en.sprite](ctx, ex, ey, true, t);
         }
@@ -1924,20 +1934,26 @@ ctx.clearRect(0, 0, W, H);
       ctx.save(); ctx.globalAlpha=.22; ctx.fillStyle='#000';
       ctx.beginPath(); ctx.ellipse(ex+sz.w/2, FLOOR_Y+2, sz.w*.38, 4, 0, 0, Math.PI*2); ctx.fill();
       ctx.restore();
-      // Lunge
+      // Lunge — 22 frames for cinematic weight
       let lunge = 0;
       if (en.animState === 'attack') {
-        lunge = -Math.sin(en.animTimer / 10 * Math.PI) * 35;
-        en.animTimer++; if (en.animTimer >= 10) { en.animState = 'idle'; en.animTimer = 0; }
+        lunge = -Math.sin(en.animTimer / 22 * Math.PI) * 44;
+        en.animTimer++; if (en.animTimer >= 22) { en.animState = 'idle'; en.animTimer = 0; }
       }
-      // Hurt flash
-      if (en.animState === 'hurt') {
-        ctx.save(); ctx.globalAlpha = .5 + Math.sin(en.animTimer*1.8)*.45;
-        en.animTimer++; if (en.animTimer > 10) { en.animState='idle'; en.animTimer=0; }
+      // Hurt flash — FIX: capture animState BEFORE incrementing timer
+      const enWasHurt = en.animState === 'hurt';
+      if (enWasHurt) {
+        ctx.save();
+        ctx.globalAlpha = .55 + Math.sin(en.animTimer*1.2)*.44;
+        ctx.filter = 'brightness(200%) saturate(0%)';
+        en.animTimer++; if (en.animTimer > 25) { en.animState='idle'; en.animTimer=0; }
       }
       const bob = Math.sin(t * .055 + i * 1.3) * 2;
+      // Enemy sprite glow for visibility
+      ctx.save(); ctx.shadowColor = en.color||RD; ctx.shadowBlur = 14;
       if (SPR[en.sprite]) SPR[en.sprite](ctx, ex + lunge, ey + bob, true, t);
-      if (en.animState === 'hurt') ctx.restore();
+      ctx.restore();
+      if (enWasHurt) ctx.restore();
       // HP bar + name
       this.hpBar(ctx, ex, ey - 12, sz.w, en.hp, en.maxHp, en.color || RD);
       ctx.fillStyle = en.color || MG;
@@ -2015,11 +2031,29 @@ ctx.clearRect(0, 0, W, H);
     // Particle system — Splatoon-style burst particles
     this.particles = this.particles.filter(pt => pt.alpha > 0.02);
     this.particles.forEach(pt => {
-      pt.vy += pt.gravity||0.12; pt.x+=pt.vx; pt.y+=pt.vy;
-      pt.alpha = Math.max(0, pt.alpha - (pt.fade||0.032));
+      pt.vy += pt.gravity||0.08; pt.x+=pt.vx; pt.y+=pt.vy;
+      pt.alpha = Math.max(0, pt.alpha - (pt.fade||0.018));
       ctx.save(); ctx.globalAlpha=pt.alpha;
-      ctx.fillStyle=pt.color||'#fff'; ctx.shadowColor=pt.color||'#fff'; ctx.shadowBlur=pt.glow||5;
+      ctx.fillStyle=pt.color||'#fff'; ctx.shadowColor=pt.color||'#fff'; ctx.shadowBlur=pt.glow||6;
       ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.size||3, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+    });
+
+    // Floating combat text (CRIT, DEFEATED, MISS, etc.)
+    this.floatTexts = this.floatTexts.filter(ft => ft.life < ft.maxLife);
+    this.floatTexts.forEach(ft => {
+      ft.life++; ft.y += ft.vy; ft.vy *= 0.94;
+      const prog = ft.life / ft.maxLife;
+      const alpha = prog < 0.65 ? 1 : Math.max(0, 1 - (prog-0.65)/0.35);
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.font = `bold ${ft.size}px 'Press Start 2P',monospace`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.shadowColor = ft.color; ctx.shadowBlur = 22;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(ft.text, ft.x+1, ft.y+1); // shadow pass
+      ctx.fillStyle = ft.color; ctx.shadowBlur = 14;
+      ctx.fillText(ft.text, ft.x, ft.y);
       ctx.restore();
     });
 
@@ -2042,7 +2076,7 @@ ctx.clearRect(0, 0, W, H);
     if(this.screenFlash.alpha>0){
       ctx.save(); ctx.globalAlpha=this.screenFlash.alpha;
       ctx.fillStyle=this.screenFlash.color; ctx.fillRect(0,0,W,H);
-      ctx.restore(); this.screenFlash.alpha=Math.max(0,this.screenFlash.alpha-0.08);
+      ctx.restore(); this.screenFlash.alpha=Math.max(0,this.screenFlash.alpha-0.04);
     }
   },
 
@@ -2454,7 +2488,10 @@ ctx.clearRect(0, 0, W, H);
     ctx.fillStyle='rgba(255,255,255,.18)'; ctx.fillRect(x, y, w*pct, 2);
   },
 
-  spawnVFX(type, x, y, c) { this.vfx.push({type,x,y,c:c||'#fff',t:0,maxT:type==='explode'?30:20}); },
+  spawnVFX(type, x, y, c) { this.vfx.push({type,x,y,c:c||'#fff',t:0,maxT:type==='explode'?50:35}); },
+  spawnText(text, x, y, color='#fff', size=13) {
+    this.floatTexts.push({text,x,y,vy:-1.4,color,size,life:0,maxLife:95});
+  },
 
   // Splatoon-style particle burst — loud, saturated colors
   spawnBurst(x, y, baseColor, count=25, sizeMult=1) {
@@ -3355,11 +3392,19 @@ const Combat = {
     const isCrit=Math.random()<critChance;
     const d=this.deal(target,p.atk,isCrit);
     const idx=GameState.enemies.indexOf(target);
-    if(idx>=0){const pos=Arena.getEnemyPos(idx);Arena.spawnVFX('slash',pos.x,pos.y,p.accent||'#fff');}
+    if(idx>=0){
+      const pos=Arena.getEnemyPos(idx);
+      Arena.spawnVFX('slash',pos.x,pos.y,p.accent||'#fff');
+      if(isCrit){
+        Arena.spawnBurst(pos.x,pos.y,p.accent||OR,55,2.2);
+        Arena.spawnText('CRITICAL!',pos.x,pos.y-35,p.accent||OR,12);
+        Arena.triggerShake(7,14);
+      }
+    }
   },
   enemyAttack(en,p){
     if(en.isStunned()||en.debuffs.some(d=>d.id==='exhausted')){DM.say(`${en.name} stunned!`);return;}
-    if(p.isDodging()){UI.dmgNumPlayer(0,'miss');DM.say('Attack dodged!');return;}
+    if(p.isDodging()){UI.dmgNumPlayer(0,'miss');Arena.spawnText('MISS!',Arena.getPlayerPos().x,Arena.getPlayerPos().y-25,'#888888',10);DM.say('Attack dodged!');return;}
     const blocked=Math.max(0,p.def);
     let rawDmg=Math.max(1,en.atk-(en.id==='ghostHacker'?0:blocked));
     // Block mechanic
@@ -3528,7 +3573,8 @@ const Combat = {
     QM._cleanRun=true;
     AIDialog.init();
     UI.updateCombo();UI.updateBlock();UI.updateTurnOrder();
-    GameState.combatInterval=setInterval(()=>Combat.tick(),500);
+    Arena.resize(); // ensure canvas is properly sized before first render
+    GameState.combatInterval=setInterval(()=>Combat.tick(),1800);
   }
 };
 
@@ -3740,7 +3786,7 @@ const UI={
     const sz=type==='crit'?Math.min(30,14+Math.floor(n/12)):type==='miss'?10:type==='heal'?Math.min(22,11+Math.floor(n/10)):Math.min(22,10+Math.floor(n/14));
     const drift=(Math.random()-.5)*22;
     d.style.cssText=`left:${x-rect.left-14+drift}px;top:${y-rect.top-10}px;font-size:${sz}px;`;
-    ov.appendChild(d);setTimeout(()=>d.remove(),1000);
+    ov.appendChild(d);setTimeout(()=>d.remove(),2500);
   },
   dmgNumPlayer(val,type){const pp=Arena.getPlayerPos();this.dmgNumAt(pp.x,pp.y,val,type);},
   updateBars(){
@@ -4400,7 +4446,7 @@ const Game={
             pm.classList.toggle('show',!open);
             if(!open&&GameState.combatRunning){clearInterval(GameState.combatInterval);GameState.combatInterval=null;GameState.combatRunning=false;}
             else if(open&&!GameState.combatRunning&&GameState.enemies.filter(e=>e.hp>0).length){
-              GameState.combatRunning=true;GameState.combatInterval=setInterval(()=>Combat.tick(),500);
+              GameState.combatRunning=true;GameState.combatInterval=setInterval(()=>Combat.tick(),1800);
             }
           }
         }
@@ -4627,7 +4673,7 @@ const Game={
     GameState.currentRoomIdx=0;
     GameState.floorGold=0;
     LootScreen.reset();
-    Arena.time=0;
+    Arena.time=0;Arena.vfx=[];Arena.particles=[];Arena.floatTexts=[];
     UI.show('sCM');
     requestAnimationFrame(()=>{ Arena.resize(); requestAnimationFrame(()=>Arena.resize()); });
     const p=GameState.player;
@@ -4845,7 +4891,7 @@ const Game={
     const mb=document.getElementById('mapBtn');if(mb)mb.classList.add('hidden');
     WorldMap.hide();
     Inventory.init();LootScreen.reset();
-    Arena.time=0;Arena._initHexParticles&&Arena._initHexParticles();
+    Arena.time=0;Arena.vfx=[];Arena.particles=[];Arena.floatTexts=[];Arena._initHexParticles&&Arena._initHexParticles();
     // Show CONTINUE button only if save exists
     const contBtn=document.getElementById('continueBtn');
     if(contBtn)contBtn.style.display=SaveSystem.hasSave()?'':'none';
