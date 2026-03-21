@@ -2,6 +2,20 @@
 
 This file provides guidance to Claude Code when working with this repository.
 
+## Skills Directory
+Before writing any code, always read the relevant skill files from C:\game\skills\:
+
+| Task | Read This Skill |
+|---|---|
+| Any UI element, color, border, font | cyberpunk-theme.md |
+| Any combat logic, timing, formulas | combat-system.md |
+| Any item, loot, inventory change | loot-generator.md |
+| Any dialog, NPC, speech bubble | dialog-writer.md |
+| Any zone background, canvas effect | zone-background.md |
+| Any enemy stats, scaling, economy | balance-rules.md |
+| Any save/load, localStorage | save-system.md |
+| Any sprite, animation, particle | sprite-animation.md |
+
 ## Project Overview
 **8BIT CYBERPUNK — NEON DUNGEON ROGUELIKE** is a single-file browser game.
 No build system, no package manager, no dependencies beyond Google Fonts.
