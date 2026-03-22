@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>NEON DUNGEON // ROGUELIKE</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap');
 :root{
   --C:#00FFFF;--M:#FF00FF;--P:#8800FF;--G:#39FF14;
   --BK:#0D0D0D;--NV:#060618;--GN:#1C1C2E;--OR:#FF4500;
@@ -22,31 +22,85 @@ html,body{width:100%;height:100%;overflow:hidden;background:#060618;font-family:
 .scr{position:absolute;inset:0;display:none;flex-direction:column;z-index:10;}
 .scr.on{display:flex;}
 
-/* ══ CLASS SELECT — full-screen city backdrop layout ══ */
-#sCS{padding:6px 8px;gap:0;overflow:hidden;background:transparent;position:relative;align-items:center;justify-content:space-between;height:100vh;}
-#cityCV{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;}
-/* Game title */
-.stitle{position:relative;z-index:5;flex-shrink:0;padding:clamp(6px,1.5vh,16px) 0 clamp(4px,1vh,10px);text-align:center;background:transparent;border-bottom:none;width:100%;}
-.gtitle-main{display:block;font-size:clamp(20px,4vw,60px);color:#fff;letter-spacing:4px;text-shadow:0 0 10px #00ffff,0 0 22px #00ffff,0 0 45px rgba(0,255,255,.55),0 0 80px rgba(0,200,255,.28),3px 3px 0 #000,-1px -1px 0 #000;font-family:'Press Start 2P',monospace;line-height:1.2;}
-.gtitle-sub{display:block;font-size:clamp(10px,1.8vw,26px);color:var(--M);letter-spacing:6px;margin-top:8px;text-shadow:0 0 10px var(--M),0 0 22px rgba(255,0,255,.5),2px 2px 0 #000;font-family:'Press Start 2P',monospace;}
-.gtitle-deco{display:block;font-size:clamp(9px,1.8vw,24px);color:rgba(0,255,255,.65);letter-spacing:3px;margin-top:6px;font-family:'Press Start 2P',monospace;}
-#cs-chars{position:relative;z-index:4;width:100%;display:flex;align-items:center;justify-content:center;flex:1;min-height:0;padding:clamp(6px,1vh,16px) 0;}
-#cs-bottom{position:relative;z-index:5;width:100%;background:rgba(2,2,16,.95);border:1px solid rgba(0,255,255,.18);border-radius:3px;padding:clamp(10px,1.2vh,18px) clamp(12px,1.2vw,20px);display:flex;flex-direction:column;gap:clamp(6px,0.8vh,12px);flex-shrink:0;}
-.cg{display:flex;flex-wrap:wrap;justify-content:center;gap:clamp(5px,0.6vw,10px);z-index:5;pointer-events:auto;width:100%;padding:0 clamp(8px,1vw,16px);}
-.cc{background:rgba(2,2,18,.0);border:2px solid rgba(0,255,255,.15);padding:clamp(6px,0.8vw,12px) clamp(5px,0.6vw,10px) clamp(8px,1vw,14px);cursor:pointer;transition:all .18s;position:relative;display:flex;flex-direction:column;align-items:center;flex:1 1 clamp(90px,13vw,160px);min-width:clamp(90px,13vw,160px);max-width:clamp(110px,17vw,200px);}
-.cc:hover,.cc.sel{border-color:var(--C);border-width:2.5px;background:rgba(0,255,255,.07);box-shadow:0 0 26px rgba(0,255,255,.6),inset 0 0 18px rgba(0,255,255,.09);}
-.cc.sel::after{content:'▶';position:absolute;top:4px;right:5px;font-size:clamp(7px,0.9vw,12px);color:var(--C);text-shadow:0 0 8px var(--C);}
-.cc canvas{display:block;image-rendering:pixelated;filter:drop-shadow(0 6px 18px rgba(0,0,0,.95)) drop-shadow(0 0 12px rgba(0,255,255,.18));height:clamp(80px,11vh,160px);width:auto;}
-.cn{font-size:clamp(9px,1.2vw,18px);text-align:center;margin:clamp(4px,0.6vh,8px) 0 clamp(3px,0.5vh,6px);text-shadow:0 0 8px currentColor,0 1px 4px #000,0 -1px 4px #000;}
-.cs{font-size:clamp(8px,1vw,13px);color:#ccdde8;line-height:1.8;width:100%;background:rgba(0,0,0,.62);border:1px solid rgba(0,255,255,.15);padding:clamp(4px,0.5vh,8px) clamp(5px,0.6vw,9px);}
-.sr{display:flex;justify-content:space-between;align-items:center;gap:4px;margin-bottom:clamp(2px,0.3vh,5px);}
-.sb{flex:1;height:6px;background:rgba(0,0,0,.7);margin-left:4px;border:1px solid rgba(255,255,255,.08);}
+/* ══ MAIN MENU ══ */
+#sMM{background:#020210;overflow:hidden;position:absolute;inset:0;}
+#sMM.on{display:flex;flex-direction:column;}
+#matrixCV{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;}
+.mm-overlay{position:absolute;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:clamp(20px,4vh,60px) 20px;}
+.mm-title{text-align:center;margin-bottom:clamp(20px,5vh,60px);}
+.mm-title-main{font-family:'Press Start 2P',monospace;font-size:clamp(36px,7vw,90px);letter-spacing:clamp(6px,1vw,16px);line-height:1.1;
+  background:linear-gradient(180deg,#00ffff 0%,#ff00ff 50%,#00ff41 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 20px rgba(0,255,255,.5)) drop-shadow(0 0 40px rgba(255,0,255,.3));
+  animation:mmTitleGlow 4s ease infinite alternate;}
+.mm-title-sub{font-family:'Press Start 2P',monospace;font-size:clamp(20px,4vw,56px);letter-spacing:clamp(8px,1.5vw,20px);
+  background:linear-gradient(90deg,#ff00ff,#00ffff,#00ff41);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 14px rgba(255,0,255,.4));margin-top:clamp(4px,1vh,12px);}
+@keyframes mmTitleGlow{0%{filter:drop-shadow(0 0 20px rgba(0,255,255,.5)) drop-shadow(0 0 40px rgba(255,0,255,.3))}100%{filter:drop-shadow(0 0 30px rgba(255,0,255,.5)) drop-shadow(0 0 50px rgba(0,255,255,.3))}}
+.mm-btns{display:flex;flex-direction:column;gap:clamp(12px,2vh,24px);align-items:center;width:100%;max-width:500px;}
+.mm-btn{font-family:'Share Tech Mono',monospace;border:none;cursor:pointer;letter-spacing:6px;transition:all .25s;position:relative;width:100%;text-align:center;z-index:20;}
+.mm-connect{font-size:clamp(18px,2.5vw,32px);padding:clamp(18px,3vh,32px) 0;
+  background:linear-gradient(135deg,rgba(0,255,255,.12),rgba(255,0,255,.12));
+  border:2px solid #00ffff;color:#00ffff;
+  text-shadow:0 0 14px #00ffff,0 0 28px rgba(0,255,255,.4);
+  box-shadow:0 0 20px rgba(0,255,255,.25),inset 0 0 24px rgba(0,255,255,.06);
+  animation:mmPulse 3s ease infinite;}
+.mm-connect:hover{background:linear-gradient(135deg,rgba(0,255,255,.25),rgba(255,0,255,.25));
+  box-shadow:0 0 50px rgba(0,255,255,.5),0 0 100px rgba(255,0,255,.2),inset 0 0 40px rgba(0,255,255,.1);
+  transform:scale(1.03);text-shadow:0 0 24px #00ffff,0 0 48px rgba(0,255,255,.6);}
+.mm-secondary{font-size:clamp(12px,1.5vw,20px);padding:clamp(14px,2vh,22px) 0;
+  background:linear-gradient(135deg,rgba(136,0,255,.1),rgba(0,255,255,.06));
+  border:1.5px solid rgba(0,255,255,.35);color:#00ffff;
+  text-shadow:0 0 8px rgba(0,255,255,.5);box-shadow:0 0 10px rgba(0,255,255,.1);}
+.mm-secondary:hover{border-color:#ff00ff;color:#ff00ff;text-shadow:0 0 14px #ff00ff;
+  box-shadow:0 0 24px rgba(255,0,255,.3);background:linear-gradient(135deg,rgba(255,0,255,.12),rgba(0,255,255,.08));}
+.mm-small{font-size:clamp(10px,1.1vw,15px);padding:clamp(10px,1.4vh,16px) 0;width:48%;
+  background:rgba(2,2,20,.6);border:1px solid rgba(255,0,255,.3);color:rgba(255,0,255,.6);
+  text-shadow:0 0 6px rgba(255,0,255,.3);letter-spacing:3px;}
+.mm-small:hover{border-color:#ff00ff;color:#ff00ff;text-shadow:0 0 12px #ff00ff;
+  box-shadow:0 0 18px rgba(255,0,255,.3);background:rgba(255,0,255,.08);}
+.mm-row{display:flex;gap:clamp(8px,1.5vw,16px);width:100%;}
+.mm-footer{color:rgba(0,255,255,.2);font-family:'Share Tech Mono',monospace;font-size:clamp(8px,0.9vw,12px);letter-spacing:5px;
+  position:absolute;bottom:clamp(12px,2vh,24px);left:0;right:0;text-align:center;pointer-events:none;}
+@keyframes mmPulse{0%,100%{box-shadow:0 0 20px rgba(0,255,255,.25),inset 0 0 24px rgba(0,255,255,.06)}50%{box-shadow:0 0 40px rgba(0,255,255,.5),0 0 80px rgba(255,0,255,.15),inset 0 0 36px rgba(0,255,255,.1)}}
+
+/* ══ CHARACTER CREATE ══ */
+#sCS{padding:0;gap:0;overflow:hidden;background:#020210;position:relative;height:100vh;width:100vw;}
+#sCS.on{display:flex;flex-direction:column;}
+#cityCV{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:.4;}
+.stitle{position:relative;z-index:5;flex-shrink:0;padding:clamp(4px,0.8vh,10px) 0;text-align:center;width:100%;background:linear-gradient(180deg,rgba(2,2,16,.95),rgba(2,2,16,.7));}
+.gtitle-main{display:block;font-family:'Share Tech Mono',monospace;font-size:clamp(14px,2.2vw,28px);color:#00ffff;letter-spacing:6px;text-shadow:0 0 12px #00ffff,0 0 24px rgba(0,255,255,.4);text-transform:uppercase;}
+.gtitle-sub,.gtitle-deco{display:none;}
+/* CC layout: left preview + right options */
+#ccPreview{background:rgba(2,2,16,.85);border-right:1px solid rgba(0,255,255,.2);backdrop-filter:blur(4px);}
+#cs-chars{position:relative;z-index:4;display:flex;}
+#cs-bottom{position:relative;z-index:5;width:100%;background:rgba(2,2,16,.95);border-top:1px solid rgba(0,255,255,.18);padding:clamp(4px,0.6vh,10px) clamp(8px,1vw,16px);display:flex;flex-direction:column;gap:clamp(4px,0.5vh,8px);flex-shrink:0;}
+/* Shared card/panel styles */
+.cc-panel{background:rgba(2,2,20,.9);border:1px solid rgba(0,255,255,.12);padding:clamp(4px,0.5vh,8px) clamp(6px,0.7vw,10px);margin-bottom:clamp(4px,0.5vh,8px);}
+.cg{display:flex;flex-direction:column;gap:0;z-index:5;pointer-events:auto;width:100%;padding:clamp(4px,0.5vh,6px) clamp(6px,0.8vw,12px);}
+/* Gender cards */
+.cc{background:rgba(2,2,18,.85);border:1.5px solid rgba(0,255,255,.15);padding:clamp(4px,0.5vw,8px);cursor:pointer;transition:all .18s;position:relative;display:flex;flex-direction:column;align-items:center;}
+.cc:hover,.cc.sel{border-color:var(--C);background:rgba(0,255,255,.08);box-shadow:0 0 16px rgba(0,255,255,.4),inset 0 0 10px rgba(0,255,255,.06);}
+.cc.sel::after{content:'▶';position:absolute;top:3px;right:4px;font-size:8px;color:var(--C);}
+.cc canvas{display:block;image-rendering:pixelated;filter:drop-shadow(0 4px 10px rgba(0,0,0,.9));height:clamp(48px,6vh,80px);width:auto;}
+.cn{font-family:'Share Tech Mono',monospace;font-size:clamp(8px,0.9vw,12px);text-align:center;margin:2px 0;color:#00ffff;text-shadow:0 0 6px currentColor;}
+/* Section labels */
+.slbl{font-family:'Share Tech Mono',monospace;font-size:clamp(8px,0.9vw,13px);color:#00ffff;margin-bottom:clamp(3px,0.4vh,6px);letter-spacing:2px;text-shadow:0 0 6px rgba(0,255,255,.5);display:block;text-transform:uppercase;}
+/* Stat bars */
+.cs{font-family:'Share Tech Mono',monospace;font-size:clamp(7px,0.8vw,11px);color:#ccdde8;line-height:1.6;width:100%;}
+.sr{display:flex;align-items:center;gap:4px;margin-bottom:2px;}
+.sb{flex:1;height:5px;background:rgba(0,0,0,.7);border:1px solid rgba(255,255,255,.06);}
 .sbf{height:100%;}
-.cs-row{display:flex;gap:clamp(8px,1vw,16px);}
+/* Skill/equip cards */
+.spc{background:rgba(2,2,20,.9);border:1.5px solid rgba(136,0,255,.25);padding:clamp(4px,0.5vh,8px) clamp(4px,0.5vw,8px);cursor:pointer;transition:all .15s;font-family:'Share Tech Mono',monospace;}
+.spc:hover,.spc.sel{border-color:#ff00ff;background:rgba(255,0,255,.08);box-shadow:0 0 12px rgba(255,0,255,.3);}
+.spn{font-size:clamp(7px,0.8vw,11px);color:#ff00ff;text-shadow:0 0 6px rgba(255,0,255,.4);margin-bottom:2px;}
+/* Equipment */
+.cs-row{display:flex;gap:clamp(4px,0.5vw,8px);}
 .cs-col{flex:1;min-width:0;}
-.slbl{font-size:clamp(9px,1.2vw,16px);color:var(--M);margin-bottom:clamp(5px,0.7vh,10px);letter-spacing:1px;text-shadow:0 0 8px var(--M),0 1px 3px #000;display:block;}
-.eg{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(4px,0.5vw,8px);}
-.ec{background:rgba(4,4,18,.92);border:1.5px solid rgba(255,180,0,.25);padding:clamp(7px,0.8vh,12px) clamp(6px,0.7vw,11px);cursor:pointer;font-size:clamp(8px,0.95vw,13px);line-height:1.9;transition:all .15s;}
+.eg{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(3px,0.4vw,6px);}
+.ec{background:rgba(4,4,18,.92);border:1.5px solid rgba(255,180,0,.25);padding:clamp(4px,0.5vh,8px) clamp(4px,0.5vw,8px);cursor:pointer;font-family:'Share Tech Mono',monospace;font-size:clamp(7px,0.8vw,11px);line-height:1.6;transition:all .15s;}
 .ec:hover,.ec.sel{border-color:var(--GD);box-shadow:0 0 10px rgba(255,215,0,.35);background:rgba(16,12,2,.92);}
 .en2{color:var(--GD);font-size:clamp(9px,1.1vw,15px);font-weight:bold;margin-bottom:clamp(3px,0.4vh,6px);text-shadow:0 0 6px var(--GD);}
 .spg{display:grid;grid-template-columns:1fr 1fr;gap:clamp(4px,0.5vw,8px);}
@@ -713,7 +767,7 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
   background:
     linear-gradient(rgba(0,20,50,.14),rgba(28,0,48,.12)),
     linear-gradient(rgba(0,0,0,.54),rgba(0,0,0,.54)),
-    url('mapback.png') center/cover no-repeat #020208;
+    url('newmap.jpg') center/cover no-repeat #020208;
   flex-direction:column;overflow:hidden;
 }
 .wm-hdr{flex-shrink:0;display:flex;justify-content:space-between;align-items:center;
@@ -838,43 +892,59 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
     </div>
   </div>
 
-  <!-- CLASS SELECT -->
-  <div class="scr on" id="sCS">
+  <!-- MAIN MENU -->
+  <div class="scr on" id="sMM">
+    <canvas id="matrixCV"></canvas>
+    <div class="mm-overlay">
+      <div class="mm-title">
+        <div class="mm-title-main">8-BIT</div>
+        <div class="mm-title-sub">CYBERPUNK</div>
+      </div>
+      <div class="mm-btns">
+        <button class="mm-btn mm-connect" id="mmConnect" onclick="UI.show('sCS');City.resize();">CONNECT</button>
+        <button class="mm-btn mm-secondary" id="mmContinue" style="display:none" onclick="if(SaveSystem.load()){UI.show('sCS');WorldMap.show();}">CONTINUE</button>
+        <div class="mm-row">
+          <button class="mm-btn mm-small" id="mmSettings" onclick="document.getElementById('settingsModal').classList.add('show');">SETTINGS</button>
+          <button class="mm-btn mm-small" id="mmRecords" onclick="Records.showPanel();">RECORDS</button>
+        </div>
+      </div>
+      <div class="mm-footer">NEON DUNGEON ROGUELIKE</div>
+    </div>
+  </div>
+
+  <!-- CHARACTER CREATE -->
+  <div class="scr" id="sCS">
     <canvas id="cityCV"></canvas>
-    <button id="apiGearBtn" title="Configure AI API Key">⚙ AI</button>
-    <div id="menuBtns">
-      <button class="menu-extra-btn" id="settingsBtn">⚙ SETTINGS</button>
-      <button class="menu-extra-btn" id="recordsBtn">🏆 RECORDS</button>
-    </div>
+    <!-- Title bar -->
     <div class="stitle">
-      <span class="gtitle-main">8BIT CYBERPUNK</span>
-      <span class="gtitle-sub">⚡ NEON DUNGEON ROGUELIKE ⚡</span>
-      <span class="gtitle-deco">— SELECT YOUR CHAMPION —</span>
+      <span class="gtitle-main">CREATE YOUR RUNNER</span>
     </div>
-    <!-- 6 character cards across the middle of the screen -->
-    <div id="cs-chars">
-      <div class="cg" id="cgrid" style="width:100%;padding:0 8px;"></div>
+    <!-- Main area: preview left + options right -->
+    <div style="flex:1;display:flex;min-height:0;overflow:hidden;position:relative;z-index:5;">
+      <!-- LEFT: Character Preview -->
+      <div id="ccPreview" style="width:clamp(140px,18vw,240px);flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:8px;">
+        <canvas id="ccPreviewCV" width="120" height="160" style="image-rendering:pixelated;width:clamp(80px,12vw,160px);height:auto;filter:drop-shadow(0 0 14px rgba(0,255,255,.3));"></canvas>
+        <div id="ccPreviewName" style="font-family:'Share Tech Mono',monospace;font-size:clamp(9px,1.1vw,14px);color:#00ffff;text-shadow:0 0 8px #00ffff;letter-spacing:3px;">RUNNER</div>
+        <div id="ccPreviewStats" style="font-family:'Share Tech Mono',monospace;font-size:clamp(6px,0.65vw,9px);color:#888;line-height:1.8;text-align:center;"></div>
+      </div>
+      <!-- RIGHT: Scrollable options -->
+      <div id="cs-chars" style="flex:1;overflow-y:auto;min-height:0;">
+        <div class="cg" id="cgrid" style="width:100%;max-width:700px;margin:0 auto;"></div>
+      </div>
     </div>
-    <!-- Bottom panel: equipment + spells + button -->
+    <!-- Bottom bar: equipment + enter -->
     <div id="cs-bottom">
-      <div class="cs-row">
+      <div class="cs-row" style="align-items:center;">
         <div class="cs-col">
-          <span class="slbl">▶ EQUIPMENT — CHOOSE 1</span>
+          <span class="slbl" style="margin-bottom:3px;">▶ EQUIPMENT</span>
           <div class="eg" id="egrid"></div>
         </div>
-        <div class="cs-col">
-          <span class="slbl">▶ CLASS ABILITIES</span>
-          <div class="spg" id="spgrid"></div>
+        <div style="flex-shrink:0;display:flex;flex-direction:column;gap:4px;">
+          <button class="entbtn" id="continueBtn" style="display:none;background:linear-gradient(135deg,rgba(0,140,60,.92),rgba(0,80,30,.92));border-color:var(--G);color:var(--G);text-shadow:0 0 10px var(--G);font-size:clamp(8px,1vw,13px);padding:clamp(8px,1vh,14px) clamp(14px,1.5vw,24px);">CONTINUE</button>
+          <button class="entbtn" id="ebtn" style="font-size:clamp(9px,1.1vw,14px);padding:clamp(8px,1vh,14px) clamp(16px,2vw,28px);">ENTER DUNGEON</button>
         </div>
       </div>
-      <div style="display:flex;gap:10px;justify-content:center;width:100%;">
-        <button class="entbtn" id="continueBtn" style="display:none;background:linear-gradient(135deg,rgba(0,140,60,.92),rgba(0,80,30,.92));border-color:var(--G);color:var(--G);text-shadow:0 0 10px var(--G);">▶ CONTINUE RUN ◀</button>
-        <button class="entbtn" id="ebtn">▶ ENTER DUNGEON ◀</button>
-      </div>
     </div>
-    <!-- keep old sections hidden so JS refs don't break -->
-    <div class="esec" style="display:none"><div class="eg" id="egrid_old"></div></div>
-    <div class="spsec" style="display:none"><div class="spg" id="spgrid_old"></div></div>
   </div>
 
   <!-- COMBAT -->
@@ -1875,7 +1945,7 @@ const Arena = {
       }
       // Cast glow — 30 frames
       if (p.animState === 'cast') {
-        const ac = CLASSES[GameState.selectedClass]?.accent || CY;
+        const ac = GameState.selectedAccent || CY;
         ctx.save(); ctx.globalAlpha = .45 - p.animTimer/66;
         const g = ctx.createRadialGradient(px2+sz.w/2, py2+sz.h/2, 0, px2+sz.w/2, py2+sz.h/2, 65);
         g.addColorStop(0, ac); g.addColorStop(1, 'transparent');
@@ -1894,7 +1964,7 @@ const Arena = {
       if (pWasHurt) ctx.restore();
       // HP bar
       this.hpBar(ctx, px2, py2 - 12, sz.w, p.hp, p.maxHp, CY);
-      ctx.fillStyle = CLASSES[GameState.selectedClass]?.accent || CY;
+      ctx.fillStyle = GameState.selectedAccent || CY;
       ctx.font = `${P}px 'Press Start 2P',monospace`; ctx.textAlign = 'center';
       ctx.fillText(p.className, px2 + sz.w/2, py2 - 15);
       ctx.textAlign = 'left';
@@ -2092,6 +2162,9 @@ const Arena = {
   drawBg(ctx, W, H, t) {
     const zoneId=GameState.currentZoneId||'neonNexus';
     const isBoss=GameState.enemies?.some(e=>e.isBoss&&e.hp>0);
+    // If zone has CSS background images, make canvas bg semi-transparent
+    const hasRoomBg={neonNexus:true};
+    if(hasRoomBg[zoneId]){ ctx.save();ctx.globalAlpha=0.55; }
 
     // Zone-specific background dispatch
     switch(zoneId){
@@ -2104,6 +2177,7 @@ const Arena = {
       case 'theCore':      this._bgCore(ctx,W,H,t); break;
       default:             this._bgNexus(ctx,W,H,t,isBoss); break;
     }
+    if(hasRoomBg[zoneId]) ctx.restore(); // end semi-transparent overlay
 
     // Floating holographic hex particles (all zones)
     if(GameState.settings.particles!=='off'){
@@ -2449,6 +2523,9 @@ const Arena = {
     const fy = H*.73;
     const zoneId=GameState.currentZoneId||'neonNexus';
     const isBoss=GameState.enemies?.some(e=>e.isBoss&&e.hp>0);
+    // Semi-transparent floor when zone has room backgrounds
+    const hasRoomBg2={neonNexus:true};
+    if(hasRoomBg2[zoneId]){ctx.save();ctx.globalAlpha=0.6;}
     // Zone-specific floor colors
     const floorColors={
       neonNexus:['#0a0a20','#131330'],voidSector:['#0a0012','#130028'],
@@ -2474,6 +2551,7 @@ const Arena = {
     floorGlow.addColorStop(1,'transparent');
     ctx.fillStyle=floorGlow;ctx.fillRect(0,fy,W,20);
     ctx.fillStyle='rgba(0,0,0,.5)'; ctx.fillRect(0,fy,W,2);
+    if(hasRoomBg2[zoneId]) ctx.restore();
   },
 
   hpBar(ctx, x, y, w, hp, maxHp, col) {
@@ -2684,59 +2762,42 @@ const Arena = {
 // ═══════════════════════════════════════════════════════════════
 // DATA
 // ═══════════════════════════════════════════════════════════════
-const CLASS_LORE = {
-  warrior:'Ex-military cyborg, shattered by corporate betrayal. Now sells violence to the highest bidder.',
-  ranger:'Rogue scout from the outer sectors. Hunts corp executives for sport and survival.',
-  rogue:'Shadow operative who erased their own identity. Death arrives before the target blinks.',
-  cleric:'Neural-healer excommunicated for hacking divine signal feeds. Code is gospel now.',
-  warlock:'Void-touched researcher who traded sanity for forbidden data streams.',
-  druid:'Bio-hacker who merged with the city grid. The neon speaks and they obey.',
+// ═══════════════════════════════════════════════════════════════
+// CHARACTER CREATION SYSTEM
+// ═══════════════════════════════════════════════════════════════
+const GENDERS = {
+  man:   { name:'MAN',   sprite:'warrior', lore:'Chrome-plated enforcer. Built to break things.' },
+  woman: { name:'WOMAN', sprite:'rogue',   lore:'Ghost in the wires. Strikes before you blink.' },
+  cyber: { name:'CYBER', sprite:'druid',   lore:'Post-human construct. More machine than meat.' }
 };
+const ACCENT_COLORS = { cyan:CY, magenta:MG, green:GR, orange:OR, purple:PU };
+const BASE_STATS = { hp:90, atk:14, def:6, spd:7, mp:85 };
+const STAT_PER_POINT = { hp:10, atk:3, def:2, spd:2, mp:10 };
+const STAT_POINTS_TOTAL = 15;
 
-const CLASSES = {
-  warrior:{name:'WARRIOR',hp:120,atk:18,def:12,spd:6,mp:80,accent:OR,sprite:'warrior',
-    spells:[
-      {id:'plasmaStrike',name:'Plasma Strike',icon:'⚡',desc:'2.5x ATK single target',mp:20,cd:0,maxCd:4,
-       effect(p,en){const t=Combat.lowestHp(en);if(!t)return;const d=Combat.deal(t,Math.floor(p.atk*2.5),true);const pos=Arena.getEnemyPos(GameState.enemies.indexOf(t));Arena.spawnVFX('slash',pos.x,pos.y,OR);DM.say('PLASMA STRIKE! Devastating blow!');}},
-      {id:'nanoShield',name:'Nano Shield',icon:'🛡',desc:'+50% DEF 3 turns',mp:15,cd:0,maxCd:5,
-       effect(p){p.addBuff('nanoShield',{def:Math.floor(p.baseDef*.5),turns:3});const pp=Arena.getPlayerPos();Arena.spawnVFX('explode',pp.x,pp.y,CY);DM.say('NANO SHIELD! Defense surging!');}}
-    ]},
-  ranger:{name:'RANGER',hp:90,atk:22,def:7,spd:10,mp:90,accent:GR,sprite:'ranger',
-    spells:[
-      {id:'pulseVolley',name:'Pulse Volley',icon:'🏹',desc:'1x ATK all enemies',mp:18,cd:0,maxCd:3,
-       effect(p,en){en.forEach(e=>{if(e.hp>0){Combat.deal(e,Math.floor(p.atk*(.8+Math.random()*.4)));const pos=Arena.getEnemyPos(GameState.enemies.indexOf(e));Arena.spawnVFX('spark',pos.x,pos.y,GR);}});DM.say('PULSE VOLLEY! Arrow rain!');}},
-      {id:'ghostStep',name:'Ghost Step',icon:'👻',desc:'Dodge 2 attacks',mp:25,cd:0,maxCd:5,
-       effect(p){p.addBuff('dodge',{dodges:2,turns:4});Arena.spawnVFX('spark',Arena.getPlayerPos().x,Arena.getPlayerPos().y,GR);DM.say('GHOST STEP — vanished!');}}
-    ]},
-  rogue:{name:'ROGUE',hp:80,atk:28,def:5,spd:14,mp:70,accent:MG,sprite:'rogue',
-    spells:[
-      {id:'dataSplice',name:'Data Splice',icon:'🗡',desc:'3x ATK + crit boost',mp:22,cd:0,maxCd:4,
-       effect(p,en){const t=Combat.lowestHp(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*3),true);p.addBuff('crit',{crit:.2,turns:2});const pos=Arena.getEnemyPos(GameState.enemies.indexOf(t));Arena.spawnVFX('slash',pos.x,pos.y,MG);DM.say('DATA SPLICE! Triple critical!');}},
-      {id:'smokeHack',name:'Smoke Hack',icon:'💨',desc:'-40% enemy ATK 3t',mp:18,cd:0,maxCd:4,
-       effect(p,en){en.forEach(e=>{if(e.hp>0)e.addDebuff('atkDown',{atk:Math.floor(e.atk*.4),turns:3});});Arena.spawnVFX('explode',Arena.W*.5,Arena.H*.5,'#880088');DM.say('SMOKE HACK! Targeting scrambled!');}}
-    ]},
-  cleric:{name:'CLERIC',hp:100,atk:12,def:9,spd:7,mp:120,accent:GD,sprite:'cleric',
-    spells:[
-      {id:'bioPulse',name:'Bio-Pulse Heal',icon:'💚',desc:'Heal 40% max HP',mp:25,cd:0,maxCd:3,
-       effect(p){const h=Math.floor(p.maxHp*.4);p.hp=Math.min(p.maxHp,p.hp+h);p.healedThisFloor=true;const pp=Arena.getPlayerPos();Arena.spawnVFX('explode',pp.x,pp.y,'#00ff88');UI.dmgNumAt(pp.x,pp.y,h,'heal');DM.say('BIO-PULSE! Systems restored!');}},
-      {id:'divineOverload',name:'Divine Overload',icon:'✨',desc:'AoE 1.5x ATK + cleanse',mp:30,cd:0,maxCd:4,
-       effect(p,en){en.forEach(e=>{if(e.hp>0){Combat.deal(e,Math.floor(p.atk*1.5));const pos=Arena.getEnemyPos(GameState.enemies.indexOf(e));Arena.spawnVFX('spark',pos.x,pos.y,GD);}});p.debuffs=[];DM.say('DIVINE OVERLOAD! Purged!');}}
-    ]},
-  warlock:{name:'WARLOCK',hp:85,atk:25,def:6,spd:8,mp:100,accent:PU,sprite:'warlock',
-    spells:[
-      {id:'voidDrain',name:'Void Drain',icon:'🌑',desc:'2x ATK + lifesteal',mp:20,cd:0,maxCd:3,
-       effect(p,en){const t=Combat.lowestHp(en);if(!t)return;const d=Combat.deal(t,Math.floor(p.atk*2));const st=Math.floor(d*.2);p.hp=Math.min(p.maxHp,p.hp+st);const pp=Arena.getPlayerPos();Arena.spawnVFX('explode',pp.x,pp.y,PU);UI.dmgNumAt(pp.x,pp.y,st,'heal');DM.say('VOID DRAIN! Life siphoned!');}},
-      {id:'entropyField',name:'Entropy Field',icon:'🌀',desc:'DoT 15%HP/t 3t',mp:28,cd:0,maxCd:5,
-       effect(p,en){en.forEach(e=>{if(e.hp>0)e.addDebuff('dot',{dmgPct:.15,turns:3});});Arena.spawnVFX('explode',Arena.W*.5,Arena.H*.45,'#4400aa');DM.say('ENTROPY FIELD! Reality unravels!');}}
-    ]},
-  druid:{name:'DRUID',hp:95,atk:15,def:8,spd:9,mp:110,accent:CY,sprite:'druid',
-    spells:[
-      {id:'neuralStorm',name:'Neural Storm',icon:'🌩',desc:'AoE 1.2x + 25% stun',mp:20,cd:0,maxCd:3,
-       effect(p,en){en.forEach(e=>{if(e.hp>0){Combat.deal(e,Math.floor(p.atk*1.2));if(Math.random()<.25)e.addDebuff('stun',{turns:1});const pos=Arena.getEnemyPos(GameState.enemies.indexOf(e));Arena.spawnVFX('spark',pos.x,pos.y,CY);}});DM.say('NEURAL STORM! Circuits fried!');}},
-      {id:'symbioticSurge',name:'Symbiotic Surge',icon:'🌿',desc:'+30% ATK+SPD 3t',mp:22,cd:0,maxCd:4,
-       effect(p){p.addBuff('surge',{atk:Math.floor(p.baseAtk*.3),spd:Math.floor(p.baseSpd*.3),turns:3});Arena.spawnVFX('explode',Arena.getPlayerPos().x,Arena.getPlayerPos().y,CY);DM.say('SYMBIOTIC SURGE! Power amplified!');}}
-    ]}
-};
+const ACTIVE_SKILLS = [
+  {id:'plasmaStrike',name:'Plasma Strike',icon:'⚡',desc:'2.5x ATK single target',mp:20,cd:0,maxCd:4,
+   effect(p,en){const t=Combat.lowestHp(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*2.5),true);const pos=Arena.getEnemyPos(GameState.enemies.indexOf(t));Arena.spawnVFX('slash',pos.x,pos.y,OR);DM.say('PLASMA STRIKE! Devastating blow!');}},
+  {id:'ghostStep',name:'Ghost Step',icon:'👻',desc:'Dodge 2 attacks',mp:25,cd:0,maxCd:5,
+   effect(p){p.addBuff('dodge',{dodges:2,turns:4});Arena.spawnVFX('spark',Arena.getPlayerPos().x,Arena.getPlayerPos().y,GR);DM.say('GHOST STEP — vanished!');}},
+  {id:'dataSplice',name:'Data Splice',icon:'🗡',desc:'3x ATK + crit boost',mp:22,cd:0,maxCd:4,
+   effect(p,en){const t=Combat.lowestHp(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*3),true);p.addBuff('crit',{crit:.2,turns:2});const pos=Arena.getEnemyPos(GameState.enemies.indexOf(t));Arena.spawnVFX('slash',pos.x,pos.y,MG);DM.say('DATA SPLICE! Triple critical!');}},
+  {id:'bioPulse',name:'Bio-Pulse Heal',icon:'💚',desc:'Heal 40% max HP',mp:25,cd:0,maxCd:3,
+   effect(p){const h=Math.floor(p.maxHp*.4);p.hp=Math.min(p.maxHp,p.hp+h);p.healedThisFloor=true;const pp=Arena.getPlayerPos();Arena.spawnVFX('explode',pp.x,pp.y,'#00ff88');UI.dmgNumAt(pp.x,pp.y,h,'heal');DM.say('BIO-PULSE! Systems restored!');}},
+  {id:'voidDrain',name:'Void Drain',icon:'🌑',desc:'2x ATK + lifesteal',mp:20,cd:0,maxCd:3,
+   effect(p,en){const t=Combat.lowestHp(en);if(!t)return;const d=Combat.deal(t,Math.floor(p.atk*2));const st=Math.floor(d*.2);p.hp=Math.min(p.maxHp,p.hp+st);const pp=Arena.getPlayerPos();Arena.spawnVFX('explode',pp.x,pp.y,PU);UI.dmgNumAt(pp.x,pp.y,st,'heal');DM.say('VOID DRAIN! Life siphoned!');}}
+];
+
+const PASSIVE_SKILLS = [
+  {id:'deadEye',   name:'Dead Eye',    icon:'🎯', desc:'+15% crit chance',       apply(p){ p.critBonus+=0.15; }},
+  {id:'siphon',    name:'Siphon',      icon:'🩸', desc:'+15% lifesteal on hit',  apply(p){ p.lifesteal=0.15; }},
+  {id:'phantom',   name:'Phantom',     icon:'💨', desc:'+20% dodge chance',      apply(p){ p.dodgeChance=0.20; }},
+  {id:'ironWall',  name:'Iron Wall',   icon:'🛡', desc:'+25% block DR',          apply(p){ p.blockDR=0.75; }},
+  {id:'overclock', name:'Overclock',   icon:'⚙',  desc:'-1 all spell cooldowns', apply(p){ p.spells.forEach(s=>s.maxCd=Math.max(1,s.maxCd-1)); }}
+];
+
+// Keep CLASSES as a lookup for legacy references (Arena accent, etc.)
+const CLASSES = {};
 
 const ETYPES = [
   {id:'glitchDrone',name:'GLITCH DRONE',hp:35,atk:8,def:2,spd:14,sprite:'glitchDrone',color:CY,
@@ -2748,19 +2809,19 @@ const ETYPES = [
   {id:'cyberOgre',name:'CYBER OGRE',hp:110,atk:20,def:8,spd:5,sprite:'cyberOgre',color:OR,
    ability:{name:'Overload',trigger:'cd5',cdLeft:0,fn(e,p){const d=Math.floor(e.atk*2);p.hp=Math.max(0,p.hp-d);UI.dmgNumPlayer(d,'crit');Arena.spawnVFX('explode',Arena.getPlayerPos().x,Arena.getPlayerPos().y,OR);DM.say('OVERLOAD! Devastating!');}}},
   {id:'dataWraith',name:'DATA WRAITH',hp:65,atk:13,def:3,spd:11,sprite:'dataWraith',color:CY,
-   ability:{name:'MP Drain',trigger:'onhit',fn(e,p){p.mp=Math.max(0,p.mp-15);DM.say('DATA WRAITH drains your mana!');}}},
+   ability:{name:'MP Drain',trigger:'cd4',cdLeft:0,fn(e,p){p.mp=Math.max(0,p.mp-15);DM.say('DATA WRAITH drains your mana!');}}},
   {id:'pulseHound',name:'PULSE HOUND',hp:50,atk:15,def:3,spd:13,sprite:'pulseHound',color:RD,
-   ability:{name:'Bleed',trigger:'onhit',fn(e,p){p.addDebuff('bleed',{dmgPct:.05,turns:3});DM.say('PULSE HOUND inflicts bleeding!');}}},
+   ability:{name:'Bleed',trigger:'cd3',cdLeft:0,fn(e,p){p.addDebuff('bleed',{dmgPct:.05,turns:3});DM.say('PULSE HOUND inflicts bleeding!');}}},
   {id:'circuitLich',name:'CIRCUIT LICH',hp:75,atk:18,def:6,spd:7,sprite:'circuitLich',color:GR,
    ability:{name:'Arcane Pulse',trigger:'cd3',cdLeft:0,fn(e,p){const d=Math.floor(e.atk);p.hp=Math.max(0,p.hp-d);UI.dmgNumPlayer(d,'phit');DM.say('ARCANE PULSE! Ignores armor!');}}},
   {id:'netrunner',name:'NETRUNNER',hp:60,atk:12,def:3,spd:12,evasion:0.35,sprite:'netrunner',color:CY,
-   ability:{name:'Neural Hack',trigger:'cd3',cdLeft:0,fn(e,p){
+   ability:{name:'Neural Hack',trigger:'cd6',cdLeft:0,fn(e,p){
      const targets=p.spells.filter(s=>!(s.hackedTurns>0));
      if(!targets.length){DM.say('NEURAL HACK fizzles — all spells already disrupted!');return;}
      const t=targets[Math.floor(Math.random()*targets.length)];
-     t.hackedTurns=2;
+     t.hackedTurns=1;
      Arena.spawnVFX('spark',Arena.getPlayerPos().x,Arena.getPlayerPos().y,CY);
-     DM.say(`NEURAL HACK! ${t.name} disabled for 2 turns!`);
+     DM.say(`NEURAL HACK! ${t.name} disabled for 1 turn!`);
      UI.updateSpells();
    }}},
   {id:'quantumBoss',name:'QUANTUM BOSS',hp:320,atk:28,def:14,spd:8,sprite:'quantumBoss',color:MG,
@@ -2796,9 +2857,9 @@ const ETYPES = [
    spawned:false},
   {id:'corporateDrone',name:'CORP DRONE',hp:65,atk:13,def:5,spd:9,sprite:'glitchDrone',color:'#4488ff',
    behavior:'tactical',
-   ability:{name:'ATK Suppressor',trigger:'onhit',fn(e,p){
+   ability:{name:'ATK Suppressor',trigger:'cd5',cdLeft:0,fn(e,p){
      const stacks=(p._atkSuppressStacks||0);
-     if(stacks<3){p._atkSuppressStacks=(stacks+1);const red=Math.floor(p.baseAtk*.1);p.baseAtk=Math.max(1,p.baseAtk-red);p.atk=Math.max(1,p.atk-red);UI.updateBars();DM.say(`SUPPRESSOR! ATK reduced by 10% (${stacks+1}/3)!`);}
+     if(stacks<2){p._atkSuppressStacks=(stacks+1);const red=Math.floor(p.baseAtk*.1);p.baseAtk=Math.max(1,p.baseAtk-red);p.atk=Math.max(1,p.atk-red);UI.updateBars();DM.say(`SUPPRESSOR! ATK reduced by 10% (${stacks+1}/2)!`);}
    }}},
   // ── THE ARCHITECT BOSS (floor 5) ──
   {id:'theArchitect',name:'THE ARCHITECT',hp:420,atk:24,def:10,spd:7,sprite:'circuitLich',color:'#00ffcc',
@@ -2826,37 +2887,37 @@ const ETYPES = [
 // ═══════════════════════════════════════════════════════════════
 const ZONES = {
   neonNexus:{id:'neonNexus',name:'NEON NEXUS',color:'#00FFFF',bgKey:'nexus',difficulty:1,
-    recLevel:1,icon:'🌆',rooms:5,desc:'Central city hub — tutorial zone',
-    pos:{x:0.46,y:0.44},connections:['voidSector','corporateStrip','ghostDistrict','rustMarket'],
+    recLevel:1,icon:'🌆',rooms:10,desc:'Central city hub — 10 levels of neon hell',
+    pos:{x:0.50,y:0.82},connections:['voidSector','corporateStrip','ghostDistrict','rustMarket'],
     enemies:['glitchDrone','netrunner'],bossId:'neonGolem',prereqs:[]},
   voidSector:{id:'voidSector',name:'VOID SECTOR',color:'#AA00FF',bgKey:'void',difficulty:2,
     recLevel:3,icon:'💀',rooms:6,desc:'Corrupted data streams — reality tears',
-    pos:{x:0.38,y:0.12},connections:['neonNexus','corporateStrip'],
+    pos:{x:0.12,y:0.25},connections:['neonNexus','corporateStrip'],
     enemies:['ghostHacker','voidSpecter','dataWraith'],bossId:'circuitLich',prereqs:['neonNexus']},
   corporateStrip:{id:'corporateStrip',name:'CORPORATE STRIP',color:'#4499FF',bgKey:'corp',difficulty:2,
     recLevel:3,icon:'🏢',rooms:6,desc:'Corp megablock — sterile and lethal',
-    pos:{x:0.78,y:0.26},connections:['neonNexus','voidSector','rustMarket'],
+    pos:{x:0.88,y:0.22},connections:['neonNexus','voidSector','rustMarket'],
     enemies:['corporateDrone','cyberOgre'],bossId:'theArchitect',prereqs:['neonNexus']},
   rustMarket:{id:'rustMarket',name:'RUST MARKET',color:'#FF6600',bgKey:'rust',difficulty:3,
     recLevel:5,icon:'🔧',rooms:7,desc:'Black market district — chaotic and dangerous',
-    pos:{x:0.75,y:0.52},connections:['neonNexus','corporateStrip','theUndernet'],
+    pos:{x:0.85,y:0.58},connections:['neonNexus','corporateStrip','theUndernet'],
     enemies:['chromeBeast','cyberOgre','pulseHound'],bossId:'chromeBeast',prereqs:['neonNexus']},
   theUndernet:{id:'theUndernet',name:'THE UNDERNET',color:'#39FF14',bgKey:'undernet',difficulty:3,
     recLevel:5,icon:'🕸',rooms:7,desc:'Underground data tunnels — dark and toxic',
-    pos:{x:0.32,y:0.72},connections:['neonNexus','rustMarket','ghostDistrict','dataHighway'],
+    pos:{x:0.18,y:0.72},connections:['neonNexus','rustMarket','ghostDistrict','dataHighway'],
     enemies:['neonSpider','dataWraith','glitchDrone'],bossId:'neonSpider',prereqs:['neonNexus']},
   ghostDistrict:{id:'ghostDistrict',name:'GHOST DISTRICT',color:'#BBBBDD',bgKey:'ghost',difficulty:4,
     recLevel:7,icon:'👻',rooms:6,desc:'Abandoned zone — echoes of the forgotten',
-    pos:{x:0.14,y:0.42},connections:['neonNexus','theUndernet','dataHighway'],
+    pos:{x:0.10,y:0.50},connections:['neonNexus','theUndernet','dataHighway'],
     enemies:['ghostHacker','voidSpecter','dataWraith'],bossId:'ghostHacker',prereqs:['neonNexus']},
   dataHighway:{id:'dataHighway',name:'DATA HIGHWAY',color:'#0099FF',bgKey:'highway',difficulty:4,
     recLevel:8,icon:'⚡',rooms:8,desc:'High-speed data streams — blistering pace',
-    pos:{x:0.54,y:0.84},connections:['theUndernet','ghostDistrict'],
+    pos:{x:0.78,y:0.82},connections:['theUndernet','ghostDistrict'],
     enemies:['pulseHound','glitchDrone','neonGolem'],bossId:'neonGolem',
     prereqs:['theUndernet','ghostDistrict']},
   theCore:{id:'theCore',name:'THE CORE',color:'#FFD700',bgKey:'core',difficulty:5,
     recLevel:10,icon:'🔴',rooms:5,desc:'Final boss chamber — end of everything',
-    pos:{x:0.50,y:0.52},connections:[],
+    pos:{x:0.50,y:0.35},connections:[],
     enemies:['quantumBoss'],bossId:'quantumBoss',
     prereqs:['voidSector','corporateStrip','rustMarket','theUndernet','ghostDistrict','dataHighway']},
 };
@@ -2871,7 +2932,11 @@ const SaveSystem = {
     const p=GameState.player;if(!p)return;
     try{
       localStorage.setItem(this._key,JSON.stringify({
-        selectedClass:GameState.selectedClass,
+        selectedGender:GameState.selectedGender||'man',
+        selectedAccent:GameState.selectedAccent||CY,
+        activeSkillId:GameState.player?.spells?.[0]?.id||'plasmaStrike',
+        passiveId:GameState.player?.passiveId||null,
+        statAlloc:GameState.ccState?.statAlloc||{hp:0,atk:0,def:0,spd:0,mp:0},
         selectedEquipId:GameState.selectedEquip?.id,
         hp:p.hp,maxHp:p.maxHp,mp:p.mp,maxMp:p.maxMp,
         baseAtk:p.baseAtk,atk:p.atk,baseDef:p.baseDef,def:p.def,
@@ -2892,11 +2957,15 @@ const SaveSystem = {
     try{
       const raw=localStorage.getItem(this._key);if(!raw)return false;
       const d=JSON.parse(raw);
-      GameState.selectedClass=d.selectedClass;
-      const cls=CLASSES[d.selectedClass];if(!cls)return false;
+      GameState.selectedGender=d.selectedGender||'man';
+      GameState.selectedAccent=d.selectedAccent||CY;
       const eq=EQUIP_POOL.find(e=>e.id===d.selectedEquipId)||EQUIP_POOL[0];
       GameState.selectedEquip=eq;
-      const p=new Player(cls,eq);
+      const activeSkill=ACTIVE_SKILLS.find(s=>s.id===d.activeSkillId)||ACTIVE_SKILLS[0];
+      const passiveSkill=PASSIVE_SKILLS.find(s=>s.id===d.passiveId)||null;
+      const cfg={gender:d.selectedGender||'man',accent:d.selectedAccent||CY,statAlloc:d.statAlloc||{hp:0,atk:0,def:0,spd:0,mp:0},activeSkill,passiveSkill};
+      GameState.ccState={gender:cfg.gender,accent:Object.entries(ACCENT_COLORS).find(([,v])=>v===cfg.accent)?.[0]||'cyan',statAlloc:cfg.statAlloc,pointsLeft:STAT_POINTS_TOTAL-Object.values(cfg.statAlloc).reduce((a,b)=>a+b,0),activeIdx:ACTIVE_SKILLS.indexOf(activeSkill),passiveIdx:passiveSkill?PASSIVE_SKILLS.indexOf(passiveSkill):0};
+      const p=new Player(cfg,eq);
       p.hp=d.hp;p.maxHp=d.maxHp;p.mp=d.mp;p.maxMp=d.maxMp;
       p.baseAtk=d.baseAtk;p.atk=d.atk;p.baseDef=d.baseDef;p.def=d.def;
       p.baseSpd=d.baseSpd;p.spd=d.spd;p.level=d.level||1;
@@ -3025,9 +3094,9 @@ const WorldMap = {
     // Mist particles
     this._drawParticles(ctx,W,H);
     // Subtle grid
-    ctx.strokeStyle='rgba(0,255,255,0.03)';ctx.lineWidth=1;
-    for(let x=0;x<W;x+=48){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
-    for(let y=0;y<H;y+=48){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+    ctx.strokeStyle='rgba(0,255,255,0.015)';ctx.lineWidth=1;
+    for(let x=0;x<W;x+=64){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+    for(let y=0;y<H;y+=64){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
     const zones=Object.values(ZONES);
     // Draw connections
     const drawn=new Set();
@@ -3211,8 +3280,8 @@ const LEVEL_UP_POOL = [
 // GAME STATE
 // ═══════════════════════════════════════════════════════════════
 const GameState = {
-  currentScreen:'sCS', floor:1, maxFloors:10,
-  selectedClass:null, selectedEquip:null,
+  currentScreen:'sMM', floor:1, maxFloors:10,
+  selectedGender:null, selectedAccent:null, ccState:null, selectedEquip:null,
   player:null, enemies:[],
   combatRunning:false, combatInterval:null,
   totalDmg:0, totalKills:0, questsDone:0, turnCount:0, floorTurns:0,
@@ -3232,19 +3301,38 @@ const GameState = {
 };
 
 class Player {
-  constructor(cls, eq) {
-    this.className=cls.name; this.accent=cls.accent; this.sprite=cls.sprite;
-    this.baseHp=cls.hp+(eq.bonus.hp||0); this.maxHp=this.baseHp; this.hp=this.maxHp;
-    this.maxMp=cls.mp+(eq.bonus.mp||0); this.mp=this.maxMp;
-    this.baseAtk=cls.atk+(eq.bonus.atk||0); this.atk=this.baseAtk;
-    this.baseDef=cls.def+(eq.bonus.def||0); this.def=this.baseDef;
-    this.baseSpd=cls.spd+(eq.bonus.spd||0); this.spd=this.baseSpd;
+  // New constructor: takes character creation config instead of class
+  constructor(cfg, eq) {
+    const gender = GENDERS[cfg.gender] || GENDERS.man;
+    this.className = gender.name;
+    this.accent = cfg.accent || CY;
+    this.sprite = gender.sprite;
+    this.gender = cfg.gender;
+    // Stats from base + allocation + equipment
+    const alloc = cfg.statAlloc || {hp:0,atk:0,def:0,spd:0,mp:0};
+    this.baseHp = BASE_STATS.hp + alloc.hp*STAT_PER_POINT.hp + (eq.bonus.hp||0);
+    this.maxHp = this.baseHp; this.hp = this.maxHp;
+    this.maxMp = BASE_STATS.mp + alloc.mp*STAT_PER_POINT.mp + (eq.bonus.mp||0);
+    this.mp = this.maxMp;
+    this.baseAtk = BASE_STATS.atk + alloc.atk*STAT_PER_POINT.atk + (eq.bonus.atk||0);
+    this.atk = this.baseAtk;
+    this.baseDef = BASE_STATS.def + alloc.def*STAT_PER_POINT.def + (eq.bonus.def||0);
+    this.def = this.baseDef;
+    this.baseSpd = BASE_STATS.spd + alloc.spd*STAT_PER_POINT.spd + (eq.bonus.spd||0);
+    this.spd = this.baseSpd;
     this.actionCounter=0; this.buffs=[]; this.debuffs=[];
     this.equip=eq; this.animState='idle'; this.animTimer=0;
-    this.spells=cls.spells.map(s=>({...s,effect:s.effect,cd:0,hackedTurns:0}));
+    // Active skill (single spell in array for combat system compatibility)
+    const activeSkill = cfg.activeSkill || ACTIVE_SKILLS[0];
+    this.spells=[{...activeSkill, effect:activeSkill.effect, cd:0, hackedTurns:0}];
     if(eq.bonus.cdReduce) this.spells.forEach(s=>s.maxCd=Math.max(1,s.maxCd-eq.bonus.cdReduce));
     this.spellsCast=new Set(); this.healedThisFloor=false;
     this.level=1; this.xp=0; this.xpToNext=50; this.critBonus=0;
+    // Passive skill
+    this.lifesteal=0; this.dodgeChance=0; this.blockDR=0.5;
+    const passive = cfg.passiveSkill;
+    if(passive && passive.apply) passive.apply(this);
+    this.passiveId = passive?.id || null;
   }
   addBuff(id,p){this.buffs=this.buffs.filter(b=>b.id!==id);this.buffs.push({id,...p});this.recalc();}
   addDebuff(id,p){this.debuffs=this.debuffs.filter(d=>d.id!==id);this.debuffs.push({id,...p});}
@@ -3263,7 +3351,11 @@ class Player {
     this.recalc();
   }
   hasBuff(id){return this.buffs.some(b=>b.id===id);}
-  isDodging(){const d=this.buffs.find(b=>b.id==='dodge');if(d&&d.dodges>0){d.dodges--;return true;}return false;}
+  isDodging(){
+    const d=this.buffs.find(b=>b.id==='dodge');if(d&&d.dodges>0){d.dodges--;return true;}
+    if(this.dodgeChance&&Math.random()<this.dodgeChance)return true;
+    return false;
+  }
 }
 
 class Enemy {
@@ -3321,10 +3413,11 @@ const Combat = {
     // Combo damage bonus
     const comboMult=this.getComboMult();
     if(comboMult>1)dmg=Math.floor(dmg*comboMult);
-    // Lifesteal from equipped Void Blade
+    // Lifesteal from equipped Void Blade or passive Siphon
     const p=GameState.player;
     const vb=Object.values(Inventory.equipped).find(i=>i&&i.id&&i.id.startsWith('voidBlade'));
-    if(vb){const ls=Math.floor(dmg*.15);if(p&&ls>0){p.hp=Math.min(p.maxHp,p.hp+ls);UI.dmgNumAt(Arena.getPlayerPos().x,Arena.getPlayerPos().y,ls,'heal');}}
+    const lsPct=(vb?0.15:0)+(p&&p.lifesteal?p.lifesteal:0);
+    if(lsPct>0&&p){const ls=Math.floor(dmg*lsPct);if(ls>0){p.hp=Math.min(p.maxHp,p.hp+ls);UI.dmgNumAt(Arena.getPlayerPos().x,Arena.getPlayerPos().y,ls,'heal');}}
     // Shock Gauntlets stun chance
     const sg=Object.values(Inventory.equipped).find(i=>i&&i.id&&i.id.startsWith('shockGauntlets'));
     if(sg&&Math.random()<.25){enemy.addDebuff('stun',{turns:1});DM.say('SHOCKED! Enemy stunned!');}
@@ -3418,7 +3511,7 @@ const Combat = {
     let rawDmg=Math.max(1,en.atk-(en.id==='ghostHacker'?0:blocked));
     // Block mechanic
     if(GameState.isBlocking){
-      rawDmg=Math.floor(rawDmg*.5);
+      rawDmg=Math.floor(rawDmg*(1-(p.blockDR||0.5)));
       DM.say(`BLOCKED! Damage halved to ${rawDmg}!`);
       // Counter if blocked damage below threshold
       if(rawDmg<8){
@@ -3567,8 +3660,8 @@ const Combat = {
       DM.say(`${zoneName} BOSS DEFEATED! Zone cleared!`);
       setTimeout(()=>VictoryScreen.show(true,()=>WorldMap.show()),900);
     } else {
-      DM.say('Room cleared! Choose your next path.');
-      setTimeout(()=>VictoryScreen.show(false,()=>Game.showExits()),900);
+      DM.say('Room cleared!');
+      setTimeout(()=>VictoryScreen.show(false,()=>WorldMap.show()),900);
     }
   },
   start(){
@@ -3583,7 +3676,7 @@ const Combat = {
     AIDialog.init();
     UI.updateCombo();UI.updateBlock();UI.updateTurnOrder();
     Arena.resize(); // ensure canvas is properly sized before first render
-    GameState.combatInterval=setInterval(()=>Combat.tick(),1800);
+    GameState.combatInterval=setInterval(()=>Combat.tick(),1200);
   }
 };
 
@@ -4022,7 +4115,7 @@ const UI={
           const alive=GameState.enemies.filter(e=>e.hp>0);
           if(alive.length>0&&p.hp>0){
             GameState.combatRunning=true;
-            GameState.combatInterval=setInterval(()=>Combat.tick(),500);
+            GameState.combatInterval=setInterval(()=>Combat.tick(),1200);
           } else {
             Combat.endCombat(p.hp>0);
           }
@@ -4159,6 +4252,98 @@ const DungeonGen = {
 // ─────────────────────────────────────────────────────────────────────────────
 // TITLE SCREEN — synthwave / retrowave animated background
 // ─────────────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// MATRIX RAIN — main menu background
+// ═══════════════════════════════════════════════════════════════
+const MatrixRain = {
+  cv:null, ctx:null, W:0, H:0, cols:[], fontSize:18, tick:0,
+  chars:'01アウエカキクサシセタチツネノハヒフヘマミメモヤラリルレロワン',
+
+  init(){
+    this.cv=document.getElementById('matrixCV');
+    if(!this.cv)return;
+    this.ctx=this.cv.getContext('2d');
+    this.resize();
+    window.addEventListener('resize',()=>this.resize());
+    const loop=()=>{this.tick++;this.draw();requestAnimationFrame(loop);};
+    requestAnimationFrame(loop);
+  },
+
+  resize(){
+    this.W=window.innerWidth;this.H=window.innerHeight;
+    this.cv.width=this.W;this.cv.height=this.H;
+    // Only use ~40% of possible columns for sparse look
+    const maxCols=Math.floor(this.W/this.fontSize);
+    const sparseCount=Math.floor(maxCols*0.4);
+    const usedSlots=new Set();
+    while(usedSlots.size<sparseCount) usedSlots.add(Math.floor(Math.random()*maxCols));
+    this.cols=Array.from(usedSlots).sort((a,b)=>a-b).map(slot=>({
+      slot,
+      y:Math.random()*this.H/this.fontSize|0,
+      speed:0.15+Math.random()*0.35,
+      hue:Math.random()<.5?180:300, // only cyan and magenta
+      len:4+Math.floor(Math.random()*8) // trail length
+    }));
+  },
+
+  draw(){
+    const ctx=this.ctx,W=this.W,H=this.H,fs=this.fontSize,t=this.tick;
+
+    // Faster fade for shorter trails
+    ctx.fillStyle='rgba(2,2,16,0.06)';
+    ctx.fillRect(0,0,W,H);
+
+    // Subtle vaporwave glow — very infrequent
+    if(t%200===0){
+      ctx.save();ctx.globalAlpha=0.008;
+      const g=ctx.createRadialGradient(W*.5,H*.4,0,W*.5,H*.4,H*.6);
+      g.addColorStop(0,'rgba(136,0,255,.5)');g.addColorStop(1,'transparent');
+      ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+      ctx.restore();
+    }
+
+    ctx.font=fs+'px monospace';
+    for(let i=0;i<this.cols.length;i++){
+      const col=this.cols[i];
+      col.y+=col.speed;
+      // Skip frames for very slow columns
+      if(t%3!==0&&col.speed<0.25)continue;
+
+      const ch=this.chars[Math.random()*this.chars.length|0];
+      const x=col.slot*fs,y=Math.floor(col.y)*fs;
+
+      // Dimmer colors, head char slightly brighter
+      const isHead=Math.random()>.96;
+      if(isHead){
+        ctx.fillStyle=`hsla(${col.hue},100%,80%,0.7)`;
+        ctx.shadowColor=`hsl(${col.hue},100%,60%)`;ctx.shadowBlur=6;
+      } else {
+        const alpha=Math.random()>.5?0.15:0.06;
+        ctx.fillStyle=`hsla(${col.hue},80%,50%,${alpha})`;
+        ctx.shadowBlur=0;
+      }
+      ctx.fillText(ch,x,y);
+      if(isHead)ctx.shadowBlur=0;
+
+      // Reset column
+      if(y>H&&Math.random()>.98){
+        col.y=-col.len;
+        col.speed=0.15+Math.random()*0.35;
+        col.hue=Math.random()<.5?180:300;
+      }
+    }
+
+    // Horizontal scanline flicker (rare)
+    if(Math.random()<.015){
+      const sy=Math.random()*H;
+      ctx.save();ctx.globalAlpha=0.06;
+      ctx.fillStyle=Math.random()>.5?'#00ffff':'#ff00ff';
+      ctx.fillRect(0,sy,W,1+Math.random()*2);
+      ctx.restore();
+    }
+  }
+};
+
 const City = {
   cv:null, ctx:null, W:0, H:0, t:0,
   stars:[],
@@ -4327,7 +4512,7 @@ const Records = {
   saveRun(){
     const p=GameState.player;if(!p)return;
     const d=this._load();
-    const cls=GameState.selectedClass;
+    const cls=GameState.selectedGender||'man';
     if(!d.classes)d.classes={};
     if(!d.classes[cls])d.classes[cls]={runs:0,wins:0,bestFloor:0,totalKills:0};
     const cr=d.classes[cls];
@@ -4355,16 +4540,20 @@ const Records = {
     return{runs:cr.runs,wins:cr.wins,bestFloor:cr.bestFloor};
   },
 
+  showPanel(){
+    this.renderModal();
+    document.getElementById('recordsModal').classList.add('show');
+  },
   renderModal(){
     const d=this._load();
     const cl=document.getElementById('recordsClassList');
     const at=document.getElementById('recordsAllTime');
     if(cl){
       cl.innerHTML='';
-      Object.keys(CLASSES).forEach(k=>{
+      Object.keys(GENDERS).forEach(k=>{
         const cr=d.classes?.[k];
         const row=document.createElement('div');row.className='records-row';
-        row.innerHTML=`<span class="records-row-label">${CLASSES[k].name}</span><span class="records-row-val">${cr?`${cr.wins}W/${cr.runs}R · F${cr.bestFloor}`:'—'}</span>`;
+        row.innerHTML=`<span class="records-row-label">${GENDERS[k].name}</span><span class="records-row-val">${cr?`${cr.wins}W/${cr.runs}R · F${cr.bestFloor}`:'—'}</span>`;
         cl.appendChild(row);
       });
     }
@@ -4391,9 +4580,13 @@ const Game={
       GameState.dialog=dialog;
       GameState.dungeonConfig=dungeonConfig;
     }).catch(()=>{/* offline: GameState.dialog and dungeonConfig stay null, hardcoded fallbacks apply */});
+    MatrixRain.init();
     City.init();
     Arena.init();
+    this.initMainMenu();
     this.buildClassSelect();
+    // Don't show character select on load — main menu is first
+    GameState.currentScreen='sMM';
     const dmc=document.getElementById('dmcv');
     SPR.dm(dmc.getContext('2d'),2,4);
     const sty=document.createElement('style');
@@ -4455,7 +4648,7 @@ const Game={
             pm.classList.toggle('show',!open);
             if(!open&&GameState.combatRunning){clearInterval(GameState.combatInterval);GameState.combatInterval=null;GameState.combatRunning=false;}
             else if(open&&!GameState.combatRunning&&GameState.enemies.filter(e=>e.hp>0).length){
-              GameState.combatRunning=true;GameState.combatInterval=setInterval(()=>Combat.tick(),1800);
+              GameState.combatRunning=true;GameState.combatInterval=setInterval(()=>Combat.tick(),1200);
             }
           }
         }
@@ -4465,7 +4658,7 @@ const Game={
     if(pauseResume)pauseResume.addEventListener('click',()=>{
       const pm=document.getElementById('pauseMenu');pm.classList.remove('show');
       if(!GameState.combatRunning&&GameState.enemies.filter(e=>e.hp>0).length){
-        GameState.combatRunning=true;GameState.combatInterval=setInterval(()=>Combat.tick(),500);
+        GameState.combatRunning=true;GameState.combatInterval=setInterval(()=>Combat.tick(),1200);
       }
     });
     const pauseSettings=document.getElementById('pauseSettings');
@@ -4566,72 +4759,206 @@ const Game={
     DialogEngine.showNPCGreeting('rest_node');
   },
 
-  buildClassSelect(){
-    const grid=document.getElementById('cgrid');grid.innerHTML='';
-    const classKeys=Object.keys(CLASSES);
-    classKeys.forEach((key)=>{
-      const cls=CLASSES[key];
-      const card=document.createElement('div');
-      card.className='cc'+(GameState.selectedClass===key?' sel':'');
-      card.dataset.key=key;
-
-      // Sprite canvas — large, no padding
-      const sz=SPRITE_SIZE[cls.sprite]||{w:56,h:88};
-      const cv=document.createElement('canvas');
-      cv.width=sz.w+8; cv.height=sz.h+8;
-      card.appendChild(cv);
-
-      // Stat bars
-      const maxS={hp:120,atk:28,def:12,spd:14};
-      const sc={hp:'#ff4444',atk:OR,def:'#4488ff',spd:GR};
-      const nameEl=document.createElement('div');
-      nameEl.className='cn'; nameEl.style.color=cls.accent;
-      nameEl.style.textShadow=`0 0 8px ${cls.accent}`;
-      nameEl.textContent=cls.name;
-      card.appendChild(nameEl);
-
-      const statsEl=document.createElement('div');
-      statsEl.className='cs';
-      statsEl.innerHTML=(['hp','atk','def','spd']).map(s=>
-        `<div class="sr"><span>${s.toUpperCase()}</span><div class="sb"><div class="sbf" style="width:${Math.round(cls[s]/maxS[s]*100)}%;background:${sc[s]}"></div></div><span style="color:#ccd">${cls[s]}</span></div>`
-      ).join('');
-      card.appendChild(statsEl);
-
-      // Lore tab
-      const loreEl=document.createElement('div');
-      loreEl.className='lore-tab';
-      loreEl.textContent=CLASS_LORE[key]||'';
-      card.appendChild(loreEl);
-
-      // Win rate badge
-      const wr=Records.getClassWinRate(key);
-      const wrEl=document.createElement('div');
-      wrEl.className='win-rate';
-      if(wr)wrEl.textContent=`${wr.wins}W/${wr.runs}R · BEST:F${wr.bestFloor}`;
-      card.appendChild(wrEl);
-
-      // Stagger slide-in animation
-      card.style.animationDelay=`${classKeys.indexOf(key)*55}ms`;
-
-      card.addEventListener('click',()=>{
-        GameState.selectedClass=key;
-        document.querySelectorAll('.cc').forEach(c=>c.classList.remove('sel'));
-        card.classList.add('sel');
-        this.renderSpells(key);
+  initMainMenu(){
+    document.getElementById('mmConnect').addEventListener('click',()=>{
+      UI.show('sCS');
+      City.resize();
+    });
+    const contBtn=document.getElementById('mmContinue');
+    if(contBtn){
+      contBtn.style.display=SaveSystem.hasSave()?'':'none';
+      contBtn.addEventListener('click',()=>{
+        if(SaveSystem.load()){ UI.show('sCS'); WorldMap.show(); }
       });
-      grid.appendChild(card);
+    }
+    document.getElementById('mmSettings')?.addEventListener('click',()=>{
+      document.getElementById('settingsModal').classList.add('show');
+    });
+    document.getElementById('mmRecords')?.addEventListener('click',()=>{
+      Records.showPanel();
+    });
+  },
 
-      setTimeout(()=>{
-        const cc=cv.getContext('2d'); cc.clearRect(0,0,cv.width,cv.height);
-        if(SPR[cls.sprite]) SPR[cls.sprite](cc,4,4,false,0);
-      },60);
+  buildClassSelect(){
+    if(!GameState.ccState) GameState.ccState={
+      gender:'man', accent:'cyan',
+      statAlloc:{hp:0,atk:0,def:0,spd:0,mp:0}, pointsLeft:STAT_POINTS_TOTAL,
+      activeIdx:0, passiveIdx:0
+    };
+    const cc=GameState.ccState;
+    const grid=document.getElementById('cgrid');grid.innerHTML='';
+    const F='font-family:\"Share Tech Mono\",monospace;';
+
+    // ── ROW 1: BODY + COLOR + STATS in one row ──
+    const topRow=document.createElement('div');
+    topRow.style.cssText='display:flex;gap:clamp(6px,1vw,14px);margin-bottom:clamp(6px,1vh,12px);';
+
+    // Body selection
+    const genderBox=document.createElement('div');genderBox.className='cc-panel';genderBox.style.cssText='flex:2;';
+    genderBox.innerHTML=`<div class="slbl">BODY TYPE</div>`;
+    const genderRow=document.createElement('div');
+    genderRow.style.cssText='display:flex;gap:clamp(6px,0.8vw,12px);';
+    Object.entries(GENDERS).forEach(([key,g])=>{
+      const card=document.createElement('div');
+      card.className='cc'+(cc.gender===key?' sel':'');
+      card.dataset.gkey=key;
+      card.style.cssText='flex:1;padding:clamp(6px,0.8vh,10px) clamp(4px,0.5vw,8px);';
+      const sz=SPRITE_SIZE[g.sprite]||{w:56,h:88};
+      const cv=document.createElement('canvas');
+      cv.width=sz.w+8;cv.height=sz.h+8;
+      card.appendChild(cv);
+      const nm=document.createElement('div');nm.className='cn';nm.style.cssText=F+'font-size:clamp(9px,1vw,14px);';nm.textContent=g.name;
+      card.appendChild(nm);
+      const lr=document.createElement('div');lr.style.cssText=F+'font-size:clamp(6px,0.7vw,9px);color:#667;text-align:center;margin-top:2px;';lr.textContent=g.lore;
+      card.appendChild(lr);
+      card.addEventListener('click',()=>{
+        cc.gender=key;genderRow.querySelectorAll('.cc').forEach(c=>c.classList.remove('sel'));card.classList.add('sel');this._updatePreview();
+      });
+      genderRow.appendChild(card);
+      setTimeout(()=>{const cx=cv.getContext('2d');cx.clearRect(0,0,cv.width,cv.height);if(SPR[g.sprite])SPR[g.sprite](cx,4,4,false,0);},60);
+    });
+    genderBox.appendChild(genderRow);
+    topRow.appendChild(genderBox);
+
+    // Color + Stats stacked
+    const rightCol=document.createElement('div');
+    rightCol.style.cssText='flex:1;display:flex;flex-direction:column;gap:clamp(6px,1vh,12px);';
+
+    // Color
+    const colorBox=document.createElement('div');colorBox.className='cc-panel';
+    colorBox.innerHTML=`<div class="slbl">ACCENT COLOR</div>`;
+    const colorRow=document.createElement('div');
+    colorRow.style.cssText='display:flex;gap:clamp(6px,0.8vw,10px);justify-content:center;';
+    Object.entries(ACCENT_COLORS).forEach(([name,hex])=>{
+      const sw=document.createElement('div');
+      sw.style.cssText=`width:clamp(28px,3vw,42px);height:clamp(28px,3vw,42px);border-radius:4px;background:${hex};cursor:pointer;border:2px solid ${cc.accent===name?'#fff':'#222'};box-shadow:${cc.accent===name?'0 0 12px '+hex:'none'};transition:all .15s;`;
+      sw.addEventListener('click',()=>{
+        cc.accent=name;colorRow.querySelectorAll('div').forEach(d=>{d.style.borderColor='#222';d.style.boxShadow='none';});
+        sw.style.borderColor='#fff';sw.style.boxShadow='0 0 12px '+hex;this._updatePreview();
+      });
+      colorRow.appendChild(sw);
+    });
+    colorBox.appendChild(colorRow);
+    rightCol.appendChild(colorBox);
+
+    // Stats
+    const statSec=document.createElement('div');statSec.className='cc-panel';statSec.style.cssText='flex:1;';
+    statSec.innerHTML=`<div class="slbl">STATS <span id="ccPtsLeft" style="color:${CY}">${cc.pointsLeft} PTS LEFT</span></div>`;
+    const statGrid=document.createElement('div');
+    statGrid.style.cssText='display:flex;flex-direction:column;gap:clamp(3px,0.5vh,6px);';
+    const statNames={hp:'HP',atk:'ATK',def:'DEF',spd:'SPD',mp:'MP'};
+    const statColors={hp:'#ff4444',atk:OR,def:'#4488ff',spd:GR,mp:'#aa66ff'};
+    Object.entries(statNames).forEach(([key,label])=>{
+      const row=document.createElement('div');
+      row.style.cssText='display:flex;align-items:center;gap:clamp(4px,0.5vw,8px);';
+      const val=()=>BASE_STATS[key]+cc.statAlloc[key]*STAT_PER_POINT[key];
+      row.innerHTML=`<span style="width:clamp(28px,3vw,38px);color:${statColors[key]};${F}font-size:clamp(8px,0.9vw,13px);font-weight:bold">${label}</span><button class="cc-stat-btn" data-stat="${key}" data-dir="-1" style="width:clamp(22px,2.5vw,30px);height:clamp(22px,2.5vh,30px);background:rgba(255,0,64,.5);border:1px solid #ff0040;color:#fff;cursor:pointer;${F}font-size:clamp(10px,1.1vw,14px);padding:0;line-height:1;">-</button><div style="flex:1;background:#0a0a0a;height:clamp(12px,1.6vh,18px);border:1px solid #333;"><div class="cc-bar-${key}" style="height:100%;background:${statColors[key]};width:50%;transition:width .2s"></div></div><span class="cc-val-${key}" style="width:clamp(30px,3.5vw,44px);text-align:right;color:#dde;${F}font-size:clamp(9px,1vw,14px)">${val()}</span><button class="cc-stat-btn" data-stat="${key}" data-dir="1" style="width:clamp(22px,2.5vw,30px);height:clamp(22px,2.5vh,30px);background:rgba(0,255,65,.5);border:1px solid #00ff41;color:#fff;cursor:pointer;${F}font-size:clamp(10px,1.1vw,14px);padding:0;line-height:1;">+</button>`;
+      statGrid.appendChild(row);
+    });
+    statSec.appendChild(statGrid);
+    rightCol.appendChild(statSec);
+    topRow.appendChild(rightCol);
+    grid.appendChild(topRow);
+
+    const maxStats={hp:200,atk:59,def:36,spd:37,mp:235};
+    statGrid.addEventListener('click',e=>{
+      const btn=e.target.closest('[data-stat]');if(!btn)return;
+      const stat=btn.dataset.stat,dir=parseInt(btn.dataset.dir);
+      if(dir>0&&cc.pointsLeft<=0)return;
+      if(dir<0&&cc.statAlloc[stat]<=0)return;
+      cc.statAlloc[stat]+=dir;cc.pointsLeft-=dir;
+      document.getElementById('ccPtsLeft').textContent=`${cc.pointsLeft} PTS LEFT`;
+      document.getElementById('ccPtsLeft').style.color=cc.pointsLeft>0?CY:'#ff4444';
+      const val=BASE_STATS[stat]+cc.statAlloc[stat]*STAT_PER_POINT[stat];
+      document.querySelector(`.cc-bar-${stat}`).style.width=Math.round(val/maxStats[stat]*100)+'%';
+      document.querySelector(`.cc-val-${stat}`).textContent=val;
+      this._updatePreview();
     });
 
-    if(!GameState.selectedClass) GameState.selectedClass='warrior';
-    const def=grid.querySelector('[data-key="warrior"]');
-    if(def) def.classList.add('sel');
+    // ── ROW 2: ACTIVE + PASSIVE side by side with descriptions ──
+    const skillRow=document.createElement('div');
+    skillRow.style.cssText='display:flex;gap:clamp(6px,1vw,14px);flex:1;min-height:0;';
+
+    // Active skills
+    const actBox=document.createElement('div');actBox.className='cc-panel';actBox.style.cssText='flex:1;display:flex;flex-direction:column;';
+    actBox.innerHTML=`<div class="slbl">ACTIVE SKILL — CHOOSE 1</div>`;
+    const actRow=document.createElement('div');
+    actRow.style.cssText='display:flex;flex-direction:column;gap:clamp(3px,0.4vh,6px);flex:1;';
+    ACTIVE_SKILLS.forEach((sk,i)=>{
+      const c=document.createElement('div');c.className='spc'+(cc.activeIdx===i?' sel':'');
+      c.style.cssText='cursor:pointer;padding:clamp(6px,0.8vh,10px) clamp(8px,1vw,14px);display:flex;align-items:center;gap:clamp(8px,1vw,14px);';
+      c.innerHTML=`<div style="${F}font-size:clamp(16px,2vw,24px);flex-shrink:0;width:clamp(24px,3vw,36px);text-align:center;">${sk.icon}</div><div style="flex:1;min-width:0;"><div style="${F}font-size:clamp(9px,1vw,13px);color:#ff00ff;margin-bottom:2px;">${sk.name}</div><div style="${F}font-size:clamp(7px,0.75vw,10px);color:#99a;line-height:1.4;">${sk.desc}</div></div><div style="${F}font-size:clamp(6px,0.65vw,9px);color:#556;text-align:right;flex-shrink:0;">MP:${sk.mp}<br>CD:${sk.maxCd}</div>`;
+      c.addEventListener('click',()=>{cc.activeIdx=i;actRow.querySelectorAll('.spc').forEach(x=>x.classList.remove('sel'));c.classList.add('sel');});
+      actRow.appendChild(c);
+    });
+    actBox.appendChild(actRow);
+    skillRow.appendChild(actBox);
+
+    // Passive skills
+    const pasBox=document.createElement('div');pasBox.className='cc-panel';pasBox.style.cssText='flex:1;display:flex;flex-direction:column;';
+    pasBox.innerHTML=`<div class="slbl">PASSIVE SKILL — CHOOSE 1</div>`;
+    const pasRow=document.createElement('div');
+    pasRow.style.cssText='display:flex;flex-direction:column;gap:clamp(3px,0.4vh,6px);flex:1;';
+    PASSIVE_SKILLS.forEach((sk,i)=>{
+      const c=document.createElement('div');c.className='spc'+(cc.passiveIdx===i?' sel':'');
+      c.style.cssText='cursor:pointer;padding:clamp(6px,0.8vh,10px) clamp(8px,1vw,14px);display:flex;align-items:center;gap:clamp(8px,1vw,14px);';
+      c.innerHTML=`<div style="${F}font-size:clamp(16px,2vw,24px);flex-shrink:0;width:clamp(24px,3vw,36px);text-align:center;">${sk.icon}</div><div style="flex:1;min-width:0;"><div style="${F}font-size:clamp(9px,1vw,13px);color:#ff00ff;margin-bottom:2px;">${sk.name}</div><div style="${F}font-size:clamp(7px,0.75vw,10px);color:#99a;line-height:1.4;">${sk.desc}</div></div>`;
+      c.addEventListener('click',()=>{cc.passiveIdx=i;pasRow.querySelectorAll('.spc').forEach(x=>x.classList.remove('sel'));c.classList.add('sel');});
+      pasRow.appendChild(c);
+    });
+    pasBox.appendChild(pasRow);
+    skillRow.appendChild(pasBox);
+    grid.appendChild(skillRow);
+
     this.renderEquip();
-    this.renderSpells('warrior');
+    setTimeout(()=>this._updatePreview(),100);
+  },
+
+  _updatePreview(){
+    const cc=GameState.ccState;
+    const accent=ACCENT_COLORS[cc.accent]||CY;
+    // Update gender card accent colors
+    document.querySelectorAll('.cc[data-gkey]').forEach(card=>{
+      const nm=card.querySelector('.cn');
+      if(nm){nm.style.color=accent;nm.style.textShadow='0 0 8px '+accent;}
+    });
+    // Draw large preview sprite
+    const cv=document.getElementById('ccPreviewCV');
+    if(!cv)return;
+    const ctx=cv.getContext('2d');
+    ctx.clearRect(0,0,cv.width,cv.height);
+    const gender=GENDERS[cc.gender]||GENDERS.man;
+    const sz=SPRITE_SIZE[gender.sprite]||{w:56,h:88};
+    // Draw at 2x scale centered
+    const scale=2;
+    const ox=Math.floor((cv.width-sz.w*scale)/2)/scale;
+    const oy=Math.floor((cv.height-sz.h*scale)/2)/scale;
+    ctx.save();
+    ctx.scale(scale,scale);
+    // Glow in accent color
+    ctx.shadowColor=accent;ctx.shadowBlur=10;
+    if(SPR[gender.sprite]) SPR[gender.sprite](ctx,ox,oy,false,Date.now()*0.06);
+    ctx.restore();
+    // Platform/ground line
+    const gy=Math.floor(cv.height/2+sz.h*scale/2)+4;
+    ctx.strokeStyle=accent;ctx.lineWidth=1;ctx.globalAlpha=0.3;
+    ctx.beginPath();ctx.moveTo(cv.width*.2,gy);ctx.lineTo(cv.width*.8,gy);ctx.stroke();
+    ctx.globalAlpha=1;
+    // Name label
+    const nameEl=document.getElementById('ccPreviewName');
+    if(nameEl){nameEl.textContent=gender.name;nameEl.style.color=accent;nameEl.style.textShadow='0 0 8px '+accent;}
+    // Stats summary
+    const statsEl=document.getElementById('ccPreviewStats');
+    if(statsEl){
+      const alloc=cc.statAlloc;
+      const hp=BASE_STATS.hp+alloc.hp*STAT_PER_POINT.hp;
+      const atk=BASE_STATS.atk+alloc.atk*STAT_PER_POINT.atk;
+      const def=BASE_STATS.def+alloc.def*STAT_PER_POINT.def;
+      const spd=BASE_STATS.spd+alloc.spd*STAT_PER_POINT.spd;
+      const mp=BASE_STATS.mp+alloc.mp*STAT_PER_POINT.mp;
+      const ac=accent;
+      statsEl.innerHTML=`<span style="color:#ff4444">HP:${hp}</span> <span style="color:${OR}">ATK:${atk}</span> <span style="color:#4488ff">DEF:${def}</span><br><span style="color:${GR}">SPD:${spd}</span> <span style="color:#aa66ff">MP:${mp}</span>`;
+    }
   },
 
   renderEquip(){
@@ -4646,19 +4973,19 @@ const Game={
     });
   },
 
-  renderSpells(key){
-    const cls=CLASSES[key];const grid=document.getElementById('spgrid');grid.innerHTML='';
-    cls.spells.forEach(sp=>{
-      const c=document.createElement('div');c.className='spc';
-      c.innerHTML=`<div class="spn">${sp.icon} ${sp.name}</div><div style="color:#777">${sp.desc}</div><div style="color:${CY};margin-top:3px">MP:${sp.mp} CD:${sp.maxCd}</div><div class="sp-tooltip">${sp.desc} · MP:${sp.mp} · CD:${sp.maxCd} turns</div>`;
-      grid.appendChild(c);
-    });
-  },
-
   enterDungeon(){
-    if(!GameState.selectedClass||!GameState.selectedEquip)return;
-    const cls=CLASSES[GameState.selectedClass];
-    GameState.player=new Player(cls,GameState.selectedEquip);
+    const cc=GameState.ccState;
+    if(!cc||!GameState.selectedEquip)return;
+    const cfg={
+      gender: cc.gender,
+      accent: ACCENT_COLORS[cc.accent]||CY,
+      statAlloc: cc.statAlloc,
+      activeSkill: ACTIVE_SKILLS[cc.activeIdx||0],
+      passiveSkill: PASSIVE_SKILLS[cc.passiveIdx||0]
+    };
+    GameState.selectedGender=cc.gender;
+    GameState.selectedAccent=ACCENT_COLORS[cc.accent]||CY;
+    GameState.player=new Player(cfg,GameState.selectedEquip);
     GameState.floor=1;GameState.totalDmg=0;GameState.totalKills=0;
     GameState.questsDone=0;GameState.turnCount=0;GameState.levelUpPending=false;
     GameState.combo=0;GameState.blockCd=0;GameState.isBlocking=false;
@@ -4722,6 +5049,26 @@ const Game={
     // Clear boss room tint for non-boss rooms
     const aw=document.getElementById('arenaWrap');
     if(aw)aw.classList.toggle('boss-room',room.type==='boss');
+    // Set room background image based on zone and room index
+    if(aw){
+      const zoneId=GameState.currentZoneId;
+      const totalRooms=floorData.rooms.length;
+      const zoneBgs={neonNexus:['zone1-1.png','zone1-2.png']};
+      const bgs=zoneBgs[zoneId];
+      if(bgs){
+        const halfRooms=Math.ceil(totalRooms/2);
+        const bgIdx=idx<halfRooms?0:1;
+        const localIdx=idx<halfRooms?idx:idx-halfRooms;
+        const localTotal=bgIdx===0?halfRooms:totalRooms-halfRooms;
+        const pct=localTotal>1?(localIdx/(localTotal-1))*100:0;
+        aw.style.backgroundImage=`url('${bgs[bgIdx]}')`;
+        aw.style.backgroundSize='cover';
+        aw.style.backgroundPosition=`${pct}% center`;
+        aw.style.backgroundRepeat='no-repeat';
+      } else {
+        aw.style.backgroundImage='none';
+      }
+    }
     DialogEngine._cancel();
     const p=GameState.player;
     const fl=GameState.floor;
@@ -4749,7 +5096,7 @@ const Game={
         const gold=Math.floor(20+fl*8+Math.random()*20);
         LootScreen.add(items,gold);
         GameState.floorGold+=gold;
-        setTimeout(()=>VictoryScreen.show(false,()=>this.showExits()),700);
+        setTimeout(()=>VictoryScreen.show(false,()=>WorldMap.show()),700);
         break;
       }
       case 'rest':{
@@ -4758,17 +5105,16 @@ const Game={
         p.hp=Math.min(p.maxHp,p.hp+heal);
         UI.updateBars();
         DM.say(`Rest node active. Restored ${heal} HP.`);
-        // Show NPC greeting dialog, then exits after it auto-dismisses
         setTimeout(()=>{
           DialogEngine.showNPCGreeting('rest_node');
-          setTimeout(()=>this.showExits(),3200);
+          setTimeout(()=>WorldMap.show(),3200);
         },400);
         break;
       }
       case 'merchant':{
         room.cleared=true;
         DM.say('Merchant node detected. Cyberware available.');
-        setTimeout(()=>this.triggerMerchant(()=>this.showExits()),400);
+        setTimeout(()=>this.triggerMerchant(()=>WorldMap.show()),400);
         break;
       }
     }
@@ -4857,8 +5203,13 @@ const Game={
   _spawnCombatEnemies(){
     const zone=ZONES[GameState.currentZoneId];
     const fl=GameState.floor;
-    const level=fl;
-    const maxEn=Math.min(3,1+Math.floor(fl/2));
+    const roomIdx=GameState.currentRoomIdx||0;
+    const totalRooms=GameState.currentFloor?.rooms?.length||10;
+    // Scale level based on room progress within zone (room 0 = base, last room = +50%)
+    const roomScale=roomIdx/Math.max(1,totalRooms-1); // 0 to 1
+    const level=fl+roomScale*fl*0.5; // gradual increase per room
+    // More enemies in later rooms
+    const maxEn=roomIdx<3?1:roomIdx<7?Math.min(2,1+Math.floor(fl/2)):Math.min(3,1+Math.floor(fl/2));
     // Zone enemy pool
     const zoneEnemyIds=zone?.enemies||['glitchDrone'];
     const pool=ETYPES.filter(e=>!e.isBoss&&zoneEnemyIds.includes(e.id));
@@ -4890,7 +5241,7 @@ const Game={
   restart(){
     if(GameState.combatInterval)clearInterval(GameState.combatInterval);
     GameState.combatRunning=false;
-    Object.assign(GameState,{selectedClass:null,selectedEquip:null,totalDmg:0,totalKills:0,
+    Object.assign(GameState,{selectedGender:null,selectedAccent:null,ccState:null,selectedEquip:null,totalDmg:0,totalKills:0,
       questsDone:0,turnCount:0,levelUpPending:false,
       currentFloor:null,currentRoomIdx:0,floorGold:0,combo:0,blockCd:0,isBlocking:false,_maxCombo:0,
       currentZoneId:null,zonesCleared:[],zonesUnlocked:['neonNexus'],floor:1});
@@ -4901,10 +5252,12 @@ const Game={
     WorldMap.hide();
     Inventory.init();LootScreen.reset();
     Arena.time=0;Arena.vfx=[];Arena.particles=[];Arena.floatTexts=[];Arena._initHexParticles&&Arena._initHexParticles();
-    // Show CONTINUE button only if save exists
+    // Update main menu continue button
+    const mmCont=document.getElementById('mmContinue');
+    if(mmCont)mmCont.style.display=SaveSystem.hasSave()?'':'none';
     const contBtn=document.getElementById('continueBtn');
     if(contBtn)contBtn.style.display=SaveSystem.hasSave()?'':'none';
-    UI.show('sCS');this.buildClassSelect();
+    UI.show('sMM');this.buildClassSelect();
   }
 };
 
@@ -5711,6 +6064,7 @@ document.getElementById('ebtn').addEventListener('click',()=>Game.enterDungeon()
 // Single init on load
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',()=>Game.init());}
 else{Game.init();}
+
 </script>
 </body>
 </html>
