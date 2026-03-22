@@ -3700,7 +3700,8 @@ const Combat = {
     QM.check();
   },
   endCombat(won){
-    clearInterval(GameState.combatInterval);GameState.combatRunning=false;
+    if(this._endingCombat)return;this._endingCombat=true;
+    clearInterval(GameState.combatInterval);GameState.combatInterval=null;GameState.combatRunning=false;
     const p=GameState.player;
     if(!won){
       UI.flash();
@@ -3753,6 +3754,7 @@ const Combat = {
     }
   },
   start(){
+    this._endingCombat=false;
     GameState.combatRunning=true;GameState.floorTurns=0;
     const p2=GameState.player;
     p2.healedThisFloor=false;
