@@ -2046,6 +2046,35 @@ const Arena = {
       // Main sprite
       ctx.globalAlpha = pDead ? 0.35 : 1;
       if (SPR[p.sprite]) SPR[p.sprite](ctx, dx, dy, false, t);
+      // ── Player limb animation overlay ──
+      if(!pDead){
+        const ac2=p.accent||CY;
+        const armSwing=p.animState==='attack'?Math.sin(p.animTimer/8*Math.PI)*12:
+                       p.animState==='cast'?Math.sin(p.animTimer/15*Math.PI)*-8:
+                       Math.sin(t*0.06)*2; // idle sway
+        const legSwing=p.animState==='attack'?Math.sin(p.animTimer/8*Math.PI)*6:
+                       Math.sin(t*0.04)*1.5; // idle step
+        // Right arm (weapon arm)
+        ctx.fillStyle=ac2;ctx.globalAlpha=0.7;
+        ctx.save();ctx.translate(dx+sz.w-P,dy+sz.h*0.35);ctx.rotate(armSwing*0.04);
+        ctx.fillRect(0,0,P*2,P*5);
+        // Weapon glow on attack
+        if(p.animState==='attack'){
+          ctx.fillStyle='#fff';ctx.globalAlpha=0.5;
+          ctx.fillRect(P*0.5,-P*2,P,P*3);
+        }
+        ctx.restore();
+        // Left arm
+        ctx.fillStyle='#445577';ctx.globalAlpha=0.5;
+        ctx.save();ctx.translate(dx-P,dy+sz.h*0.38);ctx.rotate(-armSwing*0.03);
+        ctx.fillRect(-P,0,P*2,P*4);
+        ctx.restore();
+        // Legs — subtle step animation
+        ctx.fillStyle='#334455';ctx.globalAlpha=0.5;
+        ctx.fillRect(dx+sz.w*0.25,dy+sz.h-P*3+legSwing,P*2,P*3);
+        ctx.fillRect(dx+sz.w*0.55,dy+sz.h-P*3-legSwing,P*2,P*3);
+        ctx.globalAlpha=1;
+      }
       ctx.restore();
       if (pDead) ctx.restore();
       if (pWasHurt) ctx.restore();
@@ -2080,11 +2109,26 @@ const Arena = {
       if (en.hp <= 0) {
         if (!en.deathTimer) {
           en.deathTimer = 65;
-          this.spawnBurst(ex+sz.w/2, ey+sz.h/2, en.color||RD, 40, 1.8);
-          setTimeout(()=>this.spawnBurst(ex+sz.w/2, ey+sz.h/2, '#ffffff', 20, 1.0), 130);
-          this.triggerShake(12, 20);
-          this.triggerScreenFlash(en.color||RD, 0.5);
-          this.spawnText('DEFEATED', ex+sz.w/2, ey-10, en.color||RD, 13);
+          const cx2=ex+sz.w/2,cy2=ey+sz.h/2;
+          // Enhanced killing blow — multi-wave particle explosion
+          this.spawnBurst(cx2,cy2,en.color||RD,50,2.0);
+          setTimeout(()=>this.spawnBurst(cx2,cy2,'#ffffff',25,1.2),100);
+          setTimeout(()=>this.spawnBurst(cx2,cy2,en.color||RD,15,0.8),250);
+          // Radial slash lines
+          for(let sl=0;sl<6;sl++){
+            const ang=sl*Math.PI/3;
+            const slx=cx2+Math.cos(ang)*30,sly=cy2+Math.sin(ang)*30;
+            this.spawnText('✦',slx,sly,en.color||RD,8);
+          }
+          this.triggerShake(15, 25);
+          this.triggerScreenFlash(en.color||RD, 0.6);
+          this.spawnText('DEFEATED', cx2, ey-15, en.color||RD, 14);
+          // Extra effects for bosses
+          if(en.isBoss){
+            this.spawnBurst(cx2,cy2,'#ffd700',30,2.5);
+            setTimeout(()=>this.triggerScreenFlash('#ffd700',0.4),200);
+            this.spawnText('★ BOSS DOWN ★',cx2,ey-40,'#ffd700',16);
+          }
         }
         ctx.save();
         const dp = en.deathTimer / 65;
@@ -2131,13 +2175,39 @@ const Arena = {
         ctx.filter = 'brightness(200%) saturate(0%)';
         en.animTimer++; if (en.animTimer > 20) { en.animState='idle'; en.animTimer=0; }
       }
-      // Idle bob + breathing
-      const bob = Math.sin(t * .04 + i * 1.3) * 3;
-      const eBreathe = 1 + Math.sin(t * .035 + i) * 0.015;
+      // ── Enemy-specific idle behavior ──
+      let idleBob=Math.sin(t*.04+i*1.3)*3;
+      let idleShiftX=0;
+      const eBreathe=1+Math.sin(t*.035+i)*0.015;
+      const eid=en.sprite||en.id||'';
+      // Glitch Drone: erratic hovering
+      if(eid==='glitchDrone'){
+        idleBob=Math.sin(t*.08+i)*6+Math.sin(t*.13)*3;
+        idleShiftX=Math.sin(t*.05+i*2)*8;
+      }
+      // Netrunner: subtle side-stepping
+      else if(eid==='netrunner'){
+        idleShiftX=Math.sin(t*.03+i)*5;
+      }
+      // Neon Golem: heavy stomp bob
+      else if(eid==='neonGolem'){
+        idleBob=Math.abs(Math.sin(t*.025))*4;
+      }
+      // Cyber Ogre: menacing sway
+      else if(eid==='cyberOgre'){
+        idleShiftX=Math.sin(t*.02)*6;
+        idleBob=Math.sin(t*.03)*2;
+      }
+      // Pulse Hound: quick pacing
+      else if(eid==='pulseHound'){
+        idleShiftX=Math.sin(t*.07)*10;
+        idleBob=Math.abs(Math.sin(t*.14))*3;
+      }
+      const bob=en.animState==='idle'?idleBob:Math.sin(t*.04+i*1.3)*3;
 
       // Draw with outline for visibility
       ctx.save();
-      const edx = ex + lunge, edy = ey + bob;
+      const edx=ex+lunge+idleShiftX,edy=ey+bob;
       if(scaleX2!==1||scaleY2!==1||eBreathe!==1){
         ctx.translate(edx+sz.w/2, edy+sz.h); ctx.scale(scaleX2*eBreathe, scaleY2*eBreathe); ctx.translate(-(edx+sz.w/2), -(edy+sz.h));
       }
@@ -2148,6 +2218,29 @@ const Arena = {
       // Main sprite
       ctx.globalAlpha=1;
       if (SPR[en.sprite]) SPR[en.sprite](ctx, edx, edy, true, t);
+      // ── Enemy limb animation overlay ──
+      const eArmSwing=en.animState==='attack'?Math.sin(en.animTimer/12*Math.PI)*15:
+                      Math.sin(t*0.05+i*2)*2;
+      const eLegSwing=en.animState==='attack'?Math.sin(en.animTimer/12*Math.PI)*8:
+                      Math.sin(t*0.035+i)*1.5;
+      const eColor=en.color||MG;
+      if(eid!=='glitchDrone'){ // drones have no limbs
+        // Arms
+        ctx.fillStyle=eColor;ctx.globalAlpha=0.5;
+        ctx.save();ctx.translate(edx-P,edy+sz.h*0.35);ctx.rotate(-eArmSwing*0.035);
+        ctx.fillRect(-P*2,0,P*2,P*4);
+        if(en.animState==='attack'){ctx.fillStyle='#ff4444';ctx.globalAlpha=0.6;ctx.fillRect(-P*2,-P,P*2,P*2);}
+        ctx.restore();
+        ctx.fillStyle=eColor;ctx.globalAlpha=0.4;
+        ctx.save();ctx.translate(edx+sz.w,edy+sz.h*0.38);ctx.rotate(eArmSwing*0.03);
+        ctx.fillRect(0,0,P*2,P*4);
+        ctx.restore();
+        // Legs
+        ctx.fillStyle='#333';ctx.globalAlpha=0.4;
+        ctx.fillRect(edx+sz.w*0.25,edy+sz.h-P*3+eLegSwing,P*2,P*3);
+        ctx.fillRect(edx+sz.w*0.55,edy+sz.h-P*3-eLegSwing,P*2,P*3);
+      }
+      ctx.globalAlpha=1;
       ctx.restore();
       if (enWasHurt) ctx.restore();
 
