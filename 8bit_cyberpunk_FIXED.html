@@ -1908,8 +1908,8 @@ const Arena = {
 
   loop() {
     this.time++;
-    // Auto-resize if canvas buffer doesn't match container
-    if (this.cv && this.cv.parentElement) {
+    // Auto-resize check every 30 frames (not every frame)
+    if (this.time%30===0 && this.cv && this.cv.parentElement) {
       const pw = this.cv.parentElement.clientWidth, ph = this.cv.parentElement.clientHeight;
       if (pw > 40 && ph > 40 && (Math.abs(this.W - pw) > 2 || Math.abs(this.H - ph) > 2)) {
         this.W = pw; this.H = ph; this.cv.width = pw; this.cv.height = ph;
@@ -2320,9 +2320,8 @@ const Arena = {
     [[W*.08,H*.08,70,22,'#FF00FF','NEON'],[W*.75,H*.06,60,20,'#00FFFF','SYNC'],[W*.45,H*.04,80,24,'#39FF14','GRID']].forEach(([bx,by,bw,bh,bc,txt])=>{
       const pulse=.5+Math.sin(t*.06+bx)*.3;
       ctx.fillStyle=bc+'22';ctx.fillRect(bx,by,bw,bh);
-      ctx.strokeStyle=bc;ctx.lineWidth=1;ctx.shadowColor=bc;ctx.shadowBlur=8*pulse;ctx.strokeRect(bx,by,bw,bh);
+      ctx.strokeStyle=bc;ctx.lineWidth=1;ctx.strokeRect(bx,by,bw,bh);
       ctx.fillStyle=bc;ctx.font=`bold 7px 'Press Start 2P',monospace`;ctx.textAlign='center';ctx.fillText(txt,bx+bw/2,by+bh/2+3);
-      ctx.shadowBlur=0;
     });
     ctx.restore();
     // Glow pillars
@@ -2377,7 +2376,7 @@ const Arena = {
       const flicker=Math.random()<.02?.3:1;
       ctx.fillStyle=`rgba(180,210,255,${.07*flicker})`;
       ctx.fillRect(W*fx-2,0,4,H*.45);
-      ctx.shadowColor='#aaddff';ctx.shadowBlur=12*flicker;
+      // No shadowBlur for performance
       ctx.strokeStyle=`rgba(180,210,255,${.5*flicker})`;ctx.lineWidth=1;
       ctx.beginPath();ctx.moveTo(W*fx,0);ctx.lineTo(W*fx,H*.03);ctx.stroke();
       ctx.shadowBlur=0;
@@ -2529,8 +2528,8 @@ const Arena = {
     for(let p=0;p<8;p++){
       const py=H*(.08+p*.1);const spd2=4+p*0.5;
       const px=((t*spd2+p*120)%(W+80))-40;
-      ctx.fillStyle=`rgba(0,180,255,${.5+p*.04})`;ctx.shadowColor='#0088ff';ctx.shadowBlur=8;
-      ctx.fillRect(px,py,14+p*2,3);ctx.shadowBlur=0;
+      ctx.fillStyle=`rgba(0,180,255,${.5+p*.04})`;
+      ctx.fillRect(px,py,14+p*2,3);
     }
     ctx.restore();
     // Clean geometric pattern on back wall
@@ -2555,8 +2554,8 @@ const Arena = {
     for(let r=0;r<4;r++){
       const rr=(t*0.5+r*60)%350;
       const alpha=Math.max(0,.3-rr/350)*pulse;
-      ctx.save();ctx.globalAlpha=alpha;ctx.strokeStyle='#ff4400';ctx.lineWidth=2;ctx.shadowColor='#ff4400';ctx.shadowBlur=10;
-      ctx.beginPath();ctx.arc(W*.5,H*.45,rr,0,Math.PI*2);ctx.stroke();ctx.shadowBlur=0;
+      ctx.save();ctx.globalAlpha=alpha;ctx.strokeStyle='#ff4400';ctx.lineWidth=2;
+      ctx.beginPath();ctx.arc(W*.5,H*.45,rr,0,Math.PI*2);ctx.stroke();
       ctx.restore();
     }
     // Gold architecture columns
@@ -3382,7 +3381,7 @@ const GameState = {
   selectedGender:null, selectedAccent:null, ccState:null, selectedEquip:null,
   player:null, enemies:[],
   combatRunning:false, combatInterval:null,
-  totalDmg:0, spellDmg:0, totalKills:0, questsDone:0, turnCount:0, floorTurns:0,
+  totalDmg:0, spellDmg:0, totalKills:0, questsDone:0, turnCount:0, floorTurns:0, turnsLeft:50,
   roomsCleared:0, itemsCollected:0, itemsSold:0, runStartTime:0,
   levelUpPending:false,
   dialog:null, dungeonConfig:null,
@@ -3698,8 +3697,18 @@ const Combat = {
     const p=GameState.player,enemies=GameState.enemies;
     if(!p||p.hp<=0)return;
     GameState.turnCount++;GameState.floorTurns++;
-    document.getElementById('tbadge').textContent='TURN:'+GameState.turnCount;
+    if(GameState.turnsLeft>0)GameState.turnsLeft--;
+    const tb=document.getElementById('tbadge');
+    if(tb){
+      tb.textContent=GameState.turnsLeft;
+      tb.style.color=GameState.turnsLeft<=10?'#ff0040':GameState.turnsLeft<=20?'#ff6600':'var(--G)';
+    }
     QM.track('totalTurns',1);
+    // Time's up — defeat player
+    if(GameState.turnsLeft<=0){
+      DM.say('TIME\'S UP! Systems overloaded!');
+      p.hp=0;this.endCombat(false);return;
+    }
     const alive=enemies.filter(e=>e.hp>0);
     if(!alive.length){this.endCombat(true);return;}
     AIDialog.onTurn(GameState.floorTurns,enemies);
@@ -3854,6 +3863,9 @@ const Combat = {
   start(){
     this._endingCombat=false;
     GameState.combatRunning=true;GameState.floorTurns=0;
+    // Set turn limit — countdown timer
+    const isBoss=GameState.currentFloor?.rooms?.[GameState.currentRoomIdx]?.type==='boss';
+    GameState.turnsLeft=isBoss?80:50;
     const p2=GameState.player;
     p2.healedThisFloor=false;
     p2.lowHpAISaid=false;
