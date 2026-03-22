@@ -1041,6 +1041,8 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
     </div>
     <!-- Hidden DM canvas (still needed for sprite rendering) -->
     <canvas id="dmcv" width="52" height="60" style="display:none;"></canvas>
+    <!-- Death overlay -->
+    <div id="deathOverlay" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.9);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:20px;"></div>
     <!-- Quest panel — hidden but DOM kept for JS refs -->
     <div class="qp" id="qpanel" style="display:none">
       <div class="qhdr"><span id="qhdrTxt">QUESTS</span><span id="qtgl">◀</span></div>
@@ -3717,24 +3719,32 @@ const Combat = {
     const p=GameState.player;
     if(!won){
       UI.flash();
-      // If in a zone, offer retry from room 1 instead of full game over
-      if(GameState.currentZoneId&&GameState.currentFloor){
-        setTimeout(()=>{
-          DM.say('FLATLINED! Restarting zone...');
-          // Restore player to full HP/MP and restart zone from room 0
-          p.hp=p.maxHp;p.mp=p.maxMp;p.debuffs=[];p.buffs=[];
-          p.spells.forEach(s=>{s.cd=0;s.hackedTurns=0;});
-          GameState.currentFloor=DungeonGen.generate(GameState.floor,ZONES[GameState.currentZoneId]?.rooms);
-          GameState.currentRoomIdx=0;
-          Arena.time=0;Arena.vfx=[];Arena.particles=[];Arena.floatTexts=[];
-          UI.show('sCM');
-          requestAnimationFrame(()=>{Arena.resize();requestAnimationFrame(()=>Arena.resize());});
-          UI.renderSpells();UI.updateBars();UI.renderBuffs();
-          Game.enterRoom(0);
-        },1200);
-      } else {
-        setTimeout(()=>{UI.show('sGO');UI.renderGO();},600);
-      }
+      setTimeout(()=>{
+        // Show death screen with progress and options
+        const zoneName=ZONES[GameState.currentZoneId]?.name||'ZONE';
+        const roomNum=GameState.currentRoomIdx+1;
+        const totalRooms=GameState.currentFloor?.rooms?.length||10;
+        const elapsed=GameState.runStartTime?Math.floor((Date.now()-GameState.runStartTime)/1000):0;
+        const mins=Math.floor(elapsed/60),secs=elapsed%60;
+        const deathEl=document.getElementById('deathOverlay');
+        if(deathEl){
+          deathEl.innerHTML=`
+            <div style="max-width:500px;width:100%;text-align:center;">
+              <div style="font-family:'Press Start 2P',monospace;font-size:clamp(20px,3vw,36px);color:#ff0040;text-shadow:0 0 20px #ff0040;margin-bottom:clamp(12px,2vh,24px);">FLATLINED</div>
+              <div style="font-family:'Share Tech Mono',monospace;font-size:clamp(9px,1vw,13px);color:#99a;line-height:2.2;margin-bottom:clamp(16px,2.5vh,30px);">
+                <div>${zoneName} — ROOM ${roomNum}/${totalRooms}</div>
+                <div>KILLS: ${GameState.totalKills} · DMG: ${GameState.totalDmg}</div>
+                <div>LEVEL: ${p.level} · TIME: ${mins}m ${secs}s</div>
+                <div style="color:#ff4444">HP: 0/${p.maxHp}</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:clamp(8px,1.2vh,14px);align-items:center;">
+                <button class="mm-btn mm-connect" style="font-size:clamp(12px,1.5vw,18px);padding:clamp(12px,1.8vh,20px) clamp(30px,4vw,50px);width:100%;max-width:350px;" onclick="Game._retryZone()">RETRY ZONE</button>
+                <button class="mm-btn mm-secondary" style="font-size:clamp(10px,1.2vw,14px);padding:clamp(8px,1.2vh,14px) clamp(20px,3vw,40px);width:100%;max-width:350px;" onclick="SaveSystem.save();Game.restart();">SAVE & QUIT</button>
+              </div>
+            </div>`;
+          deathEl.style.display='flex';
+        }
+      },800);
       return;
     }
     // Mark current room cleared
@@ -3796,7 +3806,7 @@ const DM={
     const el=document.getElementById('dmTxt');if(!el)return;
     const toast=document.getElementById('dmToast');
     el.textContent=t;
-    if(toast){toast.style.opacity='1';clearTimeout(this._toastTimer);this._toastTimer=setTimeout(()=>{toast.style.opacity='0';},2500);}
+    if(toast){toast.style.opacity='1';clearTimeout(this._toastTimer);this._toastTimer=setTimeout(()=>{toast.style.opacity='0';},1500);}
   },
   _toastTimer:null,
   lines:['The dungeon pulses with neon corruption...','Your enemies sense your approach!','Beware the shadows in the grid lines...','Every floor deeper tests your resolve!','The circuits hum with dark power...','Roll for initiative! Battle joined!','Data streams grow hostile ahead!','Press on! Glory awaits the worthy!'],
@@ -3993,6 +4003,7 @@ const UI={
     // Close overlays on screen switch
     const inv=document.getElementById('invOverlay');if(inv)inv.style.display='none';
     const shop=document.getElementById('merchantShop');if(shop)shop.style.display='none';
+    const death=document.getElementById('deathOverlay');if(death)death.style.display='none';
     if(id!=='sCM'){DialogEngine._cancel();AIDialog.hideAll();}
   },
   flash(){const f=document.getElementById('fl');if(!f)return;f.style.opacity='.65';setTimeout(()=>f.style.opacity='0',320);},
@@ -5530,6 +5541,20 @@ const Game={
     UI.show('sFC');
   },
 
+  _retryZone(){
+    const deathEl=document.getElementById('deathOverlay');if(deathEl)deathEl.style.display='none';
+    const p=GameState.player;
+    p.hp=p.maxHp;p.mp=p.maxMp;p.debuffs=[];p.buffs=[];
+    p.spells.forEach(s=>{s.cd=0;s.hackedTurns=0;});
+    GameState.currentFloor=DungeonGen.generate(GameState.floor,ZONES[GameState.currentZoneId]?.rooms);
+    GameState.currentRoomIdx=0;
+    Arena.time=0;Arena.vfx=[];Arena.particles=[];Arena.floatTexts=[];
+    Combat._endingCombat=false;
+    UI.show('sCM');
+    requestAnimationFrame(()=>{Arena.resize();requestAnimationFrame(()=>Arena.resize());});
+    UI.renderSpells();UI.updateBars();UI.renderBuffs();UI.updateFloor();
+    this.enterRoom(0);
+  },
   restart(){
     if(GameState.combatInterval)clearInterval(GameState.combatInterval);
     GameState.combatRunning=false;
