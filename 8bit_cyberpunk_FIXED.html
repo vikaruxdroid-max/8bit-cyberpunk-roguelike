@@ -1005,7 +1005,10 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
         <!-- Player HUD -->
         <div class="phud">
           <div class="phud-left">
-            <div class="pnm" id="pnm" style="color:var(--OR)">WARRIOR</div>
+            <div style="display:flex;align-items:center;gap:clamp(4px,0.5vw,8px);">
+              <div class="pnm" id="pnm" style="color:var(--OR)">WARRIOR</div>
+              <div id="passiveIcon" style="font-size:clamp(8px,0.9vw,12px);color:#888;cursor:help;" title=""></div>
+            </div>
             <div class="bars-block">
               <div class="br">
                 <span class="bl2" style="color:#ff4444">HP</span>
@@ -1165,6 +1168,7 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
       <div class="wm-title">◆ WORLD MAP ◆</div>
       <div style="display:flex;align-items:center;gap:14px;">
         <span class="wm-sub" id="wmProgress">0/7 ZONES CLEARED</span>
+        <button class="wm-back-btn" id="wmMerchantBtn" style="background:linear-gradient(135deg,rgba(255,180,0,.15),rgba(255,100,0,.1));border-color:var(--GD);color:var(--GD);">💰 MERCHANT</button>
         <button class="wm-back-btn" id="wmBackBtn">↩ BACK</button>
       </div>
     </div>
@@ -1172,6 +1176,20 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
       <canvas id="wmCanvas"></canvas>
       <div id="wmZoneInfo" class="wm-zone-info">
         <div class="wm-hint">— CLICK A ZONE TO SELECT —</div>
+      </div>
+    </div>
+    <!-- Merchant Shop Overlay -->
+    <div id="merchantShop" style="display:none;position:absolute;inset:0;z-index:60;background:rgba(0,0,16,.92);backdrop-filter:blur(4px);flex-direction:column;align-items:center;justify-content:center;padding:20px;">
+      <div style="width:100%;max-width:700px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <div style="font-family:'Share Tech Mono',monospace;font-size:clamp(12px,1.5vw,20px);color:var(--GD);letter-spacing:3px;">💰 MERCHANT</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:clamp(10px,1.2vw,16px);color:var(--GD);" id="shopGold">0 CR</div>
+        </div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:clamp(8px,0.9vw,11px);color:#00ffff;margin-bottom:8px;">▶ FOR SALE</div>
+        <div id="shopItems" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-bottom:16px;"></div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:clamp(8px,0.9vw,11px);color:#ff00ff;margin-bottom:8px;">▶ SELL FROM BAG</div>
+        <div id="shopSellItems" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px;margin-bottom:16px;max-height:120px;overflow-y:auto;"></div>
+        <button class="wm-back-btn" id="shopClose" style="width:100%;text-align:center;padding:10px;">CLOSE SHOP</button>
       </div>
     </div>
   </div>
@@ -2048,6 +2066,18 @@ const Arena = {
         ctx.fillStyle = '#ffff00'; ctx.font = '12px sans-serif'; ctx.textAlign='center';
         ctx.fillText('★', ex+sz.w/2, ey-4); ctx.textAlign='left';
       }
+      // Speed particle trail for fast enemies (SPD >= 12)
+      if(en.spd>=12&&t%3===0&&GameState.settings.particles!=='off'){
+        this.particles.push({x:ex+sz.w/2+(Math.random()-0.5)*10,y:ey+sz.h*0.7,vx:-0.5-Math.random(),vy:(Math.random()-0.5)*0.5,alpha:0.4,fade:0.025,color:en.color||CY,size:1.5+Math.random(),glow:3,gravity:0});
+      }
+      // Telegraph glow for charging enemies
+      if(en._telegraphed){
+        ctx.save();ctx.globalAlpha=0.15+Math.sin(t*0.2)*0.1;
+        const tg=ctx.createRadialGradient(ex+sz.w/2,ey+sz.h/2,0,ex+sz.w/2,ey+sz.h/2,sz.w);
+        tg.addColorStop(0,en.color||'#ff0000');tg.addColorStop(1,'transparent');
+        ctx.fillStyle=tg;ctx.beginPath();ctx.arc(ex+sz.w/2,ey+sz.h/2,sz.w,0,Math.PI*2);ctx.fill();
+        ctx.restore();
+      }
     });
 
     // VS splash at start of floor
@@ -2782,8 +2812,8 @@ const ACTIVE_SKILLS = [
    effect(p){p.addBuff('dodge',{dodges:2,turns:4});Arena.spawnVFX('spark',Arena.getPlayerPos().x,Arena.getPlayerPos().y,GR);DM.say('GHOST STEP — vanished!');}},
   {id:'dataSplice',name:'Data Splice',icon:'🗡',desc:'3x ATK + crit boost',mp:22,cd:0,maxCd:4,
    effect(p,en){const t=Combat.lowestHp(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*3),true);p.addBuff('crit',{crit:.2,turns:2});const pos=Arena.getEnemyPos(GameState.enemies.indexOf(t));Arena.spawnVFX('slash',pos.x,pos.y,MG);DM.say('DATA SPLICE! Triple critical!');}},
-  {id:'bioPulse',name:'Bio-Pulse Heal',icon:'💚',desc:'Heal 40% max HP',mp:25,cd:0,maxCd:3,
-   effect(p){const h=Math.floor(p.maxHp*.4);p.hp=Math.min(p.maxHp,p.hp+h);p.healedThisFloor=true;const pp=Arena.getPlayerPos();Arena.spawnVFX('explode',pp.x,pp.y,'#00ff88');UI.dmgNumAt(pp.x,pp.y,h,'heal');DM.say('BIO-PULSE! Systems restored!');}},
+  {id:'bioPulse',name:'Bio-Pulse Heal',icon:'💚',desc:'Heal 50% max HP',mp:25,cd:0,maxCd:3,
+   effect(p){const h=Math.floor(p.maxHp*.5);p.hp=Math.min(p.maxHp,p.hp+h);p.healedThisFloor=true;const pp=Arena.getPlayerPos();Arena.spawnVFX('explode',pp.x,pp.y,'#00ff88');UI.dmgNumAt(pp.x,pp.y,h,'heal');DM.say('BIO-PULSE! Systems restored!');}},
   {id:'voidDrain',name:'Void Drain',icon:'🌑',desc:'2x ATK + lifesteal',mp:20,cd:0,maxCd:3,
    effect(p,en){const t=Combat.lowestHp(en);if(!t)return;const d=Combat.deal(t,Math.floor(p.atk*2));const st=Math.floor(d*.2);p.hp=Math.min(p.maxHp,p.hp+st);const pp=Arena.getPlayerPos();Arena.spawnVFX('explode',pp.x,pp.y,PU);UI.dmgNumAt(pp.x,pp.y,st,'heal');DM.say('VOID DRAIN! Life siphoned!');}}
 ];
@@ -3284,7 +3314,8 @@ const GameState = {
   selectedGender:null, selectedAccent:null, ccState:null, selectedEquip:null,
   player:null, enemies:[],
   combatRunning:false, combatInterval:null,
-  totalDmg:0, totalKills:0, questsDone:0, turnCount:0, floorTurns:0,
+  totalDmg:0, spellDmg:0, totalKills:0, questsDone:0, turnCount:0, floorTurns:0,
+  roomsCleared:0, itemsCollected:0, itemsSold:0, runStartTime:0,
   levelUpPending:false,
   dialog:null, dungeonConfig:null,
   currentFloor:null, currentRoomIdx:0, floorGold:0,
@@ -3425,6 +3456,7 @@ const Combat = {
     enemy.hp=Math.max(0,enemy.hp-dmg);
     GameState.totalDmg+=dmg;
     QM.track('totalDmg',dmg); QM.track('dmgBlocked',blocked);
+    Audio.play(isCrit?'crit':'hit');
     Arena.triggerHurt(false,enemy);
     const idx=GameState.enemies.indexOf(enemy);
     if(idx>=0){
@@ -3460,6 +3492,7 @@ const Combat = {
     if(GameState.combo>0){GameState.combo=0;UI.updateCombo();}
   },
   killEnemy(en){
+    Audio.play('death');
     GameState.totalKills++;
     QM.track('totalKills',1);QM.track('killBlows',1);
     if(GameState.player.spellsCast.size===0)QM.track('noSpellKills',1);
@@ -3483,6 +3516,7 @@ const Combat = {
       GameState.levelUpPending=true;
       p.xp-=p.xpToNext;p.xpToNext=Math.floor(50*(p.level+1)*1.2);p.level++;
       clearInterval(GameState.combatInterval);GameState.combatInterval=null;
+      Audio.play('levelUp');
       Arena.spawnVFX('explode',Arena.getPlayerPos().x,Arena.getPlayerPos().y,PU);
       setTimeout(()=>{UI.showLevelUp();},700);
     }
@@ -3512,7 +3546,7 @@ const Combat = {
     // Block mechanic
     if(GameState.isBlocking){
       rawDmg=Math.floor(rawDmg*(1-(p.blockDR||0.5)));
-      DM.say(`BLOCKED! Damage halved to ${rawDmg}!`);
+      Audio.play('block');DM.say(`BLOCKED! Damage reduced to ${rawDmg}!`);
       // Counter if blocked damage below threshold
       if(rawDmg<8){
         const ctrDmg=Math.max(1,Math.floor(p.atk*.75));
@@ -3526,6 +3560,7 @@ const Combat = {
     // Phase Cloak dodge chance
     const pc=Object.values(Inventory.equipped).find(i=>i&&i.id&&i.id.startsWith('phaseCloak'));
     if(pc&&Math.random()<.2){UI.dmgNumPlayer(0,'miss');DM.say('PHASE CLOAK! Attack phased through!');return;}
+    Audio.play('hit');
     p.hp=Math.max(0,p.hp-rawDmg);
     Arena.triggerHurt(true);Arena.triggerAttack(false,en);
     UI.dmgNumPlayer(rawDmg,'phit');
@@ -3541,26 +3576,38 @@ const Combat = {
     const alive=enemies.filter(e=>e.hp>0);if(!alive.length)return;
     for(const sp of p.spells){
       if(sp.cd>0||p.mp<sp.mp||(sp.hackedTurns||0)>0)continue;
-      if(sp.id==='bioPulse'&&p.hp/p.maxHp>.4)continue;
-      if(sp.id==='nanoShield'&&p.hasBuff('nanoShield'))continue;
+      if(sp.id==='bioPulse'&&p.hp/p.maxHp>.5)continue;
       if(sp.id==='ghostStep'&&p.hasBuff('dodge'))continue;
-      if(sp.id==='symbioticSurge'&&p.hasBuff('surge'))continue;
       this.castSpell(p,sp,enemies);break;
     }
   },
   castSpell(p,spell,enemies){
     if(spell.cd>0||p.mp<spell.mp||(spell.hackedTurns||0)>0)return;
+    Audio.play(spell.id==='bioPulse'?'heal':'spell');
     p.mp-=spell.mp;spell.cd=spell.maxCd;
+    // Spell evolution: track casts, evolve at 10
+    if(!spell.castCount)spell.castCount=0;
+    spell.castCount++;
+    if(spell.castCount===10&&!spell.evolved){
+      spell.evolved=true;spell.maxCd=Math.max(1,spell.maxCd-1);
+      spell.name='EX '+spell.name;spell.desc='[EVOLVED] '+spell.desc;
+      Arena.spawnBurst(Arena.getPlayerPos().x,Arena.getPlayerPos().y,'#FFD700',60,2.0);
+      Arena.spawnText('SPELL EVOLVED!',Arena.getPlayerPos().x,Arena.getPlayerPos().y-40,'#FFD700',14);
+      Audio.play('evolve');
+      DM.say('SPELL EVOLVED! Power surging!');
+    }
     const prevSize=p.spellsCast.size;
     p.spellsCast.add(spell.id);
     if(p.spellsCast.size>prevSize)QM.track('spellsCast',1);
     const aliveEn=enemies.filter(e=>e.hp>0);
+    const dmgBefore=GameState.totalDmg;
     spell.effect(p,aliveEn);
+    GameState.spellDmg+=(GameState.totalDmg-dmgBefore);
     Arena.triggerCast();
     // Spell-specific particle effects
     const pp3=Arena.getPlayerPos();
-    if(spell.id==='nanoShield'||spell.id==='ghostStep'){Arena.spawnRing(pp3.x,pp3.y,'#4499ff',65);}
-    else if(spell.id==='bioPulse'||spell.id==='symbioticSurge'){Arena.spawnHeal(pp3.x,pp3.y);}
+    if(spell.id==='ghostStep'){Arena.spawnRing(pp3.x,pp3.y,'#4499ff',65);}
+    else if(spell.id==='bioPulse'){Arena.spawnHeal(pp3.x,pp3.y);}
     else if(spell.id==='plasmaStrike'&&aliveEn[0]){const ep=Arena.getEnemyPos(GameState.enemies.indexOf(aliveEn[0]));Arena.spawnLightning(pp3.x,pp3.y,ep.x,ep.y,CY);}
     else if(spell.id==='voidDrain'&&aliveEn[0]){const ep2=Arena.getEnemyPos(GameState.enemies.indexOf(aliveEn[0]));Arena.spawnLightning(ep2.x,ep2.y,pp3.x,pp3.y,PU);}
     else{Arena.spawnBurst(pp3.x,pp3.y,p.accent||CY,16,0.85);}
@@ -3605,8 +3652,19 @@ const Combat = {
     }
     for(const en of alive){
       en.actionCounter+=en.spd;en.turnCount++;
-      if(en.ability.trigger==='cd3'){en.ability.cdLeft=(en.ability.cdLeft||0)+1;if(en.ability.cdLeft>=3){en.ability.cdLeft=0;en.ability.fn(en,p);}}
-      if(en.ability.trigger==='cd5'){en.ability.cdLeft=(en.ability.cdLeft||0)+1;if(en.ability.cdLeft>=5){en.ability.cdLeft=0;en.ability.fn(en,p);}}
+      // Generic CD-based ability trigger with telegraph
+      const cdMatch=en.ability.trigger.match(/^cd(\d+)$/);
+      if(cdMatch){
+        const cdMax=parseInt(cdMatch[1]);
+        en.ability.cdLeft=(en.ability.cdLeft||0)+1;
+        if(en.ability.cdLeft===cdMax-1&&!en._telegraphed){
+          en._telegraphed=true;
+          const idx2=GameState.enemies.indexOf(en);
+          if(idx2>=0){const tp=Arena.getEnemyPos(idx2);Arena.spawnText('CHARGING...',tp.x,tp.y-30,en.color||RD,10);}
+          DM.say(`${en.name} is charging ${en.ability.name}!`);
+        }
+        if(en.ability.cdLeft>=cdMax){en.ability.cdLeft=0;en._telegraphed=false;en.ability.fn(en,p);}
+      }
       if(en.ability.trigger==='turn3'&&en.turnCount===3)en.ability.fn(en,p);
       if(en.ability.trigger==='hp50'&&!en.ability.used&&en.hp/en.maxHp<=.5){en.ability.used=true;en.ability.fn(en,p);}
       if(en.actionCounter>=100){
@@ -3646,10 +3704,31 @@ const Combat = {
     if(GameState.levelUpPending)return;
     clearInterval(GameState.combatInterval);GameState.combatRunning=false;
     const p=GameState.player;
-    if(!won){UI.flash();setTimeout(()=>{UI.show('sGO');UI.renderGO();},600);return;}
+    if(!won){
+      UI.flash();
+      // If in a zone, offer retry from room 1 instead of full game over
+      if(GameState.currentZoneId&&GameState.currentFloor){
+        setTimeout(()=>{
+          DM.say('FLATLINED! Restarting zone...');
+          // Restore player to full HP/MP and restart zone from room 0
+          p.hp=p.maxHp;p.mp=p.maxMp;p.debuffs=[];p.buffs=[];
+          p.spells.forEach(s=>{s.cd=0;s.hackedTurns=0;});
+          GameState.currentFloor=DungeonGen.generate(GameState.floor,ZONES[GameState.currentZoneId]?.rooms);
+          GameState.currentRoomIdx=0;
+          Arena.time=0;Arena.vfx=[];Arena.particles=[];Arena.floatTexts=[];
+          UI.show('sCM');
+          requestAnimationFrame(()=>{Arena.resize();requestAnimationFrame(()=>Arena.resize());});
+          UI.renderSpells();UI.updateBars();UI.renderBuffs();
+          Game.enterRoom(0);
+        },1200);
+      } else {
+        setTimeout(()=>{UI.show('sGO');UI.renderGO();},600);
+      }
+      return;
+    }
     // Mark current room cleared
     const room=GameState.currentFloor?.rooms[GameState.currentRoomIdx];
-    if(room)room.cleared=true;
+    if(room)room.cleared=true;GameState.roomsCleared++;
     if(!p.healedThisFloor)QM.track('floorsNoHeal',1);
     if(GameState.floorTurns<=10)QM.track('fastWins',1);
     QM.track('floorsCleared',1);QM.check();
@@ -3660,8 +3739,18 @@ const Combat = {
       DM.say(`${zoneName} BOSS DEFEATED! Zone cleared!`);
       setTimeout(()=>VictoryScreen.show(true,()=>WorldMap.show()),900);
     } else {
-      DM.say('Room cleared!');
-      setTimeout(()=>VictoryScreen.show(false,()=>WorldMap.show()),900);
+      // Advance to next room in the zone
+      const nextIdx=GameState.currentRoomIdx+1;
+      const totalRooms=GameState.currentFloor?.rooms?.length||0;
+      const roomNum=GameState.currentRoomIdx+1;
+      DM.say(`Room ${roomNum}/${totalRooms} cleared!`);
+      setTimeout(()=>VictoryScreen.show(false,()=>{
+        if(nextIdx<totalRooms){
+          Game.enterRoom(nextIdx);
+        } else {
+          WorldMap.show();
+        }
+      }),900);
     }
   },
   start(){
@@ -3984,18 +4073,27 @@ const UI={
     const best=allItems.filter(i=>i.rarity==='legendary')[0]||allItems.filter(i=>i.rarity==='rare')[0]||allItems[0];
     const grid=document.getElementById('goGrid');
     if(grid){
+      const elapsed=GameState.runStartTime?Math.floor((Date.now()-GameState.runStartTime)/1000):0;
+      const mins=Math.floor(elapsed/60),secs=elapsed%60;
+      const basicDmg=GameState.totalDmg-GameState.spellDmg;
       grid.innerHTML=`
-        <div class="go-panel"><div class="go-panel-title">▶ RUN STATS</div>
-          <div>FLOOR: ${GameState.floor-1} / ${GameState.maxFloors}</div>
+        <div class="go-panel"><div class="go-panel-title">▶ COMBAT</div>
           <div>KILLS: ${GameState.totalKills}</div>
-          <div>DAMAGE: ${GameState.totalDmg}</div>
+          <div>TOTAL DMG: ${GameState.totalDmg}</div>
+          <div>├ BASIC ATK: ${basicDmg}</div>
+          <div>└ SPELL DMG: ${GameState.spellDmg}</div>
           <div>TURNS: ${GameState.turnCount}</div>
+          <div>COMBO MAX: ${GameState._maxCombo||0}x</div>
         </div>
-        <div class="go-panel"><div class="go-panel-title">▶ FINAL STATUS</div>
+        <div class="go-panel"><div class="go-panel-title">▶ PROGRESS</div>
+          <div>FLOOR: ${GameState.floor-1} / ${GameState.maxFloors}</div>
+          <div>ROOMS: ${GameState.roomsCleared}</div>
           <div>QUESTS: ${GameState.questsDone}</div>
+          <div>ITEMS FOUND: ${GameState.itemsCollected}</div>
+          <div>ITEMS SOLD: ${GameState.itemsSold}</div>
+          <div>TIME: ${mins}m ${secs}s</div>
           <div style="color:${p?'#ff4444':'#aaa'}">HP: ${p?p.hp:0}/${p?p.maxHp:0}</div>
           <div>CREDITS: ${Inventory.gold} CR</div>
-          <div>COMBO MAX: ${GameState._maxCombo||0}x</div>
         </div>`;
     }
     const bi=document.getElementById('goBestItem');
@@ -4104,7 +4202,21 @@ const UI={
     const grid=document.getElementById('lvgrid');grid.innerHTML='';
     pool.forEach(u=>{
       const c=document.createElement('div');c.className='uc';
-      c.innerHTML=`<span class="utitle">${u.icon} ${u.name}</span>${u.desc}`;
+      // Build stat preview
+      let preview='';
+      const s=u.name;
+      if(s.includes('HP'))preview=`HP: ${p.maxHp} → ${p.maxHp+(s.includes('IRON')?10:15)}`;
+      else if(s.includes('ATK')&&!s.includes('OVER'))preview=`ATK: ${p.atk} → ${p.atk+5}`;
+      else if(s.includes('DEF')&&!s.includes('IRON'))preview=`DEF: ${p.def} → ${p.def+4}`;
+      else if(s.includes('SPEED'))preview=`SPD: ${p.spd} → ${p.spd+3}`;
+      else if(s.includes('MP'))preview=`MP: ${p.maxMp} → ${p.maxMp+25}`;
+      else if(s.includes('OVERCLOCK'))preview=`ATK: ${p.atk}→${p.atk+6} SPD: ${p.spd}→${p.spd+2}`;
+      else if(s.includes('IRON'))preview=`DEF: ${p.def}→${p.def+5} HP: ${p.maxHp}→${p.maxHp+10}`;
+      else if(s.includes('CD'))preview=`CD: ${p.spells[0]?.maxCd||'?'} → ${Math.max(1,(p.spells[0]?.maxCd||2)-1)}`;
+      else if(s.includes('CRIT'))preview=`CRIT: ${Math.round((p.critBonus||0)*100)}% → ${Math.round(((p.critBonus||0)+0.1)*100)}%`;
+      else if(s.includes('MEDIC'))preview=`HP: ${p.hp} → ${Math.min(p.maxHp,p.hp+Math.floor(p.maxHp*.25))}`;
+      const prevHtml=preview?`<div style="color:var(--G);font-size:clamp(7px,0.8vw,10px);margin-top:3px">${preview}</div>`:'';
+      c.innerHTML=`<span class="utitle">${u.icon} ${u.name}</span>${u.desc}${prevHtml}`;
       c.addEventListener('click',()=>{
         u.apply(p);UI.flash();UI.updateBars();
         DM.say(`LEVEL UP! ${u.name} acquired!`);
@@ -4255,6 +4367,99 @@ const DungeonGen = {
 // ═══════════════════════════════════════════════════════════════
 // MATRIX RAIN — main menu background
 // ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// AUDIO — procedural SFX via Web Audio API (no external files)
+// ═══════════════════════════════════════════════════════════════
+const Audio={
+  ctx:null,vol:0.5,muted:false,
+  init(){if(!this.ctx)try{this.ctx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}},
+  play(type){
+    if(this.muted||!this.ctx)return;
+    this.init();
+    try{this['_'+type]?.();}catch(e){}
+  },
+  _osc(freq,freq2,dur,wave='square',gain=0.3){
+    const c=this.ctx,o=c.createOscillator(),g=c.createGain();
+    o.type=wave;o.frequency.setValueAtTime(freq,c.currentTime);
+    if(freq2)o.frequency.linearRampToValueAtTime(freq2,c.currentTime+dur/1000);
+    g.gain.setValueAtTime(gain*this.vol,c.currentTime);
+    g.gain.linearRampToValueAtTime(0,c.currentTime+dur/1000);
+    o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+dur/1000);
+  },
+  _hit(){this._osc(200,80,60,'square',0.25);},
+  _crit(){this._osc(300,100,100,'square',0.4);setTimeout(()=>this._noise(40),20);},
+  _heal(){this._osc(400,800,200,'sine',0.2);},
+  _block(){this._osc(800,400,50,'triangle',0.25);},
+  _spell(){this._osc(200,1200,300,'sawtooth',0.15);},
+  _death(){this._noise(150);setTimeout(()=>this._osc(300,50,200,'square',0.3),50);},
+  _levelUp(){[400,500,600,800].forEach((f,i)=>setTimeout(()=>this._osc(f,f,80,'sine',0.2),i*80));},
+  _uiClick(){this._osc(600,600,30,'square',0.08);},
+  _evolve(){[600,800,1000,1200].forEach((f,i)=>setTimeout(()=>this._osc(f,f,100,'sine',0.25),i*60));},
+  _noise(dur){
+    const c=this.ctx,n=c.createBufferSource(),buf=c.createBuffer(1,c.sampleRate*dur/1000,c.sampleRate);
+    const d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*0.3;
+    n.buffer=buf;const g=c.createGain();g.gain.setValueAtTime(0.15*this.vol,c.currentTime);
+    g.gain.linearRampToValueAtTime(0,c.currentTime+dur/1000);
+    n.connect(g);g.connect(c.destination);n.start();
+  }
+};
+// Init audio on first user interaction
+document.addEventListener('click',()=>Audio.init(),{once:true});
+
+// ═══════════════════════════════════════════════════════════════
+// MERCHANT SHOP — buy/sell system on world map
+// ═══════════════════════════════════════════════════════════════
+const MerchantShop={
+  stock:[],
+  open(){
+    const fl=GameState.floor||1;
+    this.stock=Array.from({length:4},()=>LootSystem.roll(fl));
+    this.render();
+    document.getElementById('merchantShop').style.display='flex';
+  },
+  close(){document.getElementById('merchantShop').style.display='none';},
+  getPrice(item){
+    const base=item.rarity==='legendary'?300:item.rarity==='rare'?100:40;
+    return Math.floor(base*(1+(GameState.floor||1)*0.15));
+  },
+  getSellPrice(item){return Math.floor(this.getPrice(item)*0.4);},
+  render(){
+    const shopEl=document.getElementById('shopItems');shopEl.innerHTML='';
+    const goldEl=document.getElementById('shopGold');
+    goldEl.textContent=Inventory.gold+' CR';
+    this.stock.forEach((item,i)=>{
+      if(!item)return;
+      const price=this.getPrice(item);
+      const canBuy=Inventory.gold>=price;
+      const d=document.createElement('div');
+      d.style.cssText=`background:rgba(4,4,20,.95);border:1.5px solid ${item.rarity==='legendary'?'var(--GD)':item.rarity==='rare'?'var(--C)':'#444'};padding:8px;cursor:${canBuy?'pointer':'not-allowed'};font-family:'Share Tech Mono',monospace;transition:all .15s;opacity:${canBuy?1:.5};`;
+      const bonusStr=Object.entries(item.bonus||{}).map(([k,v])=>`+${v} ${k.toUpperCase()}`).join(' ');
+      d.innerHTML=`<div style="color:${item.color||'#fff'};font-size:clamp(9px,1vw,13px)">${item.icon||'📦'} ${item.name}</div><div style="color:#888;font-size:clamp(7px,0.8vw,10px)">${bonusStr}</div><div style="color:var(--GD);font-size:clamp(8px,0.9vw,12px);margin-top:4px">${price} CR</div>`;
+      if(canBuy)d.addEventListener('click',()=>{
+        if(Inventory.items.filter(x=>x).length>=24){DM.say('Bag full!');return;}
+        Inventory.gold-=price;Inventory.items[Inventory.items.indexOf(null)]=item;
+        this.stock[i]=null;Audio.play('uiClick');this.render();Inventory.render();
+      });
+      d.addEventListener('mouseenter',()=>{if(canBuy)d.style.boxShadow='0 0 12px rgba(0,255,255,.4)';});
+      d.addEventListener('mouseleave',()=>{d.style.boxShadow='none';});
+      shopEl.appendChild(d);
+    });
+    // Sell section
+    const sellEl=document.getElementById('shopSellItems');sellEl.innerHTML='';
+    Inventory.items.forEach((item,i)=>{
+      if(!item)return;
+      const sp=this.getSellPrice(item);
+      const d=document.createElement('div');
+      d.style.cssText=`background:rgba(20,4,4,.9);border:1px solid rgba(255,0,64,.3);padding:4px 6px;cursor:pointer;font-family:'Share Tech Mono',monospace;font-size:clamp(7px,0.8vw,10px);transition:all .15s;`;
+      d.innerHTML=`${item.icon||'📦'} ${item.name} <span style="color:var(--GD)">${sp}CR</span>`;
+      d.addEventListener('click',()=>{
+        Inventory.gold+=sp;Inventory.items[i]=null;Audio.play('uiClick');this.render();Inventory.render();
+      });
+      sellEl.appendChild(d);
+    });
+  }
+};
+
 const MatrixRain = {
   cv:null, ctx:null, W:0, H:0, cols:[], fontSize:18, tick:0,
   chars:'01アウエカキクサシセタチツネノハヒフヘマミメモヤラリルレロワン',
@@ -4728,6 +4933,11 @@ const Game={
         WorldMap.show();
       });
     }
+    // Merchant button on world map
+    const wmMerchBtn=document.getElementById('wmMerchantBtn');
+    if(wmMerchBtn)wmMerchBtn.addEventListener('click',()=>MerchantShop.open());
+    const shopCloseBtn=document.getElementById('shopClose');
+    if(shopCloseBtn)shopCloseBtn.addEventListener('click',()=>MerchantShop.close());
     // World map back button
     const wmBackBtn=document.getElementById('wmBackBtn');
     if(wmBackBtn){
@@ -4986,7 +5196,8 @@ const Game={
     GameState.selectedGender=cc.gender;
     GameState.selectedAccent=ACCENT_COLORS[cc.accent]||CY;
     GameState.player=new Player(cfg,GameState.selectedEquip);
-    GameState.floor=1;GameState.totalDmg=0;GameState.totalKills=0;
+    GameState.floor=1;GameState.totalDmg=0;GameState.spellDmg=0;GameState.totalKills=0;
+    GameState.roomsCleared=0;GameState.itemsCollected=0;GameState.itemsSold=0;GameState.runStartTime=Date.now();
     GameState.questsDone=0;GameState.turnCount=0;GameState.levelUpPending=false;
     GameState.combo=0;GameState.blockCd=0;GameState.isBlocking=false;
     GameState._maxCombo=0;
@@ -5015,6 +5226,12 @@ const Game={
     const p=GameState.player;
     document.getElementById('pnm').textContent=p.className;
     document.getElementById('pnm').style.color=p.accent;
+    // Show passive skill icon
+    const passEl=document.getElementById('passiveIcon');
+    if(passEl&&p.passiveId){
+      const ps=PASSIVE_SKILLS.find(s=>s.id===p.passiveId);
+      if(ps){passEl.textContent=ps.icon+' '+ps.name;passEl.title=ps.desc;passEl.style.color=p.accent;}
+    }
     document.getElementById('eqbadge').textContent=p.equip.icon+' '+p.equip.name;
     const dmc=document.getElementById('dmcv');
     const dmctx=dmc.getContext('2d');
@@ -5096,7 +5313,11 @@ const Game={
         const gold=Math.floor(20+fl*8+Math.random()*20);
         LootScreen.add(items,gold);
         GameState.floorGold+=gold;
-        setTimeout(()=>VictoryScreen.show(false,()=>WorldMap.show()),700);
+        const nextLoot=GameState.currentRoomIdx+1;
+        const totalLoot=GameState.currentFloor?.rooms?.length||0;
+        setTimeout(()=>VictoryScreen.show(false,()=>{
+          if(nextLoot<totalLoot)Game.enterRoom(nextLoot);else WorldMap.show();
+        }),700);
         break;
       }
       case 'rest':{
@@ -5105,16 +5326,24 @@ const Game={
         p.hp=Math.min(p.maxHp,p.hp+heal);
         UI.updateBars();
         DM.say(`Rest node active. Restored ${heal} HP.`);
+        const nextRest=GameState.currentRoomIdx+1;
+        const totalRest=GameState.currentFloor?.rooms?.length||0;
         setTimeout(()=>{
           DialogEngine.showNPCGreeting('rest_node');
-          setTimeout(()=>WorldMap.show(),3200);
+          setTimeout(()=>{
+            if(nextRest<totalRest)Game.enterRoom(nextRest);else WorldMap.show();
+          },2500);
         },400);
         break;
       }
       case 'merchant':{
         room.cleared=true;
         DM.say('Merchant node detected. Cyberware available.');
-        setTimeout(()=>this.triggerMerchant(()=>WorldMap.show()),400);
+        const nextMerch=GameState.currentRoomIdx+1;
+        const totalMerch=GameState.currentFloor?.rooms?.length||0;
+        setTimeout(()=>this.triggerMerchant(()=>{
+          if(nextMerch<totalMerch)Game.enterRoom(nextMerch);else WorldMap.show();
+        }),400);
         break;
       }
     }
@@ -5809,7 +6038,9 @@ const VictoryScreen = {
     const p = GameState.player;
     const fl = GameState.floor;
     const t = document.getElementById('vicFloorTitle');
-    if (t) t.textContent = `◆ FLOOR ${fl} CLEARED ◆`;
+    const roomNum=GameState.currentRoomIdx+1;
+    const totalRooms=GameState.currentFloor?.rooms?.length||0;
+    if (t) t.textContent = this._isBoss?`◆ ZONE BOSS DEFEATED ◆`:`◆ ROOM ${roomNum}/${totalRooms} CLEARED ◆`;
     const s = document.getElementById('vicStatsLine');
     if (s) s.textContent =
       `FLOOR:${fl}/${GameState.maxFloors} · KILLS:${GameState.totalKills} · ` +
@@ -5995,9 +6226,18 @@ const VictoryScreen = {
   },
 
   _renderUpgrades() {
-    this._upgrades = Rogue.genUpgrades();
     const grid = document.getElementById('vicUpgrades');
+    const hdr = grid?.previousElementSibling; // the "CHOOSE AN UPGRADE" header
     if (!grid) return;
+    // Only show upgrades after boss fights
+    if (!this._isBoss) {
+      grid.innerHTML = '';
+      if(hdr)hdr.style.display='none';
+      this._selectedUpgrade = {name:'SKIP',apply(){}};
+      return;
+    }
+    if(hdr)hdr.style.display='';
+    this._upgrades = Rogue.genUpgrades();
     grid.innerHTML = '';
     this._upgrades.forEach(u => {
       const card = document.createElement('div');
@@ -6020,7 +6260,7 @@ const VictoryScreen = {
     const active = !!this._selectedUpgrade;
     btn.disabled = !active;
     btn.classList.toggle('active', active);
-    if (hint) hint.textContent = active ? '✓ UPGRADE SELECTED' : 'SELECT AN UPGRADE TO CONTINUE';
+    if (hint) hint.textContent = !this._isBoss ? '▶ CONTINUE TO NEXT ROOM' : active ? '✓ UPGRADE SELECTED' : 'SELECT AN UPGRADE TO CONTINUE';
   },
 
   // Called by vicContinueBtn click
