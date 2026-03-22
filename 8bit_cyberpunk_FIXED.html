@@ -4342,7 +4342,7 @@ const Combat = {
     GameState.combatRunning=true;GameState.floorTurns=0;
     // Set turn limit — countdown timer
     const isBoss=GameState.currentFloor?.rooms?.[GameState.currentRoomIdx]?.type==='boss';
-    GameState.turnsLeft=isBoss?80:50;
+    GameState.turnsLeft=isBoss?100:60;
     const p2=GameState.player;
     p2.healedThisFloor=false;
     p2.lowHpAISaid=false;
@@ -5034,7 +5034,16 @@ const MerchantShop={
     this.render();
     const el=document.getElementById('merchantShop');if(el)el.style.display='flex';
   },
-  close(){const el=document.getElementById('merchantShop');if(el)el.style.display='none';if(this._onClose)this._onClose();},
+  close(){
+    const el=document.getElementById('merchantShop');if(el)el.style.display='none';
+    if(this._onClose){this._onClose();}
+    else if(GameState.currentScreen==='sCM'){
+      // Fallback: advance to next room if closed during dungeon without callback
+      const next=GameState.currentRoomIdx+1;
+      const total=GameState.currentFloor?.rooms?.length||0;
+      if(next<total)setTimeout(()=>Game.enterRoom(next),400);
+    }
+  },
   _onClose:null,
   getPrice(item){
     const base=item.rarity==='legendary'?300:item.rarity==='rare'?100:40;
@@ -6060,7 +6069,7 @@ const Game={
         DM.say(`Found ${items.length} items and ${gold} credits!`);
         try{UI.updateBars();UI.updateFloor();}catch(e){}
         setTimeout(()=>{
-          try{if(nextLoot<totalLoot)this.enterRoom(nextLoot);else WorldMap.show();}catch(e){console.error('Loot advance error:',e);}
+          try{if(nextLoot<totalLoot)Game.enterRoom(nextLoot);else WorldMap.show();}catch(e){console.error('Loot advance error:',e);}
         },1200);
         break;
       }
@@ -6074,7 +6083,7 @@ const Game={
         const nextRest=GameState.currentRoomIdx+1;
         const totalRest=GameState.currentFloor?.rooms?.length||0;
         setTimeout(()=>{
-          try{if(nextRest<totalRest)this.enterRoom(nextRest);else WorldMap.show();}catch(e){console.error('Rest advance error:',e);}
+          try{if(nextRest<totalRest)Game.enterRoom(nextRest);else WorldMap.show();}catch(e){console.error('Rest advance error:',e);}
         },2000);
         break;
       }
@@ -6087,7 +6096,7 @@ const Game={
         MerchantShop._onClose=()=>{
           MerchantShop._onClose=null;
           setTimeout(()=>{
-            if(nextMerch<totalMerch)this.enterRoom(nextMerch);else WorldMap.show();
+            if(nextMerch<totalMerch)Game.enterRoom(nextMerch);else WorldMap.show();
           },400);
         };
         MerchantShop.open();
