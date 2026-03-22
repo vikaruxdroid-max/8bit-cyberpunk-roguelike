@@ -1941,51 +1941,85 @@ const Arena = {
     // Player
     if (p) {
       const sz = SPRITE_SIZE[p.sprite] || {w:56,h:88};
-      const px2 = Math.floor(W * 0.14);
+      const px2 = Math.floor(W * 0.18);
       const py2 = FLOOR_Y - sz.h;
+      const ac = GameState.selectedAccent || CY;
 
-      // Shadow
-      ctx.save(); ctx.globalAlpha=.25; ctx.fillStyle='#000';
-      ctx.beginPath(); ctx.ellipse(px2+sz.w/2, FLOOR_Y+2, sz.w*.38, 4, 0, 0, Math.PI*2); ctx.fill();
+      // Ground shadow
+      ctx.save(); ctx.globalAlpha=.3; ctx.fillStyle='#000';
+      ctx.beginPath(); ctx.ellipse(px2+sz.w/2, FLOOR_Y+2, sz.w*.45, 5, 0, 0, Math.PI*2); ctx.fill();
       ctx.restore();
-      // Attack lunge — 22 frames for cinematic weight
-      let lunge = 0;
+
+      // Animation offsets
+      let lunge=0, dodgeY=0, scaleX=1, scaleY=1;
+      // Attack — lunge forward
       if (p.animState === 'attack' && p.animTimer !== undefined) {
-        lunge = Math.sin(p.animTimer / 22 * Math.PI) * 54;
+        const prog = p.animTimer / 22;
+        lunge = Math.sin(prog * Math.PI) * 60;
+        scaleX = 1 + Math.sin(prog * Math.PI) * 0.08;
         p.animTimer++;
         if (p.animTimer >= 22) { p.animState = 'idle'; p.animTimer = 0; }
       }
-      // Hurt flash — FIX: capture animState BEFORE incrementing timer so restore check is reliable
+      // Hurt — knockback + flash
       const pWasHurt = p.animState === 'hurt';
       if (pWasHurt) {
         ctx.save();
+        lunge = -Math.sin(p.animTimer / 25 * Math.PI) * 20;
         ctx.globalAlpha = .55 + Math.sin(p.animTimer * 1.2) * .44;
         ctx.filter = 'brightness(200%) saturate(0%)';
         p.animTimer++; if (p.animTimer > 25) { p.animState = 'idle'; p.animTimer = 0; }
       }
-      // Cast glow — 30 frames
+      // Cast — glow + scale up
       if (p.animState === 'cast') {
-        const ac = GameState.selectedAccent || CY;
         ctx.save(); ctx.globalAlpha = .45 - p.animTimer/66;
-        const g = ctx.createRadialGradient(px2+sz.w/2, py2+sz.h/2, 0, px2+sz.w/2, py2+sz.h/2, 65);
+        const g = ctx.createRadialGradient(px2+sz.w/2, py2+sz.h/2, 0, px2+sz.w/2, py2+sz.h/2, 70);
         g.addColorStop(0, ac); g.addColorStop(1, 'transparent');
-        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(px2+sz.w/2, py2+sz.h/2, 65, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(px2+sz.w/2, py2+sz.h/2, 70, 0, Math.PI*2); ctx.fill();
         ctx.restore();
+        scaleY = 1 + Math.sin(p.animTimer / 30 * Math.PI) * 0.06;
         p.animTimer++; if (p.animTimer > 30) { p.animState = 'idle'; p.animTimer = 0; }
       }
-      const bob = Math.sin(t * .055) * 2;
+      // Idle bob + breathing
+      const bob = Math.sin(t * .04) * 3;
+      const breathe = 1 + Math.sin(t * .03) * 0.015;
       const pDead = p.hp <= 0;
       if (pDead) { ctx.save(); ctx.globalAlpha = .35; }
-      // Draw player sprite (no shadowBlur for performance)
-      if (SPR[p.sprite]) SPR[p.sprite](ctx, px2 + lunge, py2 + bob, false, t);
+
+      // Draw sprite outline for visibility (dark border)
+      ctx.save();
+      const dx = px2 + lunge, dy = py2 + bob;
+      if(scaleX!==1||scaleY!==1||breathe!==1){
+        ctx.translate(dx+sz.w/2, dy+sz.h); ctx.scale(scaleX*breathe, scaleY*breathe); ctx.translate(-(dx+sz.w/2), -(dy+sz.h));
+      }
+      // Dark outline pass (offset in 4 directions)
+      ctx.globalAlpha = (pDead ? 0.2 : 0.5);
+      if(SPR[p.sprite]){
+        for(const[ox2,oy2] of [[-2,0],[2,0],[0,-2],[0,2]]){
+          ctx.save(); ctx.filter='brightness(0%)';
+          SPR[p.sprite](ctx, dx+ox2, dy+oy2, false, t);
+          ctx.restore();
+        }
+      }
+      // Main sprite
+      ctx.globalAlpha = pDead ? 0.35 : 1;
+      if (SPR[p.sprite]) SPR[p.sprite](ctx, dx, dy, false, t);
+      ctx.restore();
       if (pDead) ctx.restore();
       if (pWasHurt) ctx.restore();
-      // HP bar
-      this.hpBar(ctx, px2, py2 - 12, sz.w, p.hp, p.maxHp, CY);
-      ctx.fillStyle = GameState.selectedAccent || CY;
-      ctx.font = `${P}px 'Press Start 2P',monospace`; ctx.textAlign = 'center';
-      ctx.fillText(p.className, px2 + sz.w/2, py2 - 15);
-      ctx.textAlign = 'left';
+
+      // HP bar — bigger, with colored fill
+      this.hpBar(ctx, px2-4, py2 - 16, sz.w+8, p.hp, p.maxHp, ac);
+      // Name label — readable size with dark background
+      ctx.save();
+      const nameText = p.className;
+      ctx.font = `bold ${Math.max(8,P+2)}px 'Share Tech Mono',monospace`;
+      ctx.textAlign = 'center';
+      const nameW = ctx.measureText(nameText).width;
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fillRect(px2+sz.w/2-nameW/2-4, py2-28, nameW+8, 12);
+      ctx.fillStyle = ac;
+      ctx.fillText(nameText, px2+sz.w/2, py2-18);
+      ctx.restore();
     }
 
     // Enemies
@@ -2027,53 +2061,88 @@ const Arena = {
         en.deathTimer--;
         return;
       }
-      // Shadow
-      ctx.save(); ctx.globalAlpha=.22; ctx.fillStyle='#000';
-      ctx.beginPath(); ctx.ellipse(ex+sz.w/2, FLOOR_Y+2, sz.w*.38, 4, 0, 0, Math.PI*2); ctx.fill();
+      // Ground shadow
+      ctx.save(); ctx.globalAlpha=.25; ctx.fillStyle='#000';
+      ctx.beginPath(); ctx.ellipse(ex+sz.w/2, FLOOR_Y+2, sz.w*.45, 5, 0, 0, Math.PI*2); ctx.fill();
       ctx.restore();
-      // Lunge — 22 frames for cinematic weight
-      let lunge = 0;
+
+      // Animation offsets
+      let lunge=0, scaleX2=1, scaleY2=1;
       if (en.animState === 'attack') {
-        lunge = -Math.sin(en.animTimer / 22 * Math.PI) * 44;
+        const prog2 = en.animTimer / 22;
+        lunge = -Math.sin(prog2 * Math.PI) * 50;
+        scaleX2 = 1 + Math.sin(prog2 * Math.PI) * 0.08;
         en.animTimer++; if (en.animTimer >= 22) { en.animState = 'idle'; en.animTimer = 0; }
       }
-      // Hurt flash — FIX: capture animState BEFORE incrementing timer
       const enWasHurt = en.animState === 'hurt';
       if (enWasHurt) {
         ctx.save();
+        lunge = Math.sin(en.animTimer / 25 * Math.PI) * 15;
         ctx.globalAlpha = .55 + Math.sin(en.animTimer*1.2)*.44;
         ctx.filter = 'brightness(200%) saturate(0%)';
         en.animTimer++; if (en.animTimer > 25) { en.animState='idle'; en.animTimer=0; }
       }
-      const bob = Math.sin(t * .055 + i * 1.3) * 2;
-      // Draw enemy sprite (no shadowBlur for performance)
-      if (SPR[en.sprite]) SPR[en.sprite](ctx, ex + lunge, ey + bob, true, t);
+      // Idle bob + breathing
+      const bob = Math.sin(t * .04 + i * 1.3) * 3;
+      const eBreathe = 1 + Math.sin(t * .035 + i) * 0.015;
+
+      // Draw with outline for visibility
+      ctx.save();
+      const edx = ex + lunge, edy = ey + bob;
+      if(scaleX2!==1||scaleY2!==1||eBreathe!==1){
+        ctx.translate(edx+sz.w/2, edy+sz.h); ctx.scale(scaleX2*eBreathe, scaleY2*eBreathe); ctx.translate(-(edx+sz.w/2), -(edy+sz.h));
+      }
+      // Dark outline
+      ctx.globalAlpha=0.5;
+      if(SPR[en.sprite]){
+        for(const[ox3,oy3] of [[-2,0],[2,0],[0,-2],[0,2]]){
+          ctx.save(); ctx.filter='brightness(0%)';
+          SPR[en.sprite](ctx, edx+ox3, edy+oy3, true, t);
+          ctx.restore();
+        }
+      }
+      // Main sprite
+      ctx.globalAlpha=1;
+      if (SPR[en.sprite]) SPR[en.sprite](ctx, edx, edy, true, t);
+      ctx.restore();
       if (enWasHurt) ctx.restore();
-      // HP bar + name
-      this.hpBar(ctx, ex, ey - 12, sz.w, en.hp, en.maxHp, en.color || RD);
+
+      // HP bar — bigger with colored fill
+      this.hpBar(ctx, ex-4, ey - 16, sz.w+8, en.hp, en.maxHp, en.color || RD);
+      // Name label with dark background
+      ctx.save();
+      const eName = en.name.slice(0,12);
+      ctx.font = `bold ${Math.max(8,P+2)}px 'Share Tech Mono',monospace`;
+      ctx.textAlign = 'center';
+      const eNameW = ctx.measureText(eName).width;
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fillRect(ex+sz.w/2-eNameW/2-4, ey-28, eNameW+8, 12);
       ctx.fillStyle = en.color || MG;
-      ctx.font = `${P}px 'Press Start 2P',monospace`; ctx.textAlign = 'center';
-      ctx.fillText(en.name.slice(0,10), ex + sz.w/2, ey - 15);
+      ctx.fillText(eName, ex+sz.w/2, ey-18);
       if (en.isBoss) {
         const pc = ['','#39FF14','#FFD700','#FF2244'][en.phase||1];
-        ctx.fillStyle = pc; ctx.fillText(`[PHASE ${en.phase}]`, ex+sz.w/2, ey-8);
+        ctx.fillStyle = pc; ctx.fillText(`PHASE ${en.phase}`, ex+sz.w/2, ey-6);
       }
-      ctx.textAlign = 'left';
-      // Stun star
+      ctx.restore();
+      // Stun indicator
       if (en.isStunned && en.isStunned()) {
-        ctx.fillStyle = '#ffff00'; ctx.font = '12px sans-serif'; ctx.textAlign='center';
-        ctx.fillText('★', ex+sz.w/2, ey-4); ctx.textAlign='left';
+        ctx.fillStyle = '#ffff00'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign='center';
+        ctx.fillText('★ STUNNED', ex+sz.w/2, ey-2); ctx.textAlign='left';
       }
-      // Speed particle trail for fast enemies (SPD >= 12)
+      // Speed trail
       if(en.spd>=12&&t%3===0&&GameState.settings.particles!=='off'){
-        this.particles.push({x:ex+sz.w/2+(Math.random()-0.5)*10,y:ey+sz.h*0.7,vx:-0.5-Math.random(),vy:(Math.random()-0.5)*0.5,alpha:0.4,fade:0.025,color:en.color||CY,size:1.5+Math.random(),glow:3,gravity:0});
+        this.particles.push({x:edx+sz.w/2+(Math.random()-0.5)*10,y:edy+sz.h*0.7,vx:-0.5-Math.random(),vy:(Math.random()-0.5)*0.5,alpha:0.4,fade:0.025,color:en.color||CY,size:1.5+Math.random(),glow:3,gravity:0});
       }
-      // Telegraph glow for charging enemies
+      // Telegraph glow
       if(en._telegraphed){
-        ctx.save();ctx.globalAlpha=0.15+Math.sin(t*0.2)*0.1;
-        const tg=ctx.createRadialGradient(ex+sz.w/2,ey+sz.h/2,0,ex+sz.w/2,ey+sz.h/2,sz.w);
+        ctx.save();ctx.globalAlpha=0.2+Math.sin(t*0.15)*0.12;
+        const tg=ctx.createRadialGradient(edx+sz.w/2,edy+sz.h/2,0,edx+sz.w/2,edy+sz.h/2,sz.w*1.5);
         tg.addColorStop(0,en.color||'#ff0000');tg.addColorStop(1,'transparent');
-        ctx.fillStyle=tg;ctx.beginPath();ctx.arc(ex+sz.w/2,ey+sz.h/2,sz.w,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle=tg;ctx.beginPath();ctx.arc(edx+sz.w/2,edy+sz.h/2,sz.w*1.5,0,Math.PI*2);ctx.fill();
+        // Pulsing warning text
+        ctx.globalAlpha=0.7+Math.sin(t*0.2)*0.3;
+        ctx.fillStyle='#ff4400';ctx.font=`bold ${P+2}px 'Share Tech Mono',monospace`;ctx.textAlign='center';
+        ctx.fillText('⚠ CHARGING',edx+sz.w/2,edy-32);
         ctx.restore();
       }
     });
@@ -2583,16 +2652,16 @@ const Arena = {
 
   hpBar(ctx, x, y, w, hp, maxHp, col) {
     const pct = Math.max(0, hp/maxHp);
-    ctx.fillStyle='#080814'; ctx.fillRect(x, y, w, 5);
-    ctx.strokeStyle='#2a2a3a'; ctx.lineWidth=.5; ctx.strokeRect(x, y, w, 5);
+    const h=7;
+    // Dark background with border
+    ctx.fillStyle='rgba(0,0,0,0.7)'; ctx.fillRect(x-1, y-1, w+2, h+2);
+    ctx.fillStyle='#0a0a14'; ctx.fillRect(x, y, w, h);
     // Color based on HP%
     let barColor;
     if(pct>0.6)barColor=col||'#39ff14';
     else if(pct>0.3)barColor='#ffcc00';
     else barColor='#ff2244';
-    const g = ctx.createLinearGradient(x,y,x+w*pct,y);
-    g.addColorStop(0,barColor);g.addColorStop(1,barColor);
-    ctx.fillStyle=g; ctx.fillRect(x, y, w*pct, 5);
+    ctx.fillStyle=barColor; ctx.fillRect(x, y, w*pct, h);
     // Shine sweep
     const shinePos=(this.time*0.8)%100/100;
     if(shinePos>0&&shinePos<1){
