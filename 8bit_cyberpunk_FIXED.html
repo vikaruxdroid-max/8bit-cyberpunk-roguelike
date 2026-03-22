@@ -3475,7 +3475,13 @@ const Combat = {
     }
     // Increment combo
     this.incrementCombo();
-    if(enemy.hp<=0)this.killEnemy(enemy);
+    if(enemy.hp<=0){
+      this.killEnemy(enemy);
+      // Check if all enemies dead — end combat immediately
+      if(!GameState.enemies.some(e=>e.hp>0)){
+        setTimeout(()=>this.endCombat(true),200);
+      }
+    }
     else{if(enemy.checkPhase)enemy.checkPhase();if(!enemy.lowHpSaid&&enemy.hp/enemy.maxHp<=0.3){enemy.lowHpSaid=true;DialogEngine.showLowHp(enemy);AIDialog.onLowHPEnemy(enemy);}}
     return dmg;
   },
