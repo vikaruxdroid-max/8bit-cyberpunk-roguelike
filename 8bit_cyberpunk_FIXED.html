@@ -6257,7 +6257,7 @@ const VictoryScreen = {
     const btn = document.getElementById('vicContinueBtn');
     const hint = document.getElementById('vicUpgHint');
     if (!btn) return;
-    const active = !!this._selectedUpgrade;
+    const active = !this._isBoss || !!this._selectedUpgrade;
     btn.disabled = !active;
     btn.classList.toggle('active', active);
     if (hint) hint.textContent = !this._isBoss ? '▶ CONTINUE TO NEXT ROOM' : active ? '✓ UPGRADE SELECTED' : 'SELECT AN UPGRADE TO CONTINUE';
@@ -6265,12 +6265,15 @@ const VictoryScreen = {
 
   // Called by vicContinueBtn click
   _continue() {
-    if (!this._selectedUpgrade) return;
     const p = GameState.player;
-    this._selectedUpgrade.apply(p);
+    if (this._selectedUpgrade && this._selectedUpgrade.apply) {
+      this._selectedUpgrade.apply(p);
+      if(this._selectedUpgrade.name&&this._selectedUpgrade.name!=='SKIP'){
+        DM.say(`Upgrade: ${this._selectedUpgrade.name}!`);
+      }
+    }
     UI.flash();
     UI.updateBars();
-    DM.say(`Upgrade: ${this._selectedUpgrade.name}!`);
     LootScreen.reset();
     const cb = this._cb;
     if (this._isBoss) {
