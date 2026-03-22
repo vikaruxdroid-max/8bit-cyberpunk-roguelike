@@ -3700,7 +3700,6 @@ const Combat = {
     QM.check();
   },
   endCombat(won){
-    if(GameState.levelUpPending)return;
     clearInterval(GameState.combatInterval);GameState.combatRunning=false;
     const p=GameState.player;
     if(!won){
