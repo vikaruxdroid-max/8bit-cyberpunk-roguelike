@@ -5264,6 +5264,7 @@ const Game={
     if(!floorData)return;
     const room=floorData.rooms[idx];
     if(!room)return;
+    UI.show('sCM');
     room.visited=true;
     GameState.currentRoomIdx=idx;
     const exEl=document.getElementById('roomExits');
