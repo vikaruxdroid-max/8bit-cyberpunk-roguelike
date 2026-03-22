@@ -3620,7 +3620,7 @@ const Combat = {
     document.getElementById('tbadge').textContent='TURN:'+GameState.turnCount;
     QM.track('totalTurns',1);
     const alive=enemies.filter(e=>e.hp>0);
-    if(!alive.length&&!GameState.levelUpPending){this.endCombat(true);return;}
+    if(!alive.length){this.endCombat(true);return;}
     AIDialog.onTurn(GameState.floorTurns,enemies);
     if(p.hp/p.maxHp<=0.30&&!p.lowHpAISaid){p.lowHpAISaid=true;AIDialog.onLowHPPlayer();}
     p.tickBuffs();
