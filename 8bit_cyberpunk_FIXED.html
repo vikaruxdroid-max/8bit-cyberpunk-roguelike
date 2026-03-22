@@ -962,6 +962,7 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
       <span class="fb" style="color:var(--G)" id="tbadge">TURN:0</span>
       <span class="fb" style="color:var(--GD)" id="goldbadge">⚡0 CR</span>
       <button id="speedBtn" onclick="Game.toggleSpeed();" style="font-family:'Share Tech Mono',monospace;font-size:clamp(7px,0.8vw,10px);padding:2px 6px;cursor:pointer;background:rgba(0,255,65,.15);border:1px solid var(--G);color:var(--G);">1x</button>
+      <button id="autoBtn" onclick="Game.toggleAuto();" style="font-family:'Share Tech Mono',monospace;font-size:clamp(7px,0.8vw,10px);padding:2px 6px;cursor:pointer;background:rgba(136,0,255,.15);border:1px solid var(--P);color:var(--P);">AUTO:OFF</button>
       <button id="mapBtn" class="hidden">MAP</button>
     </div>
     <!-- Full-width arena -->
@@ -2290,7 +2291,7 @@ const Arena = {
         ctx.globalAlpha=pulse*0.7;
         ctx.strokeStyle=`hsl(${hp.hue+hueShift},100%,70%)`;
         ctx.lineWidth=1;
-        ctx.shadowColor=ctx.strokeStyle;ctx.shadowBlur=4;
+        // No shadowBlur for performance
         const hx=hp.x*W,hy=hp.y*H,r=hp.size;
         ctx.beginPath();
         for(let i=0;i<6;i++){
@@ -2594,7 +2595,7 @@ const Arena = {
     for(let a=0;a<4;a++){
       const ax=W*.06+a*W*.24,aw=W*.14;
       ctx.fillStyle=colorBase+'0.08)';
-      ctx.strokeStyle=archColor;ctx.lineWidth=2;ctx.shadowColor=archColor;ctx.shadowBlur=8;
+      ctx.strokeStyle=archColor;ctx.lineWidth=2;
       ctx.beginPath();ctx.arc(ax+aw/2,H*.18,aw*.5,Math.PI,0,false);ctx.lineTo(ax+aw,H*.18);ctx.lineTo(ax,H*.18);ctx.closePath();
       ctx.fill();ctx.stroke();ctx.shadowBlur=0;
       const pg3=ctx.createRadialGradient(ax+aw/2,H*.13,0,ax+aw/2,H*.13,aw*.38);
@@ -4158,8 +4159,10 @@ const UI={
     const p=GameState.player;const bar=document.getElementById('spbar');if(!p||!bar)return;bar.innerHTML='';
     p.spells.forEach((sp,i)=>{
       const btn=document.createElement('div');btn.className='spbtn';
+      const evolved=sp.evolved?'border-color:var(--GD);':'';
       btn.innerHTML=`<div class="spico">${sp.icon}</div><div class="splbl">${sp.name.split(' ').slice(0,2).join(' ')}</div><div class="cdov" style="display:none">0<small>CD</small></div>`;
-      btn.title=`${sp.name}: ${sp.desc} | MP:${sp.mp} CD:${sp.maxCd}`;
+      if(sp.evolved)btn.style.borderColor='var(--GD)';
+      btn.title=`${sp.name}${sp.evolved?' [EVOLVED]':''}\n${sp.desc}\nMP:${sp.mp} CD:${sp.maxCd}${sp.castCount?' ('+sp.castCount+' casts)':''}`;
       btn.addEventListener('click',()=>{if(GameState.combatRunning)Combat.castSpell(p,sp,GameState.enemies);});
       bar.appendChild(btn);
     });
@@ -4569,7 +4572,7 @@ const MerchantShop={
   },
   getSellPrice(item){return Math.floor(this.getPrice(item)*0.4);},
   render(){
-    const shopEl=document.getElementById('shopItems');shopEl.innerHTML='';
+    const shopEl=document.getElementById('shopItems');if(!shopEl)return;shopEl.innerHTML='';
     const goldEl=document.getElementById('shopGold');
     goldEl.textContent=Inventory.gold+' CR';
     this.stock.forEach((item,i)=>{
@@ -4590,7 +4593,7 @@ const MerchantShop={
       shopEl.appendChild(d);
     });
     // Sell section
-    const sellEl=document.getElementById('shopSellItems');sellEl.innerHTML='';
+    const sellEl=document.getElementById('shopSellItems');if(!sellEl)return;sellEl.innerHTML='';
     Inventory.items.forEach((item,i)=>{
       if(!item)return;
       const sp=this.getSellPrice(item);
@@ -5677,6 +5680,31 @@ const Game={
     UI.show('sFC');
   },
 
+  _autoBattle:false,
+  toggleAuto(){
+    this._autoBattle=!this._autoBattle;
+    const btn=document.getElementById('autoBtn');
+    if(btn){
+      btn.textContent=this._autoBattle?'AUTO:ON':'AUTO:OFF';
+      btn.style.background=this._autoBattle?'rgba(0,255,65,.3)':'rgba(136,0,255,.15)';
+      btn.style.borderColor=this._autoBattle?'var(--G)':'var(--P)';
+      btn.style.color=this._autoBattle?'var(--G)':'var(--P)';
+    }
+    // When auto is on, auto-click continue on victory screens
+    if(this._autoBattle){
+      this._autoInterval=setInterval(()=>{
+        if(GameState.currentScreen==='sVIC'){
+          const btn2=document.getElementById('vicContinueBtn');
+          if(btn2&&btn2.disabled){const c=document.querySelector('.vic-upg-card:not(.selected)');if(c)c.click();}
+          else if(btn2&&!btn2.disabled)btn2.click();
+        }
+        const shop=document.getElementById('merchantShop');
+        if(shop&&shop.style.display==='flex')document.getElementById('shopClose')?.click();
+      },1500);
+    } else {
+      clearInterval(this._autoInterval);this._autoInterval=null;
+    }
+  },
   _combatSpeed:1200,
   _speedIdx:0,
   toggleSpeed(){
