@@ -1,151 +1,117 @@
 {
   "enemies": {
     "netrunner": {
-      "encounter": ["Jacking in, flatline incoming.", "Your wetware is mine.", "Hack initiated. Resistance futile."],
-      "combat_low_hp": ["System... critical...", "Rerouting... can't hold...", "Firewall... breached..."],
-      "death": ["Disconnecting... permanently.", "Flatlined. Ghost... gone.", "Connection... terminated."]
+      "encounter": ["Jacking in, flatline incoming.", "Your wetware is mine.", "Hack initiated. Resistance futile.", "I see your code. Primitive."],
+      "combat_low_hp": ["System... critical...", "Rerouting... can't hold...", "Firewall... breached...", "Backup protocols... failing..."],
+      "death": ["Disconnecting... permanently.", "Flatlined. Ghost... gone.", "Connection... terminated.", "My code was... perfect..."],
+      "on_hack": ["Your skills are mine now.", "Locked out! How's that feel?", "Neural hack complete.", "Programs disabled. You're blind."]
+    },
+    "glitchDrone": {
+      "encounter": ["BZZT. Target acquired.", "Scanning... hostile detected.", "Protocol: eliminate.", "Drone swarm online."],
+      "combat_low_hp": ["Motor... failing...", "ERRROR... recalibrating...", "Damage critical... bzzt...", "Unit compromised..."],
+      "death": ["ERRR-RRR-OR...", "Unit offline. Permanently.", "Drone down.", "Signal... lost... bzzt..."]
+    },
+    "neonGolem": {
+      "encounter": ["I AM THE WALL.", "CONSTRUCTION PROTOCOL: DESTROY.", "Rebuilding... always rebuilding...", "You will be foundation material."],
+      "combat_low_hp": ["STRUCTURAL INTEGRITY: CRITICAL!", "Cannot maintain form!", "REBUILD! REBUILD!", "You break me? I BREAK YOU!"],
+      "death": ["Foundation... crumbling...", "Built to last... not forever...", "STRUCTURAL FAILURE.", "The wall... falls..."]
     },
     "default": {
-      "encounter": ["You dare enter my domain?", "Prepare to be deleted.", "This floor belongs to me."],
-      "combat_low_hp": ["Impossible... I cannot fall.", "You are stronger than expected...", "Not yet... not yet!"],
-      "death": ["Defeated... in the neon dark.", "The dungeon... claims me.", "You win... this time."]
+      "encounter": ["You dare enter my domain?", "Prepare to be deleted.", "This floor belongs to me.", "Another runner to flatline.", "Your signal ends here."],
+      "combat_low_hp": ["Impossible... I cannot fall.", "You are stronger than expected...", "Not yet... not yet!", "System failing... override...", "Rerouting power..."],
+      "death": ["Defeated... in the neon dark.", "The dungeon... claims me.", "You win... this time.", "Flatlined.", "Data... corrupted..."],
+      "player_low_hp": ["Almost flatlined, runner!", "Your signal's fading!", "One more hit does it.", "Smell that? Circuits burning."],
+      "on_crit_received": ["Lucky shot, meat!", "That actually hurt!", "ERROR: unexpected spike!", "You'll pay for that."],
+      "on_block": ["Blocked? Doesn't matter.", "Hide behind that shield.", "Can't block forever.", "Delay the inevitable."],
+      "on_combo_received": ["Stop... hitting... me!", "Countermeasures failing!", "Can't keep up!", "Too fast!"],
+      "on_telegraph": ["Charging up...", "Power building...", "You should run.", "This will hurt."]
     }
+  },
+  "player": {
+    "encounter": ["Another one? Let's go.", "You picked the wrong runner.", "Time to earn credits.", "Boot up. Let's dance."],
+    "combat_low_hp": ["Not done yet...", "Pain is just data.", "Still standing.", "You think this stops me?", "Grit over chrome."],
+    "on_kill": ["Next.", "Flatlined. Moving on.", "One less problem.", "That's how it's done.", "Too easy."],
+    "on_crit": ["Right in the circuits!", "Critical hit!", "Direct to the core!", "Boom.", "Read those numbers!"],
+    "on_spell": ["Eat this!", "Program executing.", "Special delivery!", "Try blocking this.", "Ability online!"],
+    "on_block": ["Not today.", "Shield up!", "Nice try.", "Deflected!", "Blocked."],
+    "on_combo_3": ["Combo! Keep going!", "Three in a row!", "On a streak!"],
+    "on_combo_5": ["Five hit combo!", "Can't stop!", "Unstoppable!", "COMBO MASTER!"],
+    "on_combo_7": ["MAXIMUM COMBO!", "They can't touch this!", "GODLIKE!", "LEGENDARY STREAK!"],
+    "on_level_up": ["System upgrade.", "Power surge!", "Stronger every fight.", "New protocols online."],
+    "on_heal": ["Systems restored.", "Back in action.", "Patch applied.", "Health replenished."],
+    "on_dodge": ["Too slow!", "Can't hit what moves.", "Ghost mode!", "Miss me?"]
   },
   "npcs": {
     "merchant": {
-      "greeting": ["Credits talk. What do you need?", "Fresh cyberware, just arrived.", "Buy fast, the corp patrols are close."],
-      "buy": ["Smart choice.", "Good doing business.", "Come back when you have more credits."],
+      "greeting": ["Credits talk. What do you need?", "Fresh cyberware, just arrived.", "Buy fast, corp patrols are close.", "Everything has a price, runner."],
+      "buy": ["Smart choice.", "Good doing business.", "Come back with more credits."],
       "no_credits": ["No credits, no gear. Move along.", "Come back when you're not broke."]
     },
     "rest_node": {
-      "greeting": ["Safe zone detected. Rest here.", "Neural uplink available. Recharge?", "Sanctuary found. Restore systems?"],
-      "rest": ["Systems restored. Back to full power.", "Recharged. The dungeon awaits.", "Neural sync complete."]
+      "greeting": ["Safe zone detected. Rest here.", "Neural uplink available. Recharge.", "Sanctuary found. Restore systems.", "Catch your breath, runner."],
+      "rest": ["Systems restored. Full power.", "Recharged. The dungeon waits.", "Neural sync complete."]
     }
   },
   "floor_events": {
-    "floor_1": ["Neon light flickers above you.", "The dungeon hums with corrupted data.", "Distant combat echoes through the corridors."],
-    "floor_5": ["The air crackles with ICE.", "Corporate logos litter the walls.", "Something powerful stirs deeper below."],
-    "floor_10": ["You feel the boss presence nearby.", "The dungeon warps around you.", "Final systems online. Boss chamber ahead."]
+    "1": "The neon streets buzz. First sector breach.",
+    "2": "Deeper in. The signals grow hostile.",
+    "3": "Third sector. They know you're here.",
+    "4": "Halfway point. The real threats begin.",
+    "5": "Boss territory. Maximum alert.",
+    "6": "Critical sector. No margin for error.",
+    "7": "The core hums louder. Almost there.",
+    "8": "Final approach. No turning back.",
+    "9": "Last barrier before the end.",
+    "10": "BOSS CHAMBER. The guardian awaits."
+  },
+  "dm": {
+    "room_enter": ["New sector. Stay sharp.", "Hostiles detected.", "The grid shifts.", "Combat imminent.", "Another room, another fight."],
+    "rest": ["Safe node. Rest while you can.", "A moment of peace.", "Recharging systems."],
+    "merchant": ["Data trader appears.", "Merchant node online.", "Black market access."],
+    "boss_intro": ["WARNING: MASSIVE SIGNATURE!", "The boss awakens.", "All systems alert!"],
+    "zone_clear": ["Zone secured! Signal clear.", "All hostiles eliminated.", "Area pacified. Well done, runner."]
   },
   "ai_fallbacks": {
     "enemy_taunt": [
-      "Your data ends here, fleshbag.",
-      "Flatline protocol: activated.",
-      "This dungeon is my domain, ghost.",
-      "Error: hero not found. Deleting...",
-      "You jack in, you jack out dead.",
-      "Netware won't save you down here.",
-      "Synaptic override incoming.",
-      "I've flatlined better than you.",
-      "Corps built me to end things like you.",
-      "Your chrome means nothing in my sector.",
-      "Run the exit protocol. Save yourself.",
-      "Signal lost — that's your soul, choom.",
-      "Biometrics confirm: you are already dead.",
-      "Fight me and glitch into nothing.",
-      "Last hero who came here is static now."
+      "Your data ends here, fleshbag.", "Flatline protocol: activated.", "This dungeon is my domain.",
+      "Error: hero not found. Deleting...", "You jack in, you jack out dead.",
+      "Synaptic override incoming.", "I've flatlined better than you.",
+      "Corps built me to end you.", "Your chrome means nothing here.",
+      "Signal lost — that's your soul.", "Fight me and glitch into nothing."
     ],
     "enemy_lowHp": [
-      "Syst3m... cr1tical... r3boot...",
-      "Impossible... I do not... fall...",
-      "Damage exceeds... tolerance...",
-      "Rerouting... power... failing...",
-      "C0re temp critical. Still fighting.",
-      "You got lucky, ghost. Won't happen again.",
-      "Still functional. Still... dangerous.",
-      "This is... not over. Never over.",
-      "Firewall... breach... compensating...",
-      "I have contingencies. Many... contingencies.",
-      "Pain is just a subroutine. Overriding.",
-      "Error 404: surrender not found.",
-      "Run the backup. Run the backup. Run—",
-      "Not like this... not in this sector...",
-      "You will regret this cascade."
+      "Syst3m... cr1tical...", "Impossible... I do not fall...", "Damage exceeds tolerance...",
+      "Rerouting... failing...", "Still functional. Still dangerous.",
+      "This is not over.", "Pain is just a subroutine.", "Error 404: surrender not found.",
+      "Run the backup... run the—", "Not like this..."
     ],
     "enemy_death": [
-      "D1sc0nn3ct1ng... p3rman3ntly.",
-      "Signal lost. Ghost... gone.",
-      "Connection... terminated. Well played.",
-      "Flatlined in the neon dark.",
-      "Kernel panic. No... recovery.",
-      "You win this node, ghost.",
-      "Process killed. Memory... cleared.",
-      "System halt. Core... dump.",
-      "Tell the corps... I almost had you.",
-      "Next floor... will end you. I... swear.",
-      "Shutdown... imminent. Good fight, choom.",
-      "Stack overflow... fatal.",
-      "My data dies... yours will too.",
-      "Error... error... err—",
-      "The dungeon... inherits... my power."
+      "D1sc0nn3ct1ng...", "Signal lost. Ghost gone.", "Connection terminated.",
+      "Flatlined in neon dark.", "Kernel panic. No recovery.",
+      "Process killed.", "System halt.", "Shutdown imminent.",
+      "My data dies... yours will too.", "Error... error... err—"
     ],
     "player_comeback": [
-      "Already seen worse. Let's dance.",
-      "You talk. I flatten.",
-      "Try harder, chrome-brain.",
-      "Your move. My finish.",
-      "Bring the pain. I've got more.",
-      "This sector falls today.",
-      "Net's mine now. Step aside.",
-      "Last checkpoint was a mile back. Still here.",
-      "Logged in. Not logging out.",
-      "Your ICE? Already broken.",
-      "I flatline enemies, not missions.",
-      "Corp built you. I'll unbuild you.",
-      "Threat level: irrelevant.",
-      "You're just loot I haven't picked up yet.",
-      "Stay still. This won't take long."
+      "Already seen worse.", "You talk. I flatten.", "Try harder.",
+      "Your move. My finish.", "Bring the pain.", "This sector falls today.",
+      "Net's mine now.", "Still here. Still fighting.",
+      "I flatline enemies, not missions.", "Threat level: irrelevant."
     ],
     "player_lowHp": [
-      "Still standing. Still swinging.",
-      "Pain's just data. Keep moving.",
-      "Not done yet. Not even close.",
-      "Bleeding but functional. Push through.",
-      "Every breath is a choice. Choosing fight.",
-      "Systems critical. Override accepted.",
-      "I've flatlined before. Not today.",
-      "Damage report: irrelevant. Keep pushing.",
-      "Low HP is a state of mind.",
-      "Body's failing. Will is not.",
-      "Come on... one more hit. One more.",
-      "Grit over chrome. Always.",
-      "I didn't come this far to disconnect.",
-      "Rerouting through the pain.",
-      "This is where I find out what I'm made of."
+      "Still standing.", "Pain's just data.", "Not done yet.",
+      "Bleeding but functional.", "Every breath is a choice.",
+      "Systems critical. Override accepted.", "Damage report: irrelevant.",
+      "Body's failing. Will is not.", "I didn't come this far to disconnect."
     ],
     "player_crit": [
-      "OVERCLOCK! Maximum output!",
-      "There's the critical strike!",
-      "Full damage — feel that!",
-      "Synaptic surge — MAXIMUM!",
-      "That's a flatline hit!",
-      "Chrome and fury!",
-      "Critical confirmed — beautiful.",
-      "Read my damage numbers!",
-      "That's the kill shot coded in.",
-      "Overclocked and loving it!",
-      "Hit like a corpo data-nuke!",
-      "You felt that in your mainframe!",
-      "Crit. Done. Next.",
-      "Precision damage. Maximum style.",
-      "That one's going in the kill log."
+      "OVERCLOCK! Maximum!", "Critical strike!", "Full damage!",
+      "Synaptic surge!", "Flatline hit!", "Chrome and fury!",
+      "Critical confirmed!", "Overclocked!", "Precision damage."
     ],
     "player_spell": [
-      "Initiating protocol — NOW!",
-      "Skill deployed. Watch the damage.",
-      "System ability — ONLINE!",
-      "Tactical override engaged!",
-      "Ability sequence: activated.",
-      "Chrome and code — unleashed!",
-      "Running the special. Stand back.",
-      "This one hurts. Trust me.",
-      "Subroutine: EXECUTE.",
-      "Power spike incoming!",
-      "Special loaded — fire in the hole!",
-      "That's the killswitch, engaged.",
-      "Ability buffered. Releasing now.",
-      "Full power output. Now.",
-      "Sequence complete. Impact confirmed."
+      "Protocol — NOW!", "Skill deployed!", "Ability ONLINE!",
+      "Tactical override!", "Chrome unleashed!", "Special loaded!",
+      "Power spike!", "Full output!", "Sequence complete."
     ]
   }
 }

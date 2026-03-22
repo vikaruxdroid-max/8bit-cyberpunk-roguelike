@@ -961,6 +961,7 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
       <span class="fb" style="color:var(--M)" id="dbadge">DMG:0</span>
       <span class="fb" style="color:var(--G)" id="tbadge">TURN:0</span>
       <span class="fb" style="color:var(--GD)" id="goldbadge">⚡0 CR</span>
+      <button id="speedBtn" onclick="Game.toggleSpeed();" style="font-family:'Share Tech Mono',monospace;font-size:clamp(7px,0.8vw,10px);padding:2px 6px;cursor:pointer;background:rgba(0,255,65,.15);border:1px solid var(--G);color:var(--G);">1x</button>
       <button id="mapBtn" class="hidden">MAP</button>
     </div>
     <!-- Full-width arena -->
@@ -3576,6 +3577,7 @@ const Combat = {
   killEnemy(en){
     Audio.play('death');
     GameState.totalKills++;
+    Achievements.check();
     QM.track('totalKills',1);QM.track('killBlows',1);
     if(GameState.player.spellsCast.size===0)QM.track('noSpellKills',1);
     if(en.isBoss)QM.track('bossKills',1);
@@ -3590,10 +3592,21 @@ const Combat = {
     const drops=LootSystem.genLoot(en,GameState.floor);
     const gold=LootSystem.goldFromEnemy(en,GameState.floor);
     LootScreen.add(drops,gold);
-    // XP gain
+    // Gold and XP popups
     const p=GameState.player;
     const xpGain=en.isBoss?150:10+GameState.floor*5;
     p.xp+=xpGain;
+    if(idx>=0){
+      const pos2=Arena.getEnemyPos(idx);
+      if(gold>0)Arena.spawnText(`+${gold} CR`,pos2.x,pos2.y+20,'#FFD700',9);
+      Arena.spawnText(`+${xpGain} XP`,pos2.x+30,pos2.y+10,'#aa66ff',8);
+    }
+    // Kill streak announcements
+    const streak=GameState.totalKills;
+    if(streak===3)Arena.spawnText('TRIPLE KILL!',Arena.W*.5,Arena.H*.3,'#FF00FF',14);
+    else if(streak===5)Arena.spawnText('KILLING SPREE!',Arena.W*.5,Arena.H*.3,'#FFD700',16);
+    else if(streak===8)Arena.spawnText('UNSTOPPABLE!',Arena.W*.5,Arena.H*.3,'#FF4500',18);
+    UI.updateFloor();
     // Level up happens at end of combat now (in victory screen)
     while(p.xp>=p.xpToNext){
       p.xp-=p.xpToNext;p.xpToNext=Math.floor(50*(p.level+1)*1.2);p.level++;
@@ -3823,6 +3836,9 @@ const Combat = {
     if(!p.healedThisFloor)QM.track('floorsNoHeal',1);
     if(GameState.floorTurns<=10)QM.track('fastWins',1);
     QM.track('floorsCleared',1);QM.check();
+    // Ghost run: no damage taken this room
+    if(p.hp>=p.maxHp)Achievements.unlock('no_damage');
+    Achievements.check();
     UI.flash();
     SaveSystem.save();
     if(room?.type==='boss'){
@@ -3867,7 +3883,7 @@ const Combat = {
     AIDialog.init();
     UI.updateCombo();UI.updateBlock();UI.updateTurnOrder();
     Arena.resize(); // ensure canvas is properly sized before first render
-    GameState.combatInterval=setInterval(()=>Combat.tick(),1200);
+    GameState.combatInterval=setInterval(()=>Combat.tick(),Game._combatSpeed||1200);
   }
 };
 
@@ -4348,7 +4364,7 @@ const UI={
           const alive=GameState.enemies.filter(e=>e.hp>0);
           if(alive.length>0&&p.hp>0){
             GameState.combatRunning=true;
-            GameState.combatInterval=setInterval(()=>Combat.tick(),1200);
+            GameState.combatInterval=setInterval(()=>Combat.tick(),Game._combatSpeed||1200);
           } else {
             Combat.endCombat(p.hp>0);
           }
@@ -4904,6 +4920,57 @@ const Records = {
   reset(){ localStorage.removeItem(this._key); },
 };
 
+// ═══════════════════════════════════════════════════════════════
+// ACHIEVEMENTS — persistent unlock tracking
+// ═══════════════════════════════════════════════════════════════
+const Achievements={
+  _key:'nd_achievements',
+  defs:[
+    {id:'first_blood',name:'FIRST BLOOD',desc:'Kill your first enemy',icon:'🗡',check:()=>GameState.totalKills>=1},
+    {id:'combo_5',name:'COMBO MASTER',desc:'Reach 5x combo',icon:'🔥',check:()=>GameState._maxCombo>=5},
+    {id:'combo_7',name:'GODLIKE',desc:'Reach 7x combo',icon:'⚡',check:()=>GameState._maxCombo>=7},
+    {id:'zone_clear',name:'ZONE RUNNER',desc:'Clear your first zone',icon:'🏆',check:()=>GameState.zonesCleared.length>=1},
+    {id:'level_5',name:'VETERAN',desc:'Reach level 5',icon:'⭐',check:()=>GameState.player?.level>=5},
+    {id:'kills_20',name:'SERIAL FLATLINE',desc:'Kill 20 enemies in one run',icon:'💀',check:()=>GameState.totalKills>=20},
+    {id:'no_damage',name:'GHOST RUN',desc:'Clear a room taking 0 damage',icon:'👻',check:()=>false}, // tracked in endCombat
+    {id:'spell_evolve',name:'EX PROTOCOL',desc:'Evolve your spell',icon:'🌟',check:()=>GameState.player?.spells?.some(s=>s.evolved)},
+    {id:'gold_100',name:'CREDIT HOARDER',desc:'Accumulate 100 credits',icon:'💰',check:()=>Inventory.gold>=100},
+    {id:'boss_kill',name:'BOSS SLAYER',desc:'Defeat a zone boss',icon:'👑',check:()=>GameState.totalKills>0&&GameState.zonesCleared.length>=1},
+  ],
+  _unlocked:null,
+  init(){try{this._unlocked=JSON.parse(localStorage.getItem(this._key))||[];}catch(e){this._unlocked=[];}},
+  check(){
+    if(!this._unlocked)this.init();
+    this.defs.forEach(a=>{
+      if(this._unlocked.includes(a.id))return;
+      if(a.check()){
+        this._unlocked.push(a.id);
+        try{localStorage.setItem(this._key,JSON.stringify(this._unlocked));}catch(e){}
+        this._notify(a);
+      }
+    });
+  },
+  unlock(id){
+    if(!this._unlocked)this.init();
+    if(this._unlocked.includes(id))return;
+    const a=this.defs.find(d=>d.id===id);if(!a)return;
+    this._unlocked.push(id);
+    try{localStorage.setItem(this._key,JSON.stringify(this._unlocked));}catch(e){}
+    this._notify(a);
+  },
+  _notify(a){
+    Audio.play('levelUp');
+    const banner=document.getElementById('questBanner');
+    if(banner){
+      document.getElementById('questBanner-title').textContent='ACHIEVEMENT UNLOCKED';
+      document.getElementById('questBanner-desc').textContent=a.icon+' '+a.name;
+      document.getElementById('questBanner-reward').textContent=a.desc;
+      banner.classList.add('show');
+      setTimeout(()=>banner.classList.remove('show'),3500);
+    }
+  }
+};
+
 const Game={
   init(){
     // Load generative content JSON — non-blocking; fallback to null defaults if offline
@@ -4982,7 +5049,7 @@ const Game={
             pm.classList.toggle('show',!open);
             if(!open&&GameState.combatRunning){clearInterval(GameState.combatInterval);GameState.combatInterval=null;GameState.combatRunning=false;}
             else if(open&&!GameState.combatRunning&&GameState.enemies.filter(e=>e.hp>0).length){
-              GameState.combatRunning=true;GameState.combatInterval=setInterval(()=>Combat.tick(),1200);
+              GameState.combatRunning=true;GameState.combatInterval=setInterval(()=>Combat.tick(),Game._combatSpeed||1200);
             }
           }
         }
@@ -4992,7 +5059,7 @@ const Game={
     if(pauseResume)pauseResume.addEventListener('click',()=>{
       const pm=document.getElementById('pauseMenu');pm.classList.remove('show');
       if(!GameState.combatRunning&&GameState.enemies.filter(e=>e.hp>0).length){
-        GameState.combatRunning=true;GameState.combatInterval=setInterval(()=>Combat.tick(),1200);
+        GameState.combatRunning=true;GameState.combatInterval=setInterval(()=>Combat.tick(),Game._combatSpeed||1200);
       }
     });
     const pauseSettings=document.getElementById('pauseSettings');
@@ -5610,6 +5677,21 @@ const Game={
     UI.show('sFC');
   },
 
+  _combatSpeed:1200,
+  _speedIdx:0,
+  toggleSpeed(){
+    const speeds=[1200,800,400];
+    const labels=['1x','2x','3x'];
+    this._speedIdx=(this._speedIdx+1)%3;
+    this._combatSpeed=speeds[this._speedIdx];
+    const btn=document.getElementById('speedBtn');
+    if(btn)btn.textContent=labels[this._speedIdx];
+    // Restart interval with new speed if combat running
+    if(GameState.combatRunning&&GameState.combatInterval){
+      clearInterval(GameState.combatInterval);
+      GameState.combatInterval=setInterval(()=>Combat.tick(),this._combatSpeed);
+    }
+  },
   _retryZone(){
     const deathEl=document.getElementById('deathOverlay');if(deathEl)deathEl.style.display='none';
     const p=GameState.player;
@@ -6482,6 +6564,7 @@ const VictoryScreen = {
       const zoneId = GameState.currentZoneId;
       if (zoneId && !GameState.zonesCleared.includes(zoneId)) {
         GameState.zonesCleared.push(zoneId);
+        Achievements.check();
         const zone = ZONES[zoneId];
         // Unlock adjacent zones whose prereqs are now met
         Object.values(ZONES).forEach(z => {
