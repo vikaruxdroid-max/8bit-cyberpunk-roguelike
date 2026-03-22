@@ -1018,11 +1018,14 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
       </div>
     </div>
     <!-- Inventory Overlay (replaces sidebar) -->
-    <div id="invOverlay" style="display:none;position:absolute;inset:0;z-index:80;background:rgba(0,0,16,.92);backdrop-filter:blur(4px);flex-direction:column;align-items:center;justify-content:center;padding:20px;">
-      <div style="width:100%;max-width:500px;">
+    <div id="invOverlay" style="display:none;position:absolute;inset:0;z-index:80;background:rgba(0,0,16,.92);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:20px;overflow-y:auto;">
+      <div style="width:100%;max-width:500px;margin:auto;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
           <span style="font-family:'Share Tech Mono',monospace;color:var(--C);font-size:clamp(10px,1.2vw,16px);letter-spacing:3px;">⟐ INVENTORY</span>
-          <span id="invGold" style="font-family:'Share Tech Mono',monospace;color:var(--GD);font-size:clamp(9px,1vw,13px);">⚡ 0 CR</span>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span id="invGold" style="font-family:'Share Tech Mono',monospace;color:var(--GD);font-size:clamp(9px,1vw,13px);">⚡ 0 CR</span>
+            <button onclick="document.getElementById('invOverlay').style.display='none';" style="background:rgba(255,0,64,.3);border:1px solid #ff0040;color:#fff;font-family:'Share Tech Mono',monospace;font-size:clamp(10px,1.1vw,14px);padding:4px 12px;cursor:pointer;">✕</button>
+          </div>
         </div>
         <div class="inv-sec">▶ EQUIPPED</div>
         <div class="equip-grid" id="equipGrid"></div>
@@ -1033,7 +1036,7 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
           <button class="inv-sell" id="invSellBtn" disabled>SELL</button>
         </div>
         <div class="inv-tip" id="invTip">SELECT AN ITEM</div>
-        <button class="wm-back-btn" style="width:100%;text-align:center;margin-top:8px;padding:8px;" onclick="document.getElementById('invOverlay').style.display='none';">CLOSE INVENTORY</button>
+        <button class="wm-back-btn" style="width:100%;text-align:center;margin-top:8px;padding:10px;font-size:clamp(9px,1vw,13px);" onclick="document.getElementById('invOverlay').style.display='none';">CLOSE INVENTORY</button>
       </div>
     </div>
     <!-- Hidden DM canvas (still needed for sprite rendering) -->
@@ -3970,6 +3973,9 @@ const UI={
     document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));
     document.getElementById(id).classList.add('on');
     GameState.currentScreen=id;
+    // Close overlays on screen switch
+    const inv=document.getElementById('invOverlay');if(inv)inv.style.display='none';
+    const shop=document.getElementById('merchantShop');if(shop)shop.style.display='none';
     if(id!=='sCM'){DialogEngine._cancel();AIDialog.hideAll();}
   },
   flash(){const f=document.getElementById('fl');if(!f)return;f.style.opacity='.65';setTimeout(()=>f.style.opacity='0',320);},
