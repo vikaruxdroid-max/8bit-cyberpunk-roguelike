@@ -397,7 +397,16 @@ html,body{width:100%;height:100%;overflow:hidden;background:#060618;font-family:
 
 /* ══ UNIFIED VICTORY SCREEN ══ */
 @keyframes vicFadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-#sVIC{background:#030312;overflow:hidden;}
+@keyframes timerPulse{0%{transform:scale(1)}50%{transform:scale(1.4)}100%{transform:scale(1)}}
+.eqslot{position:relative;}
+.eqslot .eq-tip{display:none;position:absolute;bottom:105%;left:50%;transform:translateX(-50%);
+  background:#0d0d2b;border:1px solid var(--C);padding:8px 12px;white-space:nowrap;z-index:100;
+  font-family:'Share Tech Mono',monospace;font-size:11px;color:#dde;pointer-events:none;
+  box-shadow:0 0 12px rgba(0,255,255,.3);border-radius:3px;}
+.eqslot:hover .eq-tip{display:block;}
+#sVIC{background:#030312;overflow:hidden;position:relative;}
+#vicVaporBg{position:absolute;inset:0;z-index:0;pointer-events:none;}
+#sVIC>*:not(#vicVaporBg):not(.vic-scanlines){position:relative;z-index:1;}
 #sVIC.on{animation:vicFadeIn .35s ease forwards;}
 .vic-scanlines{position:absolute;inset:0;pointer-events:none;z-index:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.07) 4px);}
 .vic-top{flex-shrink:0;background:linear-gradient(90deg,rgba(0,0,10,.98),rgba(4,0,24,.98));border-bottom:2px solid var(--C);padding:clamp(5px,.7vh,10px) clamp(12px,1.5vw,24px);display:flex;flex-direction:column;gap:3px;position:relative;z-index:10;}
@@ -1120,6 +1129,7 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
 
   <!-- UNIFIED VICTORY SCREEN -->
   <div class="scr" id="sVIC">
+    <canvas id="vicVaporBg"></canvas>
     <div class="vic-scanlines"></div>
     <!-- TOP BAR -->
     <div class="vic-top">
@@ -1946,6 +1956,9 @@ const Arena = {
     ctx.shadowColor = 'transparent';
 
     ctx.clearRect(0, 0, W, H);
+    // Subtle parallax on background image
+    const wrap=document.getElementById('arenaWrap');
+    if(wrap){const px=Math.sin(t*0.008)*8,py=Math.cos(t*0.006)*4;wrap.style.backgroundPosition=`calc(50% + ${px}px) calc(50% + ${py}px)`;}
     // Screen shake
     if(this.shake.frames>0){ctx.translate((Math.random()-.5)*this.shake.intensity,(Math.random()-.5)*this.shake.intensity);this.shake.frames--;if(!this.shake.frames)this.shake.intensity=0;}
     this.drawBg(ctx, W, H, t);
@@ -2546,7 +2559,7 @@ const Arena = {
     for(let y=0;y<H*.68;y+=44){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
     // Billboard signs
     ctx.save();
-    [[W*.08,H*.08,70,22,'#FF00FF','NEON'],[W*.75,H*.06,60,20,'#00FFFF','SYNC'],[W*.45,H*.04,80,24,'#39FF14','GRID']].forEach(([bx,by,bw,bh,bc,txt])=>{
+    [[W*.08,H*.08,70,22,'#FF00FF','RAMEN'],[W*.75,H*.06,60,20,'#00FFFF','JACK IN'],[W*.45,H*.04,80,24,'#39FF14','NEURAL'],[W*.88,H*.15,55,18,'#ff6600','CHROME'],[W*.22,H*.12,65,20,'#aa66ff','VOID BAR'],[W*.60,H*.10,50,18,'#ff0040','HACKS']].forEach(([bx,by,bw,bh,bc,txt])=>{
       const pulse=.5+Math.sin(t*.06+bx)*.3;
       ctx.fillStyle=bc+'22';ctx.fillRect(bx,by,bw,bh);
       ctx.strokeStyle=bc;ctx.lineWidth=1;ctx.strokeRect(bx,by,bw,bh);
@@ -3170,6 +3183,50 @@ const PORTRAITS = {
       for(let i=9;i<15;i++)for(let j=18;j<20;j++)p(i,j,sk);
       for(let i=4;i<20;i++)for(let j=20;j<24;j++)p(i,j,'#3a3a2e');
       p(6,21,accent);p(7,21,accent);p(16,21,accent);p(17,21,accent);
+    }},
+    { id:'m4', name:'Neon Punk', draw(ctx,x,y,s,accent){
+      const p=(px,py,c)=>{ctx.fillStyle=c;ctx.fillRect(x+px*s,y+py*s,s,s);};
+      const sk='#f0c8a0';
+      // Tall mohawk in accent color
+      for(let i=9;i<15;i++)for(let j=0;j<2;j++)p(i,j,accent);
+      for(let i=10;i<14;i++)p(i,2,accent);
+      for(let i=7;i<17;i++)for(let j=3;j<5;j++)p(i,j,'#222');
+      // Face
+      for(let i=7;i<17;i++)for(let j=5;j<17;j++)p(i,j,sk);
+      // Piercings
+      p(7,8,accent);p(7,10,accent);p(17,9,accent);
+      // Eyes — intense
+      p(9,9,'#fff');p(10,9,accent);p(14,9,'#fff');p(15,9,accent);
+      // Nose ring
+      p(12,11,accent);
+      // Smirk
+      for(let i=10;i<15;i++)p(i,14,'#aa6644');p(14,13,'#aa6644');
+      // Neck + leather jacket
+      for(let i=9;i<15;i++)for(let j=17;j<20;j++)p(i,j,sk);
+      for(let i=4;i<20;i++)for(let j=20;j<24;j++)p(i,j,'#1a1a1a');
+      for(let i=9;i<15;i++)p(i,21,accent);
+    }},
+    { id:'m5', name:'Cyber Monk', draw(ctx,x,y,s,accent){
+      const p=(px,py,c)=>{ctx.fillStyle=c;ctx.fillRect(x+px*s,y+py*s,s,s);};
+      const sk='#c8a882';
+      // Shaved head
+      for(let i=6;i<18;i++)for(let j=0;j<4;j++)p(i,j,'#443322');
+      // Face
+      for(let i=6;i<18;i++)for(let j=4;j<17;j++)p(i,j,sk);
+      // Third eye implant
+      p(12,4,accent);p(11,5,accent);p(12,5,accent);p(13,5,accent);
+      // Calm eyes
+      p(8,9,'#fff');p(9,9,'#445566');p(14,9,'#fff');p(15,9,'#445566');
+      // Nose
+      p(11,11,'#b89870');p(12,11,'#b89870');
+      // Serene mouth
+      for(let i=10;i<14;i++)p(i,14,'#997755');
+      // Circuit tattoos on cheeks
+      p(7,10,accent);p(7,12,accent);p(7,14,accent);p(16,10,accent);p(16,12,accent);p(16,14,accent);
+      // Robes
+      for(let i=9;i<15;i++)for(let j=17;j<20;j++)p(i,j,sk);
+      for(let i=4;i<20;i++)for(let j=20;j<24;j++)p(i,j,'#334455');
+      p(11,21,accent);p(12,21,accent);
     }}
   ],
   woman: [
@@ -3249,6 +3306,51 @@ const PORTRAITS = {
       // Hooded collar
       for(let i=3;i<21;i++)for(let j=20;j<24;j++)p(i,j,'#1a1a1a');
       for(let i=5;i<19;i++)p(i,20,'#2a2a2a');
+    }},
+    { id:'f4', name:'Razor Girl', draw(ctx,x,y,s,accent){
+      const p=(px,py,c)=>{ctx.fillStyle=c;ctx.fillRect(x+px*s,y+py*s,s,s);};
+      const sk='#e8c8a0';
+      // Short pixie cut — one side shaved
+      for(let i=6;i<12;i++)for(let j=0;j<4;j++)p(i,j,accent);
+      for(let i=12;i<18;i++)for(let j=0;j<3;j++)p(i,j,'#332211');
+      for(let i=5;i<7;i++)for(let j=3;j<8;j++)p(i,j,accent);
+      // Face
+      for(let i=6;i<18;i++)for(let j=4;j<17;j++)p(i,j,sk);
+      // Sharp eyeliner
+      p(7,8,'#111');p(8,8,'#111');p(9,8,accent);p(10,8,'#111');
+      p(13,8,'#111');p(14,8,accent);p(15,8,'#111');p(16,8,'#111');
+      // Lip ring
+      p(13,13,'#888');
+      // Lips
+      p(10,13,'#cc3355');p(11,13,'#cc3355');p(12,13,'#cc3355');
+      // Neck + choker
+      for(let i=9;i<15;i++)for(let j=17;j<20;j++)p(i,j,sk);
+      for(let i=8;i<16;i++)p(i,17,accent);
+      for(let i=4;i<20;i++)for(let j=20;j<24;j++)p(i,j,'#1a1a2e');
+    }},
+    { id:'f5', name:'Data Witch', draw(ctx,x,y,s,accent){
+      const p=(px,py,c)=>{ctx.fillStyle=c;ctx.fillRect(x+px*s,y+py*s,s,s);};
+      const sk='#d4b896';
+      // Long flowing hair with glowing tips
+      for(let i=5;i<19;i++)for(let j=0;j<5;j++)p(i,j,'#1a0a20');
+      for(let i=4;i<6;i++)for(let j=4;j<20;j++)p(i,j,'#1a0a20');
+      for(let i=18;i<20;i++)for(let j=4;j<20;j++)p(i,j,'#1a0a20');
+      // Glowing tips
+      p(4,17,accent);p(4,18,accent);p(4,19,accent);
+      p(19,17,accent);p(19,18,accent);p(19,19,accent);
+      // Face
+      for(let i=6;i<18;i++)for(let j=5;j<17;j++)p(i,j,sk);
+      // Glowing eyes
+      p(8,9,accent);p(9,9,accent);p(14,9,accent);p(15,9,accent);
+      // Mystic marks under eyes
+      p(8,11,accent);p(9,11,accent);p(14,11,accent);p(15,11,accent);
+      // Nose
+      p(11,11,'#c4a886');p(12,11,'#c4a886');
+      // Lips
+      p(10,13,'#995577');p(11,13,'#995577');p(12,13,'#995577');p(13,13,'#995577');
+      // Dark cloak
+      for(let i=3;i<21;i++)for(let j=20;j<24;j++)p(i,j,'#110a1a');
+      for(let i=8;i<16;i++)p(i,20,accent);
     }}
   ],
   cyber: [
@@ -3327,21 +3429,64 @@ const PORTRAITS = {
       // Dark cloak
       for(let i=3;i<21;i++)for(let j=20;j<24;j++)p(i,j,'#111');
       p(6,21,accent);p(17,21,accent);
+    }},
+    { id:'c4', name:'Proxy-X', draw(ctx,x,y,s,accent){
+      const p=(px,py,c)=>{ctx.fillStyle=c;ctx.fillRect(x+px*s,y+py*s,s,s);};
+      const mt='#3a3a4e';
+      // Smooth chrome head with fin
+      for(let i=6;i<18;i++)for(let j=1;j<17;j++)p(i,j,mt);
+      for(let i=10;i<14;i++)p(i,0,accent); // top fin
+      // Face screen — LED matrix
+      for(let i=7;i<17;i++)for(let j=5;j<14;j++)p(i,j,'#0a0a1a');
+      // Scrolling text effect (static representation)
+      for(let i=8;i<16;i++)p(i,7,accent);
+      for(let i=9;i<15;i++)p(i,9,accent);
+      for(let i=8;i<14;i++)p(i,11,accent);
+      // Mouth speaker
+      for(let i=9;i<15;i++)p(i,15,'#222');
+      for(let i=10;i<14;i++)p(i,15,accent);
+      // Neck hydraulics
+      for(let i=9;i<15;i++)for(let j=17;j<20;j++)p(i,j,'#2a2a3e');
+      p(9,18,'#555');p(14,18,'#555');
+      // Armor
+      for(let i=3;i<21;i++)for(let j=20;j<24;j++)p(i,j,mt);
+      for(let i=6;i<18;i++)p(i,21,accent);
+    }},
+    { id:'c5', name:'Omega-∞', draw(ctx,x,y,s,accent){
+      const p=(px,py,c)=>{ctx.fillStyle=c;ctx.fillRect(x+px*s,y+py*s,s,s);};
+      // Floating orb head
+      const mt='#445566';
+      for(let i=7;i<17;i++)for(let j=1;j<15;j++)p(i,j,mt);
+      for(let i=8;i<16;i++){p(i,0,mt);p(i,15,mt);}
+      // Single large eye
+      for(let i=9;i<15;i++)for(let j=5;j<11;j++)p(i,j,'#111');
+      for(let i=10;i<14;i++)for(let j=6;j<10;j++)p(i,j,accent);
+      p(11,7,'#fff');p(12,7,'#fff');p(11,8,'#fff');
+      // Ring around eye
+      p(9,5,accent);p(14,5,accent);p(9,10,accent);p(14,10,accent);
+      // No mouth — just panel lines
+      for(let i=9;i<15;i++)p(i,12,'#334455');
+      // Thin neck with cables
+      for(let i=11;i<13;i++)for(let j=15;j<20;j++)p(i,j,'#334');
+      p(10,16,accent);p(13,16,accent);p(10,18,accent);p(13,18,accent);
+      // Shoulder pads
+      for(let i=4;i<20;i++)for(let j=20;j<24;j++)p(i,j,'#2a2a3e');
+      for(let i=5;i<19;i++)p(i,20,accent);
     }}
   ]
 };
 
-const ACCENT_COLORS = { cyan:CY, magenta:MG, green:GR, orange:OR, purple:PU };
+const ACCENT_COLORS = { cyan:CY, magenta:MG, green:GR, orange:OR, purple:PU, red:'#ff2244', gold:'#ffd700', white:'#e8e8ff', teal:'#00ccaa' };
 const BASE_STATS = { hp:90, atk:14, def:6, spd:7, mp:85 };
 const STAT_PER_POINT = { hp:10, atk:3, def:2, spd:2, mp:10 };
 const STAT_POINTS_TOTAL = 15;
 
 const ACTIVE_SKILLS = [
-  {id:'plasmaStrike',name:'Plasma Strike',icon:'⚡',desc:'2.5x ATK single target',mp:20,cd:0,maxCd:4,
+  {id:'plasmaStrike',name:'Plasma Strike',icon:'⚡',desc:'2.5x ATK single target',mp:20,cd:0,maxCd:3,
    effect(p,en){const t=Combat.lowestHp(en);if(!t)return;const isCrit=Math.random()<((p.critBonus||0)+(p.hasBuff('crit')?0.35:0));Combat.deal(t,Math.floor(p.atk*2.5),isCrit);const pos=Arena.getEnemyPos(GameState.enemies.indexOf(t));Arena.spawnVFX('slash',pos.x,pos.y,OR);DM.say('PLASMA STRIKE! Devastating blow!');}},
-  {id:'ghostStep',name:'Ghost Step',icon:'👻',desc:'Dodge 2 attacks',mp:25,cd:0,maxCd:5,
+  {id:'ghostStep',name:'Ghost Step',icon:'👻',desc:'Dodge 2 attacks',mp:25,cd:0,maxCd:4,
    effect(p){p.addBuff('dodge',{dodges:2,turns:4});Arena.spawnVFX('spark',Arena.getPlayerPos().x,Arena.getPlayerPos().y,GR);DM.say('GHOST STEP — vanished!');}},
-  {id:'dataSplice',name:'Data Splice',icon:'🗡',desc:'3x ATK + crit boost',mp:22,cd:0,maxCd:4,
+  {id:'dataSplice',name:'Data Splice',icon:'🗡',desc:'3x ATK + crit boost',mp:22,cd:0,maxCd:3,
    effect(p,en){const t=Combat.lowestHp(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*3),true);p.addBuff('crit',{crit:.2,turns:2});const pos=Arena.getEnemyPos(GameState.enemies.indexOf(t));Arena.spawnVFX('slash',pos.x,pos.y,MG);DM.say('DATA SPLICE! Triple critical!');}},
   {id:'bioPulse',name:'Bio-Pulse Heal',icon:'💚',desc:'Heal 50% max HP',mp:25,cd:0,maxCd:3,
    effect(p){const h=Math.floor(p.maxHp*.5);p.hp=Math.min(p.maxHp,p.hp+h);p.healedThisFloor=true;const pp=Arena.getPlayerPos();Arena.spawnVFX('explode',pp.x,pp.y,'#00ff88');UI.dmgNumAt(pp.x,pp.y,h,'heal');DM.say('BIO-PULSE! Systems restored!');}},
@@ -3385,7 +3530,7 @@ const ETYPES = [
      DM.say(`NEURAL HACK! ${t.name} disabled for 1 turn!`);
      UI.updateSpells();
    }}},
-  {id:'quantumBoss',name:'QUANTUM BOSS',hp:320,atk:28,def:14,spd:8,sprite:'quantumBoss',color:MG,
+  {id:'quantumBoss',name:'QUANTUM BOSS',hp:220,atk:22,def:10,spd:7,sprite:'quantumBoss',color:MG,
    isBoss:true,phase:1,
    ability:{name:'Phase Attack',trigger:'phase',fn(e,p,phase){
      if(phase===2)DM.say('QUANTUM ECHO copies its last power!');
@@ -3423,7 +3568,7 @@ const ETYPES = [
      if(stacks<2){p._atkSuppressStacks=(stacks+1);const red=Math.floor(p.baseAtk*.1);p.baseAtk=Math.max(1,p.baseAtk-red);p.atk=Math.max(1,p.atk-red);UI.updateBars();DM.say(`SUPPRESSOR! ATK reduced by 10% (${stacks+1}/2)!`);}
    }}},
   // ── THE ARCHITECT BOSS (floor 5) ──
-  {id:'theArchitect',name:'THE ARCHITECT',hp:420,atk:24,def:10,spd:7,sprite:'circuitLich',color:'#00ffcc',
+  {id:'theArchitect',name:'THE ARCHITECT',hp:280,atk:20,def:8,spd:6,sprite:'circuitLich',color:'#00ffcc',
    isBoss:true,phase:1,
    ability:{name:'Architect Protocol',trigger:'phase',fn(e,p,phase){
      if(phase===2){
@@ -4179,6 +4324,16 @@ const Combat = {
     if(tb){
       tb.textContent=GameState.turnsLeft;
       tb.style.color=GameState.turnsLeft<=10?'#ff0040':GameState.turnsLeft<=20?'#ff6600':'var(--G)';
+      // Pulse animation when low
+      if(GameState.turnsLeft<=10){
+        tb.style.animation='none';void tb.offsetHeight;
+        tb.style.animation='timerPulse 0.5s ease';
+        tb.style.textShadow='0 0 12px #ff0040';
+      }else if(GameState.turnsLeft<=20){
+        tb.style.textShadow='0 0 8px #ff6600';
+      }else{
+        tb.style.textShadow='none';
+      }
     }
     QM.track('totalTurns',1);
     // Time's up — defeat player
@@ -4286,9 +4441,11 @@ const Combat = {
               <div style="font-family:'Press Start 2P',monospace;font-size:clamp(20px,3vw,36px);color:#ff0040;text-shadow:0 0 20px #ff0040;margin-bottom:clamp(12px,2vh,24px);">FLATLINED</div>
               <div style="font-family:'Share Tech Mono',monospace;font-size:clamp(9px,1vw,13px);color:#99a;line-height:2.2;margin-bottom:clamp(16px,2.5vh,30px);">
                 <div>${zoneName} — ROOM ${roomNum}/${totalRooms}</div>
-                <div>KILLS: ${GameState.totalKills} · DMG: ${GameState.totalDmg}</div>
+                <div>KILLS: ${GameState.totalKills} · DMG DEALT: ${GameState.totalDmg}</div>
+                <div>BEST ROOM: ${roomNum}/${totalRooms} · MAX COMBO: ${GameState._maxCombo||0}x</div>
                 <div>LEVEL: ${p.level} · TIME: ${mins}m ${secs}s</div>
-                <div style="color:#ff4444">HP: 0/${p.maxHp}</div>
+                <div style="color:#ff4444">HP: 0/${p.maxHp} · DMG TAKEN: ${(p.maxHp*p.level)-(p.hp||0)>0?(p.maxHp-0):p.maxHp}</div>
+                <div style="color:#ff6600">CREDITS: ${Inventory.gold||0} CR</div>
               </div>
               <div style="display:flex;flex-direction:column;gap:clamp(8px,1.2vh,14px);align-items:center;">
                 <button class="mm-btn mm-connect" style="font-size:clamp(12px,1.5vw,18px);padding:clamp(12px,1.8vh,20px) clamp(30px,4vw,50px);width:100%;max-width:350px;" onclick="Game._retryZone()">RETRY ZONE</button>
@@ -4307,6 +4464,9 @@ const Combat = {
     if(GameState.floorTurns<=10)QM.track('fastWins',1);
     QM.track('floorsCleared',1);QM.check();
     // Ghost run: no damage taken this room
+    // Between-room regen: 10% HP + 15% MP
+    p.hp=Math.min(p.maxHp,p.hp+Math.floor(p.maxHp*0.1));
+    p.mp=Math.min(p.maxMp,p.mp+Math.floor(p.maxMp*0.15));
     if(p.hp>=p.maxHp)Achievements.unlock('no_damage');
     Achievements.check();
     UI.flash();
@@ -6359,7 +6519,7 @@ const LootSystem={
     return drops;
   },
   goldFromEnemy(enemy,floor){
-    return Math.floor(((enemy.isBoss?60:8)+floor*4)*(0.7+Math.random()*0.6));
+    return Math.floor(((enemy.isBoss?100:15)+floor*5)*(0.8+Math.random()*0.5));
   },
   sellValue(item){
     return item.rarity==='legendary'?200+Math.floor(Math.random()*301)
@@ -6457,8 +6617,8 @@ const Inventory={
       const div=document.createElement('div');
       div.className='eqslot'+(item?' filled '+item.rarity:'')+(this.selSlot===s.id?' selected':'');
       if(item){
-        div.innerHTML=`<div class="eqslot-ilvl">${item.level}</div><div class="eqslot-icon" style="color:${item.color}">${item.icon}</div><div class="eqslot-lbl" style="color:${item.color}">${item.name.slice(0,5)}</div>`;
-        div.title=`${item.name}\n${LootSystem.statDesc(item.bonuses)}\nClick to select`;
+        div.innerHTML=`<div class="eqslot-ilvl">${item.level}</div><div class="eqslot-icon" style="color:${item.color}">${item.icon}</div><div class="eqslot-lbl" style="color:${item.color}">${item.name.slice(0,5)}</div><div class="eq-tip"><span style="color:${item.color};font-weight:bold">${item.icon} ${item.name}</span><br><span style="color:#888">[${item.rarity.toUpperCase()}] Lv${item.level}</span><br>${LootSystem.statDesc(item.bonuses)}</div>`;
+        div.title='';
         div.addEventListener('click',()=>{
           this.selSlot=this.selSlot===s.id?null:s.id;
           this.selBag=-1;this.render();
@@ -6808,6 +6968,85 @@ const AIDialog = {
 // ═══════════════════════════════════════════════════════════════
 // UNIFIED VICTORY SCREEN — post-combat: loot + paperdoll + upgrades
 // ═══════════════════════════════════════════════════════════════
+// ── VAPORWAVE VICTORY BACKGROUND ──
+const VaporBg={
+  _raf:0,
+  start(){
+    const cv=document.getElementById('vicVaporBg');if(!cv)return;
+    const par=cv.parentElement;if(!par)return;
+    cv.width=par.offsetWidth;cv.height=par.offsetHeight;
+    const ctx=cv.getContext('2d');
+    const W=cv.width,H=cv.height;
+    let t=0;
+    const draw=()=>{
+      t++;ctx.clearRect(0,0,W,H);
+      // Sky gradient — dark purple to pink
+      const sky=ctx.createLinearGradient(0,0,0,H*0.55);
+      sky.addColorStop(0,'#0a0018');sky.addColorStop(0.4,'#1a0030');sky.addColorStop(0.7,'#3a0050');sky.addColorStop(1,'#ff6090');
+      ctx.fillStyle=sky;ctx.fillRect(0,0,W,H*0.55);
+      // Stars
+      ctx.fillStyle='#fff';
+      for(let i=0;i<40;i++){
+        const sx=(Math.sin(i*127.1)*.5+.5)*W,sy=(Math.sin(i*311.7)*.5+.5)*H*0.4;
+        const twinkle=0.3+Math.sin(t*0.03+i)*0.7;
+        ctx.globalAlpha=Math.max(0,twinkle)*0.6;
+        ctx.fillRect(sx,sy,1+i%2,1+i%2);
+      }
+      ctx.globalAlpha=1;
+      // Retro sun
+      const sunY=H*0.38,sunR=H*0.18;
+      const sunGrad=ctx.createRadialGradient(W/2,sunY,0,W/2,sunY,sunR);
+      sunGrad.addColorStop(0,'#ffcc00');sunGrad.addColorStop(0.3,'#ff6600');sunGrad.addColorStop(0.7,'#ff0066');sunGrad.addColorStop(1,'rgba(255,0,100,0)');
+      ctx.fillStyle=sunGrad;ctx.fillRect(W*0.2,sunY-sunR,W*0.6,sunR*2);
+      // Sun horizontal lines (retro stripe effect)
+      ctx.fillStyle='#0a0018';
+      for(let i=0;i<8;i++){
+        const ly=sunY-sunR*0.6+i*sunR*0.2;
+        const lh=2+i*0.5;
+        ctx.fillRect(W*0.2,ly,W*0.6,lh);
+      }
+      // Ground plane — perspective grid
+      const groundY=H*0.55;
+      const gGrad=ctx.createLinearGradient(0,groundY,0,H);
+      gGrad.addColorStop(0,'#1a0030');gGrad.addColorStop(1,'#0a0018');
+      ctx.fillStyle=gGrad;ctx.fillRect(0,groundY,W,H-groundY);
+      // Grid lines — horizontal (perspective)
+      ctx.strokeStyle='rgba(255,0,255,0.3)';ctx.lineWidth=1;
+      for(let i=0;i<15;i++){
+        const gy=groundY+Math.pow(i/14,1.8)*(H-groundY);
+        ctx.globalAlpha=0.15+i/14*0.3;
+        ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(W,gy);ctx.stroke();
+      }
+      // Grid lines — vertical (converging to vanishing point)
+      ctx.globalAlpha=0.25;ctx.strokeStyle='rgba(0,255,255,0.25)';
+      const vx=W/2,vy=groundY;
+      for(let i=-8;i<=8;i++){
+        const bx=vx+i*(W*0.12);
+        const scrollOff=(t*0.5)%(W*0.12);
+        ctx.beginPath();ctx.moveTo(vx,vy);ctx.lineTo(bx+scrollOff-W*0.06,H);ctx.stroke();
+      }
+      ctx.globalAlpha=1;
+      // Palm tree silhouettes
+      const drawPalm=(px,ph)=>{
+        ctx.fillStyle='#0a0018';
+        // Trunk
+        ctx.fillRect(px-2,groundY-ph,4,ph);
+        // Fronds
+        for(let f=-3;f<=3;f++){
+          ctx.beginPath();ctx.moveTo(px,groundY-ph);
+          ctx.quadraticCurveTo(px+f*20,groundY-ph-15,px+f*28,groundY-ph+10);
+          ctx.lineWidth=3;ctx.strokeStyle='#0a0018';ctx.stroke();
+        }
+      };
+      drawPalm(W*0.12,H*0.25);drawPalm(W*0.88,H*0.22);
+      this._raf=requestAnimationFrame(draw);
+    };
+    cancelAnimationFrame(this._raf);
+    draw();
+  },
+  stop(){cancelAnimationFrame(this._raf);}
+};
+
 const VictoryScreen = {
   _cb: null,
   _isBoss: false,
@@ -6833,6 +7072,7 @@ const VictoryScreen = {
     Inventory._gold();
     this._render();
     UI.show('sVIC');
+    setTimeout(()=>VaporBg.start(),100);
   },
 
   _render() {
