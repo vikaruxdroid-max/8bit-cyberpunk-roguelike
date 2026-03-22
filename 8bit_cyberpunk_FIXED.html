@@ -2460,6 +2460,9 @@ const Arena = {
       }
     }
 
+    // ── BOSS INTRO CINEMATIC ──
+    if(this._bossIntro.active) this._renderBossIntro(ctx,W,H);
+
     // ── PERSONA STYLE SPELL FLASH ──
     if(this._spellFlash.active){
       const sf=this._spellFlash;sf.timer++;
@@ -2964,6 +2967,193 @@ const Arena = {
     else if (en) { en.animState='hurt'; en.animTimer=0; }
   },
   triggerCast() { if(GameState.player){GameState.player.animState='cast';GameState.player.animTimer=0;} },
+
+  // ── BOSS INTRO CINEMATIC ──
+  _bossIntro:{active:false,timer:0,totalFrames:240,boss:null,onDone:null},
+  triggerBossIntro(boss,onDone){
+    this._bossIntro={active:true,timer:0,totalFrames:240,boss,onDone};
+  },
+  _renderBossIntro(ctx,W,H){
+    const bi=this._bossIntro;if(!bi.active)return;
+    bi.timer++;
+    const kp=bi.timer/bi.totalFrames;
+    const P2=4;
+    ctx.save();
+
+    // PHASE 1 (0-0.15): Walls closing in — "oh no" moment
+    if(kp<0.15){
+      const wp=kp/0.15;
+      // Red warning flashes
+      ctx.globalAlpha=0.15+Math.sin(bi.timer*0.8)*0.1;
+      ctx.fillStyle='#ff0020';ctx.fillRect(0,0,W,H);
+      // Left wall
+      ctx.globalAlpha=0.85;
+      const wallW=W*0.12*wp;
+      const wallGrad=ctx.createLinearGradient(0,0,wallW,0);
+      wallGrad.addColorStop(0,'#1a0008');wallGrad.addColorStop(0.7,'#330015');wallGrad.addColorStop(1,'rgba(50,0,20,0)');
+      ctx.fillStyle=wallGrad;ctx.fillRect(0,0,wallW,H);
+      // Right wall
+      const wallGrad2=ctx.createLinearGradient(W,0,W-wallW,0);
+      wallGrad2.addColorStop(0,'#1a0008');wallGrad2.addColorStop(0.7,'#330015');wallGrad2.addColorStop(1,'rgba(50,0,20,0)');
+      ctx.fillStyle=wallGrad2;ctx.fillRect(W-wallW,0,wallW,H);
+      // Danger stripes on walls
+      ctx.globalAlpha=0.5*wp;ctx.strokeStyle='#ff0040';ctx.lineWidth=3;
+      for(let i=0;i<10;i++){
+        const sy=H*i/10;
+        ctx.beginPath();ctx.moveTo(0,sy);ctx.lineTo(wallW*0.8,sy+20);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(W,sy);ctx.lineTo(W-wallW*0.8,sy+20);ctx.stroke();
+      }
+      // WARNING text
+      if(wp>0.4){
+        ctx.globalAlpha=0.6+Math.sin(bi.timer*0.5)*0.4;
+        ctx.fillStyle='#ff0040';
+        ctx.font=`bold ${Math.floor(P2*6)}px 'Press Start 2P',monospace`;
+        ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText('⚠ WARNING ⚠',W/2,H*0.2);
+        ctx.font=`${Math.floor(P2*3)}px 'Share Tech Mono',monospace`;
+        ctx.fillText('BOSS DETECTED',W/2,H*0.3);
+      }
+      // Shake
+      if(bi.timer%4===0)this.triggerShake(3,4);
+    }
+    // PHASE 2 (0.15-0.25): Screen darkens, walls hold
+    else if(kp<0.25){
+      const dp=(kp-0.15)/0.1;
+      ctx.globalAlpha=0.3+dp*0.4;ctx.fillStyle='#0a0008';ctx.fillRect(0,0,W,H);
+      // Walls persist
+      const wallW=W*0.12;
+      ctx.globalAlpha=0.85;
+      ctx.fillStyle='#1a0008';ctx.fillRect(0,0,wallW,H);ctx.fillRect(W-wallW,0,wallW,H);
+      // Ground shaking rumble
+      if(bi.timer%3===0)this.triggerShake(2,3);
+    }
+    // PHASE 3 (0.25-0.65): Motorcycle entrance from right
+    else if(kp<0.65){
+      const mp=(kp-0.25)/0.4;
+      ctx.globalAlpha=0.4;ctx.fillStyle='#0a0008';ctx.fillRect(0,0,W,H);
+      // Walls fade out
+      const wallFade=Math.max(0,1-mp*3);
+      if(wallFade>0){
+        ctx.globalAlpha=0.85*wallFade;
+        ctx.fillStyle='#1a0008';ctx.fillRect(0,0,W*0.12,H);ctx.fillRect(W-W*0.12,0,W*0.12,H);
+      }
+      // Motorcycle + boss riding in from right side
+      const bikeX=W*1.2-mp*W*0.85; // slides from right to ~35% from right
+      const bikeY=H*0.65;
+      const arrived=mp>0.8;
+      ctx.globalAlpha=1;
+      // Tire marks / sparks trail
+      if(!arrived){
+        ctx.strokeStyle='#ff6600';ctx.lineWidth=2;ctx.globalAlpha=0.4;
+        for(let s=0;s<8;s++){
+          const sx=bikeX+30+s*15+Math.random()*5;
+          const sy=bikeY+20+Math.random()*6;
+          ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(sx+10+Math.random()*8,sy+Math.random()*4-2);ctx.stroke();
+        }
+        // Spark particles
+        ctx.fillStyle='#ffaa00';ctx.globalAlpha=0.7;
+        for(let sp=0;sp<6;sp++){
+          const spx=bikeX+40+Math.random()*30;
+          const spy=bikeY+15+Math.random()*10;
+          ctx.fillRect(spx,spy,2,2);
+        }
+      }
+      ctx.globalAlpha=1;
+      // Draw motorcycle (8-bit style)
+      const bS=3; // bike pixel scale
+      const bx=bikeX,by=bikeY;
+      // Wheels
+      ctx.fillStyle='#333';
+      ctx.beginPath();ctx.arc(bx,by+18*bS/4,8,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.arc(bx+20*bS/4,by+18*bS/4,8,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#666';
+      ctx.beginPath();ctx.arc(bx,by+18*bS/4,4,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.arc(bx+20*bS/4,by+18*bS/4,4,0,Math.PI*2);ctx.fill();
+      // Frame
+      ctx.fillStyle='#222';
+      ctx.fillRect(bx-5,by+5,50,12);
+      // Engine block
+      ctx.fillStyle='#444';ctx.fillRect(bx+5,by+2,20,14);
+      ctx.fillStyle=bi.boss?.color||'#ff00ff';ctx.fillRect(bx+8,by+4,14,4);
+      // Handlebars
+      ctx.fillStyle='#888';ctx.fillRect(bx-8,by-5,8,12);
+      // Headlight
+      ctx.fillStyle='#ffff00';ctx.globalAlpha=0.6+Math.sin(bi.timer*0.3)*0.4;
+      ctx.beginPath();ctx.arc(bx-10,by,5,0,Math.PI*2);ctx.fill();
+      ctx.globalAlpha=1;
+      // Exhaust
+      if(!arrived){
+        ctx.fillStyle='#555';ctx.globalAlpha=0.3;
+        for(let e=0;e<5;e++){
+          const ex=bx+55+e*12+Math.random()*8;
+          const ey=by+8+Math.random()*8-4;
+          ctx.beginPath();ctx.arc(ex,ey,3+e*2,0,Math.PI*2);ctx.fill();
+        }
+      }
+      ctx.globalAlpha=1;
+      // Boss rider on bike (simplified)
+      const rx=bx+5,ry=by-25;
+      ctx.fillStyle=bi.boss?.color||MG;
+      // Body
+      ctx.fillRect(rx,ry+8,14,16);
+      // Head
+      ctx.fillStyle='#556677';ctx.fillRect(rx+2,ry,10,10);
+      // Visor
+      ctx.fillStyle=bi.boss?.color||MG;ctx.fillRect(rx+3,ry+3,8,4);
+
+      // Boss name text
+      if(mp>0.5){
+        const nameAlpha=Math.min(1,(mp-0.5)/0.2);
+        ctx.globalAlpha=nameAlpha;
+        ctx.fillStyle=bi.boss?.color||'#ff00ff';
+        ctx.font=`bold ${Math.floor(P2*5)}px 'Press Start 2P',monospace`;
+        ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.shadowColor=bi.boss?.color||MG;ctx.shadowBlur=20;
+        ctx.fillText(bi.boss?.name||'BOSS',W/2,H*0.25);
+        ctx.shadowBlur=0;
+        ctx.font=`${Math.floor(P2*2)}px 'Share Tech Mono',monospace`;
+        ctx.fillStyle='#ff4444';
+        ctx.fillText('▸ ENGAGE ◂',W/2,H*0.33);
+      }
+
+      // Rumble on approach
+      if(bi.timer%5===0&&!arrived)this.triggerShake(4,5);
+    }
+    // PHASE 4 (0.65-0.85): Boss dismounts — flash + lands at position
+    else if(kp<0.85){
+      const dp=(kp-0.65)/0.2;
+      // White flash on dismount
+      if(dp<0.15){
+        ctx.globalAlpha=(1-dp/0.15)*0.6;ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+      }
+      // Boss name persists
+      ctx.globalAlpha=1;
+      ctx.fillStyle=bi.boss?.color||'#ff00ff';
+      ctx.font=`bold ${Math.floor(P2*5)}px 'Press Start 2P',monospace`;
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.shadowColor=bi.boss?.color||MG;ctx.shadowBlur=15;
+      ctx.fillText(bi.boss?.name||'BOSS',W/2,H*0.25);
+      ctx.shadowBlur=0;
+      // "FIGHT" text fades in
+      if(dp>0.5){
+        ctx.globalAlpha=(dp-0.5)/0.5;
+        ctx.fillStyle='#ff0040';
+        ctx.font=`bold ${Math.floor(P2*8)}px 'Press Start 2P',monospace`;
+        ctx.fillText('FIGHT!',W/2,H*0.55);
+      }
+    }
+    // PHASE 5 (0.85-1.0): Fade out, begin combat
+    else{
+      const fo=(kp-0.85)/0.15;
+      ctx.globalAlpha=(1-fo)*0.3;ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
+    }
+
+    ctx.restore();
+    if(bi.timer>=bi.totalFrames){
+      bi.active=false;
+      if(bi.onDone)bi.onDone();
+    }
+  },
   triggerKillCam(x,y,color,isCrit,lastDmg){this._killCam={active:true,timer:0,x,y,color:color||'#ff00ff',isCrit:!!isCrit,lastDmg:lastDmg||0};Audio.play('death');},
   triggerSpellFlash(name,icon){this._spellFlash={active:true,timer:0,name:name||'SKILL',icon:icon||'⚡'};},
 
@@ -6204,15 +6394,24 @@ const Game={
       case 'boss':{
         const isBoss=room.type==='boss';
         GameState.enemies=isBoss?this._spawnBoss():this._spawnCombatEnemies();
-        const fe=DM.floorEvent(fl);
-        DM.say(fe||(isBoss?`⚠ BOSS CHAMBER! PREPARE FOR TRIAL!`:DM.rand()));
-        setTimeout(()=>{
-          if(isBoss)DialogEngine.showFloorEvent(fl);
-          else DialogEngine.showEncounter(GameState.enemies[0]);
-        },600);
         p.mp=Math.min(p.maxMp,p.mp+Math.floor(p.maxMp*.3));
         p.spells.forEach(s=>s.cd=Math.max(0,(s.cd||0)-1));
-        setTimeout(()=>Combat.start(),1400);
+        if(isBoss&&GameState.enemies[0]){
+          // Stop any lingering combat before boss intro
+          clearInterval(GameState.combatInterval);GameState.combatInterval=null;GameState.combatRunning=false;Combat._endingCombat=false;
+          // Boss cinematic intro — walls close, motorcycle entrance, then combat
+          const boss=GameState.enemies[0];
+          DM.say('⚠ BOSS CHAMBER! PREPARE FOR TRIAL!');
+          Arena.triggerBossIntro(boss,()=>{
+            DialogEngine.showFloorEvent(fl);
+            Combat.start();
+          });
+        }else{
+          const fe=DM.floorEvent(fl);
+          DM.say(fe||DM.rand());
+          setTimeout(()=>DialogEngine.showEncounter(GameState.enemies[0]),600);
+          setTimeout(()=>Combat.start(),1400);
+        }
         break;
       }
       case 'loot':{
