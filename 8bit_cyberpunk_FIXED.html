@@ -2284,96 +2284,88 @@ const Arena = {
       ctx.restore(); this.screenFlash.alpha=Math.max(0,this.screenFlash.alpha-0.04);
     }
 
-    // ── PERSONA 5 STYLE KILL CAM ──
+    // ── KILL CAM — Normal: quick flash. Crit: full Persona samurai sequence ──
     if(this._killCam.active){
       const kc=this._killCam;kc.timer++;
-      const totalF=kc.isCrit?90:60; // crit kill = 1.5s, normal = 1s
-      const kp=kc.timer/totalF;
-      ctx.save();
+      if(kc.isCrit){
+        // ═══ CRITICAL KILL — 90 frames (1.5s) full cinematic ═══
+        const totalF=90;const kp=kc.timer/totalF;
+        ctx.save();
+        // Thick cinematic bars
+        const barH=H*0.18;const barProg=Math.min(1,kp/0.06);
+        ctx.fillStyle='#000';
+        ctx.fillRect(0,0,W,barH*barProg);ctx.fillRect(0,H-barH*barProg,W,barH*barProg);
 
-      // Black cinematic bars (persist throughout)
-      const barH=H*(kc.isCrit?0.18:0.12);
-      const barProg=Math.min(1,kp/0.08);
-      ctx.fillStyle='#000';
-      ctx.fillRect(0,0,W,barH*barProg);
-      ctx.fillRect(0,H-barH*barProg,W,barH*barProg);
-
-      if(kp<0.1){
-        // Freeze + slow darken
-        ctx.globalAlpha=kp/0.1*0.3;ctx.fillStyle='#000';ctx.fillRect(0,barH,W,H-barH*2);
-      }else if(kp<0.3){
-        // Diagonal slash cut — samurai style
-        const sp=(kp-0.1)/0.2;
-        ctx.globalAlpha=0.25;ctx.fillStyle='#000';ctx.fillRect(0,barH,W,H-barH*2);
-        // Main slash
-        ctx.globalAlpha=0.9;ctx.strokeStyle=kc.isCrit?'#ff0040':'#ffffff';
-        ctx.lineWidth=kc.isCrit?6:3;
-        const slashX=W*(-0.2+sp*1.4);
-        ctx.beginPath();ctx.moveTo(slashX,H*0.1);ctx.lineTo(slashX+W*0.3,H*0.9);ctx.stroke();
-        // Second slash for crit
-        if(kc.isCrit){
-          ctx.lineWidth=4;ctx.strokeStyle='#ffffff';
-          ctx.beginPath();ctx.moveTo(slashX+W*0.05,H*0.15);ctx.lineTo(slashX+W*0.35,H*0.85);ctx.stroke();
-        }
-        // Blood/ink splatter on crit kill
-        if(kc.isCrit&&sp>0.3){
-          ctx.globalAlpha=0.7*(1-((sp-0.3)/0.7));
-          // Large ink drops
-          const splats=[[0.3,0.3,35],[0.5,0.5,50],[0.7,0.35,30],[0.4,0.65,25],[0.65,0.55,40],[0.25,0.5,20],[0.8,0.4,28]];
-          splats.forEach(([sx,sy,r])=>{
-            ctx.fillStyle='#cc0030';
-            ctx.beginPath();ctx.arc(kc.x+W*(sx-0.5)*0.8,kc.y+H*(sy-0.5)*0.6,r*sp,0,Math.PI*2);ctx.fill();
-          });
-          // Smaller drops
-          for(let d=0;d<12;d++){
-            const dx=(Math.sin(d*2.3)*0.4)*W,dy=(Math.cos(d*1.7)*0.3)*H;
-            ctx.fillStyle=d%2?'#aa0020':'#ff0040';
-            ctx.beginPath();ctx.arc(kc.x+dx,kc.y+dy,4+d%5*3,0,Math.PI*2);ctx.fill();
+        if(kp<0.08){
+          ctx.globalAlpha=kp/0.08*0.5;ctx.fillStyle='#000';ctx.fillRect(0,barH,W,H-barH*2);
+        }else if(kp<0.25){
+          // Double diagonal slash
+          const sp=(kp-0.08)/0.17;
+          ctx.globalAlpha=0.3;ctx.fillStyle='#000';ctx.fillRect(0,barH,W,H-barH*2);
+          ctx.globalAlpha=0.95;ctx.strokeStyle='#ff0040';ctx.lineWidth=6;
+          const slashX=W*(-0.2+sp*1.4);
+          ctx.beginPath();ctx.moveTo(slashX,H*0.05);ctx.lineTo(slashX+W*0.3,H*0.95);ctx.stroke();
+          ctx.lineWidth=4;ctx.strokeStyle='#fff';
+          ctx.beginPath();ctx.moveTo(slashX+W*0.05,H*0.1);ctx.lineTo(slashX+W*0.35,H*0.9);ctx.stroke();
+          // Blood ink splatter
+          if(sp>0.25){
+            ctx.globalAlpha=0.8*(1-((sp-0.25)/0.75));
+            const splats=[[0.3,0.3,40],[0.5,0.5,55],[0.7,0.35,35],[0.4,0.65,30],[0.65,0.55,45],[0.2,0.55,25],[0.8,0.4,32]];
+            splats.forEach(([sx,sy,r])=>{
+              ctx.fillStyle='#cc0030';
+              ctx.beginPath();ctx.arc(kc.x+W*(sx-0.5)*0.8,kc.y+H*(sy-0.5)*0.6,r*sp,0,Math.PI*2);ctx.fill();
+            });
+            for(let d=0;d<14;d++){
+              const dx=(Math.sin(d*2.3)*0.4)*W,dy=(Math.cos(d*1.7)*0.3)*H;
+              ctx.fillStyle=d%2?'#aa0020':'#ff0040';
+              ctx.beginPath();ctx.arc(kc.x+dx,kc.y+dy,5+d%5*4,0,Math.PI*2);ctx.fill();
+            }
           }
-        }
-      }else if(kp<0.6){
-        // Hold — text on band
-        const tp=(kp-0.3)/0.3;
-        ctx.globalAlpha=0.2;ctx.fillStyle='#000';ctx.fillRect(0,barH,W,H-barH*2);
-        // Red band
-        ctx.save();ctx.translate(W/2,H/2);ctx.rotate(kc.isCrit?-0.12:-0.08);
-        ctx.globalAlpha=0.9;
-        ctx.fillStyle=kc.isCrit?'#cc0020':'#ff0040';
-        const bandH=H*(kc.isCrit?0.1:0.07);
-        ctx.fillRect(-W,-bandH/2,W*2,bandH);
-        // Text
-        ctx.globalAlpha=tp<0.15?tp/0.15:1;
-        ctx.fillStyle='#fff';
-        const fontSize=kc.isCrit?Math.floor(P*7):Math.floor(P*5);
-        ctx.font=`bold ${fontSize}px 'Press Start 2P',monospace`;
-        ctx.textAlign='center';ctx.textBaseline='middle';
-        ctx.fillText(kc.isCrit?'CRITICAL KILL':'ELIMINATED',0,0);
-        // Smaller subtitle for crit
-        if(kc.isCrit){
+        }else if(kp<0.55){
+          // "CRITICAL KILL" text on red band
+          const tp=(kp-0.25)/0.3;
+          ctx.globalAlpha=0.25;ctx.fillStyle='#000';ctx.fillRect(0,barH,W,H-barH*2);
+          ctx.save();ctx.translate(W/2,H/2);ctx.rotate(-0.12);
+          ctx.globalAlpha=0.9;ctx.fillStyle='#cc0020';
+          ctx.fillRect(-W,-H*0.05,W*2,H*0.1);
+          ctx.globalAlpha=tp<0.1?tp/0.1:1;ctx.fillStyle='#fff';
+          ctx.font=`bold ${Math.floor(P*7)}px 'Press Start 2P',monospace`;
+          ctx.textAlign='center';ctx.textBaseline='middle';
+          ctx.fillText('CRITICAL KILL',0,0);
           ctx.font=`${Math.floor(P*3)}px 'Share Tech Mono',monospace`;
-          ctx.fillStyle=kc.color;
-          ctx.fillText('FATAL BLOW',0,fontSize*0.7);
+          ctx.fillStyle=kc.color;ctx.fillText('FATAL BLOW',0,P*5);
+          ctx.restore();
+        }else if(kp<0.75){
+          // Full red flash
+          ctx.globalAlpha=(1-(kp-0.55)/0.2)*0.5;ctx.fillStyle='#ff0020';ctx.fillRect(0,0,W,H);
+        }else{
+          ctx.globalAlpha=(1-(kp-0.75)/0.25)*0.2;ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
         }
         ctx.restore();
-      }else if(kp<0.8){
-        // Flash
-        const fp=(kp-0.6)/0.2;
-        if(kc.isCrit){
-          // Red flash for crit
-          ctx.globalAlpha=(1-fp)*0.5;ctx.fillStyle='#ff0020';ctx.fillRect(0,0,W,H);
-        }else{
-          // Chromatic flash
-          ctx.globalAlpha=(1-fp)*0.3;
-          ctx.fillStyle='#ff0040';ctx.fillRect(0,0,W/2,H);
-          ctx.fillStyle='#00ffff';ctx.fillRect(W/2,0,W/2,H);
-        }
+        if(kc.timer>=totalF)kc.active=false;
       }else{
-        // Fade out
-        const fo=(kp-0.8)/0.2;
-        ctx.globalAlpha=(1-fo)*0.2;ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
+        // ═══ NORMAL KILL — 30 frames (0.5s) quick clean finish ═══
+        const totalF=30;const kp=kc.timer/totalF;
+        ctx.save();
+        if(kp<0.3){
+          // Quick white flash
+          ctx.globalAlpha=(1-kp/0.3)*0.4;ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+        }else if(kp<0.7){
+          // Brief "ELIMINATED" text — no bars, no band, just floating text
+          const tp=(kp-0.3)/0.4;
+          ctx.globalAlpha=tp<0.2?tp/0.2:(tp>0.8?(1-(tp-0.8)/0.2):1);
+          ctx.fillStyle='#fff';
+          ctx.font=`bold ${Math.floor(P*4)}px 'Press Start 2P',monospace`;
+          ctx.textAlign='center';ctx.textBaseline='middle';
+          ctx.shadowColor=kc.color;ctx.shadowBlur=15;
+          ctx.fillText('ELIMINATED',W/2,H/2);
+          ctx.shadowBlur=0;
+        }else{
+          ctx.globalAlpha=(1-(kp-0.7)/0.3)*0.15;ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
+        }
+        ctx.restore();
+        if(kc.timer>=totalF)kc.active=false;
       }
-      ctx.restore();
-      if(kc.timer>=totalF)kc.active=false;
     }
 
     // ── PERSONA STYLE SPELL FLASH ──
@@ -3267,7 +3259,7 @@ const STAT_POINTS_TOTAL = 15;
 
 const ACTIVE_SKILLS = [
   {id:'plasmaStrike',name:'Plasma Strike',icon:'⚡',desc:'2.5x ATK single target',mp:20,cd:0,maxCd:4,
-   effect(p,en){const t=Combat.lowestHp(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*2.5),true);const pos=Arena.getEnemyPos(GameState.enemies.indexOf(t));Arena.spawnVFX('slash',pos.x,pos.y,OR);DM.say('PLASMA STRIKE! Devastating blow!');}},
+   effect(p,en){const t=Combat.lowestHp(en);if(!t)return;const isCrit=Math.random()<((p.critBonus||0)+(p.hasBuff('crit')?0.35:0));Combat.deal(t,Math.floor(p.atk*2.5),isCrit);const pos=Arena.getEnemyPos(GameState.enemies.indexOf(t));Arena.spawnVFX('slash',pos.x,pos.y,OR);DM.say('PLASMA STRIKE! Devastating blow!');}},
   {id:'ghostStep',name:'Ghost Step',icon:'👻',desc:'Dodge 2 attacks',mp:25,cd:0,maxCd:5,
    effect(p){p.addBuff('dodge',{dodges:2,turns:4});Arena.spawnVFX('spark',Arena.getPlayerPos().x,Arena.getPlayerPos().y,GR);DM.say('GHOST STEP — vanished!');}},
   {id:'dataSplice',name:'Data Splice',icon:'🗡',desc:'3x ATK + crit boost',mp:22,cd:0,maxCd:4,
@@ -3935,7 +3927,8 @@ const Combat = {
     }
     // Increment combo
     this.incrementCombo();
-    if(enemy.hp<=0){
+    if(enemy.hp<=0&&!enemy._killed){
+      enemy._killed=true;
       this.killEnemy(enemy,isCrit);
     }
     else{if(enemy.checkPhase)enemy.checkPhase();if(!enemy.lowHpSaid&&enemy.hp/enemy.maxHp<=0.3){enemy.lowHpSaid=true;DialogEngine.showLowHp(enemy);AIDialog.onLowHPEnemy(enemy);}}
