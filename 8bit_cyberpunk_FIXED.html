@@ -3478,7 +3478,9 @@ const Combat = {
     if(enemy.hp<=0){
       this.killEnemy(enemy);
       // Check if all enemies dead — end combat immediately
-      if(!GameState.enemies.some(e=>e.hp>0)){
+      const remaining=GameState.enemies.filter(e=>e.hp>0);
+      console.log('[deal] enemy killed, remaining alive:',remaining.length);
+      if(!remaining.length){
         setTimeout(()=>this.endCombat(true),200);
       }
     }
@@ -3754,13 +3756,22 @@ const Combat = {
       const roomNum=GameState.currentRoomIdx+1;
       DM.say(`Room ${roomNum}/${totalRooms} cleared!`);
       LootScreen.reset();
-      setTimeout(()=>VictoryScreen.show(false,()=>{
-        if(nextIdx<totalRooms){
-          Game.enterRoom(nextIdx);
-        } else {
-          WorldMap.show();
-        }
-      }),900);
+      console.log('[endCombat] scheduling VictoryScreen for room '+roomNum);
+      setTimeout(()=>{
+        try{
+          console.log('[endCombat] showing VictoryScreen now');
+          VictoryScreen.show(false,()=>{
+            try{
+              if(nextIdx<totalRooms){
+                console.log('[VictoryScreen cb] entering room '+nextIdx);
+                Game.enterRoom(nextIdx);
+              } else {
+                WorldMap.show();
+              }
+            }catch(e){console.error('[VictoryScreen cb] ERROR:',e);}
+          });
+        }catch(e){console.error('[endCombat setTimeout] ERROR:',e);}
+      },900);
     }
   },
   start(){
