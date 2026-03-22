@@ -976,6 +976,7 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
       <span class="fb" style="color:var(--M)" id="dbadge">DMG:0</span>
       <span class="fb" style="color:var(--G)" id="tbadge">TURN:0</span>
       <span class="fb" style="color:var(--GD)" id="goldbadge">⚡0 CR</span>
+      <span class="fb" style="color:#ff8844;display:none" id="dpsBadge">DPS:0</span>
       <button id="speedBtn" onclick="Game.toggleSpeed();" style="font-family:'Share Tech Mono',monospace;font-size:clamp(7px,0.8vw,10px);padding:2px 6px;cursor:pointer;background:rgba(0,255,65,.15);border:1px solid var(--G);color:var(--G);">1x</button>
       <button id="autoBtn" onclick="Game.toggleAuto();" style="font-family:'Share Tech Mono',monospace;font-size:clamp(7px,0.8vw,10px);padding:2px 6px;cursor:pointer;background:rgba(136,0,255,.15);border:1px solid var(--P);color:var(--P);">AUTO:OFF</button>
       <button id="mapBtn" class="hidden">MAP</button>
@@ -3994,6 +3995,7 @@ const SaveSystem = {
         zonesUnlocked:GameState.zonesUnlocked,
         totalDmg:GameState.totalDmg,totalKills:GameState.totalKills,
         questsDone:GameState.questsDone,turnCount:GameState.turnCount,
+        savedAt:Date.now(),
       }));
     }catch(e){}
   },
@@ -4032,6 +4034,20 @@ const SaveSystem = {
       GameState.totalDmg=d.totalDmg||0;GameState.totalKills=d.totalKills||0;
       GameState.questsDone=d.questsDone||0;GameState.turnCount=d.turnCount||0;
       QM.init();
+      // Offline progress — passive gold + XP based on time away
+      if(d.savedAt){
+        const awayMs=Date.now()-d.savedAt;
+        const awayMin=Math.floor(awayMs/60000);
+        if(awayMin>=1){
+          const goldPerMin=2+(GameState.player?.level||1);
+          const xpPerMin=1+Math.floor((GameState.player?.level||1)*0.5);
+          const offlineGold=Math.min(awayMin*goldPerMin,500); // cap at 500
+          const offlineXP=Math.min(awayMin*xpPerMin,200); // cap at 200
+          Inventory.gold+=offlineGold;Inventory._gold();
+          if(GameState.player){GameState.player.xp+=offlineXP;}
+          GameState._offlineReward={gold:offlineGold,xp:offlineXP,mins:awayMin};
+        }
+      }
       return true;
     }catch(e){return false;}
   },
@@ -4050,6 +4066,12 @@ const WorldMap = {
     const prog=document.getElementById('wmProgress');
     if(prog)prog.textContent=`${cleared}/7 ZONES CLEARED`;
     this._clearInfo();
+    // Show offline reward notification
+    if(GameState._offlineReward){
+      const r=GameState._offlineReward;
+      GameState._offlineReward=null;
+      DM.say(`⚡ OFFLINE BONUS: +${r.gold} CR, +${r.xp} XP (${r.mins}m away)`);
+    }
     if(this._animFrame){cancelAnimationFrame(this._animFrame);this._animFrame=null;}
     const cv=document.getElementById('wmCanvas');
     if(!cv)return;
@@ -4445,6 +4467,18 @@ class Enemy {
 }
 
 const Combat = {
+  _dpsWindow:[],_dpsVal:0,
+  _trackDPS(dmg){
+    const now=Date.now();
+    this._dpsWindow.push({t:now,d:dmg});
+    // Keep last 5 seconds
+    this._dpsWindow=this._dpsWindow.filter(e=>now-e.t<5000);
+    const totalDmg=this._dpsWindow.reduce((s,e)=>s+e.d,0);
+    const elapsed=Math.max(1,(now-(this._dpsWindow[0]?.t||now))/1000);
+    this._dpsVal=elapsed>0.5?Math.round(totalDmg/elapsed):0;
+    const el=document.getElementById('dpsBadge');
+    if(el){el.textContent='DPS:'+this._dpsVal;el.style.display='';}
+  },
   lowestHp(en){return en.filter(e=>e.hp>0).sort((a,b)=>a.hp-b.hp)[0]||null;},
   deal(enemy,amount,isCrit=false){
     // Evasion check (e.g. Netrunner)
@@ -4473,6 +4507,7 @@ const Combat = {
     // Ghost Hacker: ability fn uses raw enemy atk ignoring DEF
     enemy.hp=Math.max(0,enemy.hp-dmg);
     GameState.totalDmg+=dmg;
+    this._trackDPS(dmg);
     QM.track('totalDmg',dmg); QM.track('dmgBlocked',blocked);
     Audio.play(isCrit?'crit':'hit');
     Arena.triggerHurt(false,enemy);
@@ -6758,9 +6793,9 @@ const Game={
   _combatSpeed:1200,
   _speedIdx:0,
   toggleSpeed(){
-    const speeds=[1200,800,400];
-    const labels=['1x','2x','3x'];
-    this._speedIdx=(this._speedIdx+1)%3;
+    const speeds=[1200,800,400,200];
+    const labels=['1x','2x','3x','5x'];
+    this._speedIdx=(this._speedIdx+1)%4;
     this._combatSpeed=speeds[this._speedIdx];
     const btn=document.getElementById('speedBtn');
     if(btn)btn.textContent=labels[this._speedIdx];
@@ -7246,12 +7281,19 @@ const AIDialog = {
     const gap = 12;
     const parentW = (el.parentElement||document.body).clientWidth;
     const parentH = (el.parentElement||document.body).clientHeight;
-    // Position BELOW character (like RPG dialog under sprites)
-    const spriteH = 88 * (cv.clientHeight / Arena.H); // approximate sprite height in DOM px
+    // Position BELOW character but ABOVE the dialog bar area
+    const spriteH = 88 * (cv.clientHeight / Arena.H);
+    const dialogBarReserve = 140; // space for DM dialog + HUD at bottom
     let left = domX - bw / 2;
-    let top  = domY + spriteH * 0.5 + gap;
+    let top  = domY + spriteH * 0.3 + gap;
     left = Math.max(4, Math.min(left, parentW - bw - 4));
-    top  = Math.min(top, parentH - bh - 4);
+    // Clamp: don't overlap bottom dialog bar, don't go above arena
+    top = Math.min(top, parentH - bh - dialogBarReserve);
+    top = Math.max(4, top);
+    // If still overlapping character, move to ABOVE instead
+    if(top > domY - 10 && top < domY + spriteH){
+      top = Math.max(4, domY - bh - gap);
+    }
     el.style.left = left + 'px';
     el.style.top  = top  + 'px';
   },
