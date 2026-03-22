@@ -3511,13 +3511,13 @@ const Combat = {
     const p=GameState.player;
     const xpGain=en.isBoss?150:10+GameState.floor*5;
     p.xp+=xpGain;
-    if(p.xp>=p.xpToNext&&!GameState.levelUpPending){
-      GameState.levelUpPending=true;
+    // Level up happens at end of combat now (in victory screen)
+    while(p.xp>=p.xpToNext){
       p.xp-=p.xpToNext;p.xpToNext=Math.floor(50*(p.level+1)*1.2);p.level++;
-      clearInterval(GameState.combatInterval);GameState.combatInterval=null;
+      GameState.levelUpPending=true;
       Audio.play('levelUp');
       Arena.spawnVFX('explode',Arena.getPlayerPos().x,Arena.getPlayerPos().y,PU);
-      setTimeout(()=>{UI.showLevelUp();},700);
+      Arena.spawnText('LEVEL UP!',Arena.getPlayerPos().x,Arena.getPlayerPos().y-40,'#FFD700',14);
     }
   },
   playerAttack(target){
@@ -6271,22 +6271,46 @@ const VictoryScreen = {
 
   _renderUpgrades() {
     const grid = document.getElementById('vicUpgrades');
-    const hdr = grid?.previousElementSibling; // the "CHOOSE AN UPGRADE" header
+    const hdr = grid?.previousElementSibling;
     if (!grid) return;
-    // Only show upgrades after boss fights
-    if (!this._isBoss) {
+    const p = GameState.player;
+    const hasLevelUp = GameState.levelUpPending;
+
+    if (!hasLevelUp && !this._isBoss) {
+      // No level up — show XP progress bar
       grid.innerHTML = '';
-      if(hdr)hdr.style.display='none';
+      if(hdr) hdr.textContent = '◆ EXPERIENCE ◆';
+      const xpPct = p ? Math.min(100, Math.round(p.xp / p.xpToNext * 100)) : 0;
+      grid.innerHTML = `<div style="width:100%;max-width:500px;margin:0 auto;font-family:'Share Tech Mono',monospace;">
+        <div style="display:flex;justify-content:space-between;font-size:clamp(8px,0.9vw,12px);color:#99a;margin-bottom:4px;">
+          <span>LEVEL ${p?.level||1}</span><span>${p?.xp||0} / ${p?.xpToNext||50} XP</span></div>
+        <div style="background:#0a0a14;border:1px solid rgba(136,0,255,.3);height:clamp(12px,1.5vh,18px);overflow:hidden;">
+          <div style="height:100%;width:${xpPct}%;background:linear-gradient(90deg,${PU},${CY});transition:width .4s;"></div></div></div>`;
       this._selectedUpgrade = {name:'SKIP',apply(){}};
       return;
     }
-    if(hdr)hdr.style.display='';
+
+    // Level up OR boss — show upgrade choices
+    if(hdr) hdr.textContent = hasLevelUp ? `◆ LEVEL ${p.level}! CHOOSE AN UPGRADE ◆` : '◆ CHOOSE AN UPGRADE ◆';
     this._upgrades = Rogue.genUpgrades();
     grid.innerHTML = '';
+    // Add stat preview to each upgrade
     this._upgrades.forEach(u => {
+      let preview='';
+      const s=u.name;
+      if(s.includes('HP')&&!s.includes('IRON')&&!s.includes('MEDIC'))preview=`HP: ${p.maxHp} → ${p.maxHp+15}`;
+      else if(s.includes('ATK')&&!s.includes('OVER'))preview=`ATK: ${p.atk} → ${p.atk+5}`;
+      else if(s.includes('DEF')&&!s.includes('IRON'))preview=`DEF: ${p.def} → ${p.def+4}`;
+      else if(s.includes('SPEED'))preview=`SPD: ${p.spd} → ${p.spd+3}`;
+      else if(s.includes('MP'))preview=`MP: ${p.maxMp} → ${p.maxMp+25}`;
+      else if(s.includes('OVERCLOCK'))preview=`ATK:${p.atk}→${p.atk+6} SPD:${p.spd}→${p.spd+2}`;
+      else if(s.includes('IRON'))preview=`DEF:${p.def}→${p.def+5} HP:${p.maxHp}→${p.maxHp+10}`;
+      else if(s.includes('CD'))preview=`CD: ${p.spells[0]?.maxCd||'?'} → ${Math.max(1,(p.spells[0]?.maxCd||2)-1)}`;
+      else if(s.includes('CRIT'))preview=`CRIT: ${Math.round((p.critBonus||0)*100)}% → ${Math.round(((p.critBonus||0)+0.1)*100)}%`;
+      else if(s.includes('MEDIC'))preview=`HP: ${p.hp} → ${Math.min(p.maxHp,p.hp+Math.floor(p.maxHp*.25))}`;
       const card = document.createElement('div');
       card.className = 'vic-upg-card';
-      card.innerHTML = `<div class="vic-upg-icon">${u.icon}</div><div class="vic-upg-name">${u.name}</div><div class="vic-upg-desc">${u.desc}</div>`;
+      card.innerHTML = `<div class="vic-upg-icon">${u.icon}</div><div class="vic-upg-name">${u.name}</div><div class="vic-upg-desc">${u.desc}</div>${preview?`<div style="color:var(--G);font-size:clamp(6px,.7vw,9px);margin-top:2px">${preview}</div>`:''}`;
       card.addEventListener('click', () => {
         this._selectedUpgrade = u;
         grid.querySelectorAll('.vic-upg-card').forEach(c => c.classList.remove('selected'));
@@ -6301,15 +6325,18 @@ const VictoryScreen = {
     const btn = document.getElementById('vicContinueBtn');
     const hint = document.getElementById('vicUpgHint');
     if (!btn) return;
-    const active = !this._isBoss || !!this._selectedUpgrade;
+    const hasLevelUp = GameState.levelUpPending;
+    const needsChoice = hasLevelUp || this._isBoss;
+    const active = !needsChoice || !!this._selectedUpgrade;
     btn.disabled = !active;
     btn.classList.toggle('active', active);
-    if (hint) hint.textContent = !this._isBoss ? '▶ CONTINUE TO NEXT ROOM' : active ? '✓ UPGRADE SELECTED' : 'SELECT AN UPGRADE TO CONTINUE';
+    if (hint) hint.textContent = !needsChoice ? '▶ CONTINUE TO NEXT ROOM' : active ? '✓ UPGRADE SELECTED' : 'SELECT AN UPGRADE TO CONTINUE';
   },
 
   // Called by vicContinueBtn click
   _continue() {
     const p = GameState.player;
+    GameState.levelUpPending=false;
     if (this._selectedUpgrade && this._selectedUpgrade.apply) {
       this._selectedUpgrade.apply(p);
       if(this._selectedUpgrade.name&&this._selectedUpgrade.name!=='SKIP'){
