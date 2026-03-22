@@ -1934,7 +1934,9 @@ const Arena = {
     if (GameState.currentScreen !== 'sCM') return;
     const p = GameState.player;
     const enemies = GameState.enemies || [];
-    const FLOOR_Y = Math.floor(H * 0.73);
+    // Zone-specific floor position — zone1 images have street at bottom
+    const zoneFloorY = {neonNexus:0.82};
+    const FLOOR_Y = Math.floor(H * (zoneFloorY[GameState.currentZoneId] || 0.73));
 
     // Player
     if (p) {
@@ -1974,10 +1976,8 @@ const Arena = {
       const bob = Math.sin(t * .055) * 2;
       const pDead = p.hp <= 0;
       if (pDead) { ctx.save(); ctx.globalAlpha = .35; }
-      // Sprite glow for visibility against dark/busy backgrounds
-      ctx.save(); ctx.shadowColor = p.accent||CY; ctx.shadowBlur = 14;
+      // Draw player sprite (no shadowBlur for performance)
       if (SPR[p.sprite]) SPR[p.sprite](ctx, px2 + lunge, py2 + bob, false, t);
-      ctx.restore();
       if (pDead) ctx.restore();
       if (pWasHurt) ctx.restore();
       // HP bar
@@ -2003,8 +2003,8 @@ const Arena = {
       if (en.hp <= 0) {
         if (!en.deathTimer) {
           en.deathTimer = 65;
-          this.spawnBurst(ex+sz.w/2, ey+sz.h/2, en.color||RD, 85, 2.2);
-          setTimeout(()=>this.spawnBurst(ex+sz.w/2, ey+sz.h/2, '#ffffff', 45, 1.3), 130);
+          this.spawnBurst(ex+sz.w/2, ey+sz.h/2, en.color||RD, 40, 1.8);
+          setTimeout(()=>this.spawnBurst(ex+sz.w/2, ey+sz.h/2, '#ffffff', 20, 1.0), 130);
           this.triggerShake(12, 20);
           this.triggerScreenFlash(en.color||RD, 0.5);
           this.spawnText('DEFEATED', ex+sz.w/2, ey-10, en.color||RD, 13);
@@ -2046,10 +2046,8 @@ const Arena = {
         en.animTimer++; if (en.animTimer > 25) { en.animState='idle'; en.animTimer=0; }
       }
       const bob = Math.sin(t * .055 + i * 1.3) * 2;
-      // Enemy sprite glow for visibility
-      ctx.save(); ctx.shadowColor = en.color||RD; ctx.shadowBlur = 14;
+      // Draw enemy sprite (no shadowBlur for performance)
       if (SPR[en.sprite]) SPR[en.sprite](ctx, ex + lunge, ey + bob, true, t);
-      ctx.restore();
       if (enWasHurt) ctx.restore();
       // HP bar + name
       this.hpBar(ctx, ex, ey - 12, sz.w, en.hp, en.maxHp, en.color || RD);
@@ -2098,7 +2096,6 @@ const Arena = {
       ctx.save();
       if (v.type === 'slash') {
         ctx.globalAlpha = (1-prog)*.9; ctx.strokeStyle = v.c; ctx.lineWidth = 3-prog*2;
-        ctx.shadowColor = v.c; ctx.shadowBlur = 8;
         for(let i=0;i<3;i++){
           ctx.beginPath(); ctx.moveTo(v.x,v.y);
           ctx.lineTo(v.x+Math.cos(-0.4+i*.4+prog*.5)*45*(1-prog*.2), v.y+Math.sin(-0.4+i*.4+prog*.5)*45*(1-prog*.2));
@@ -2110,20 +2107,20 @@ const Arena = {
         gr.addColorStop(0,v.c); gr.addColorStop(1,'transparent');
         ctx.fillStyle=gr; ctx.beginPath(); ctx.arc(v.x,v.y,r,0,Math.PI*2); ctx.fill();
       } else if (v.type === 'spark') {
-        ctx.globalAlpha=(1-prog); ctx.fillStyle=v.c; ctx.shadowColor=v.c; ctx.shadowBlur=7;
+        ctx.globalAlpha=(1-prog); ctx.fillStyle=v.c;
         for(let i=0;i<6;i++){
           const a=i/6*Math.PI*2+prog*2, r2=prog*38;
           ctx.beginPath(); ctx.arc(v.x+Math.cos(a)*r2, v.y+Math.sin(a)*r2, 2.5, 0, Math.PI*2); ctx.fill();
         }
       } else if (v.type === 'ring') {
         const rr=(v.maxR||55)*prog;
-        ctx.globalAlpha=(1-prog)*.85; ctx.strokeStyle=v.c; ctx.shadowColor=v.c;
-        ctx.lineWidth=3-prog*2; ctx.shadowBlur=12;
+        ctx.globalAlpha=(1-prog)*.85; ctx.strokeStyle=v.c;
+        ctx.lineWidth=3-prog*2;
         ctx.beginPath(); ctx.arc(v.x,v.y,rr,0,Math.PI*2); ctx.stroke();
         ctx.globalAlpha=(1-prog)*.3; ctx.lineWidth=8;
         ctx.beginPath(); ctx.arc(v.x,v.y,rr,0,Math.PI*2); ctx.stroke();
       } else if (v.type === 'lightning') {
-        ctx.globalAlpha=(1-prog*.6)*.9; ctx.strokeStyle=v.c; ctx.shadowColor=v.c; ctx.shadowBlur=14;
+        ctx.globalAlpha=(1-prog*.6)*.9; ctx.strokeStyle=v.c;
         ctx.lineWidth=2.5-prog; ctx.setLineDash([6,4]);
         const steps=7;
         ctx.beginPath(); ctx.moveTo(v.x,v.y);
@@ -2143,7 +2140,7 @@ const Arena = {
       pt.vy += pt.gravity||0.08; pt.x+=pt.vx; pt.y+=pt.vy;
       pt.alpha = Math.max(0, pt.alpha - (pt.fade||0.018));
       ctx.save(); ctx.globalAlpha=pt.alpha;
-      ctx.fillStyle=pt.color||'#fff'; ctx.shadowColor=pt.color||'#fff'; ctx.shadowBlur=pt.glow||6;
+      ctx.fillStyle=pt.color||'#fff';
       ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.size||3, 0, Math.PI*2); ctx.fill();
       ctx.restore();
     });
@@ -2158,10 +2155,9 @@ const Arena = {
       ctx.globalAlpha = alpha;
       ctx.font = `bold ${ft.size}px 'Press Start 2P',monospace`;
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.shadowColor = ft.color; ctx.shadowBlur = 22;
-      ctx.fillStyle = '#ffffff';
+      ctx.fillStyle = '#000000';
       ctx.fillText(ft.text, ft.x+1, ft.y+1); // shadow pass
-      ctx.fillStyle = ft.color; ctx.shadowBlur = 14;
+      ctx.fillStyle = ft.color;
       ctx.fillText(ft.text, ft.x, ft.y);
       ctx.restore();
     });
@@ -2550,8 +2546,9 @@ const Arena = {
   },
 
   drawFloor(ctx, W, H) {
-    const fy = H*.73;
     const zoneId=GameState.currentZoneId||'neonNexus';
+    const zoneFloorY2={neonNexus:0.82};
+    const fy = H*(zoneFloorY2[zoneId]||0.73);
     const isBoss=GameState.enemies?.some(e=>e.isBoss&&e.hp>0);
     // Semi-transparent floor when zone has room backgrounds
     const hasRoomBg2={neonNexus:true};
@@ -2674,13 +2671,17 @@ const Arena = {
     const sz = SPRITE_SIZE[en.sprite]||{w:56,h:88};
     const slotW = eAreaW/Math.max(n,1);
     const ex = eStartX + aliveIdx*slotW + (slotW-sz.w)/2;
-    return {x: ex+sz.w/2, y: this.H*.73-sz.h/2};
+    const zfY={neonNexus:0.82};
+    const flY=this.H*(zfY[GameState.currentZoneId]||0.73);
+    return {x: ex+sz.w/2, y: flY-sz.h/2};
   },
 
   getPlayerPos() {
     const p = GameState.player; if(!p) return {x:this.W*.2,y:this.H*.5};
     const sz = SPRITE_SIZE[p.sprite]||{w:56,h:88};
-    return {x: this.W*.14+sz.w/2, y: this.H*.73-sz.h/2};
+    const zfY={neonNexus:0.82};
+    const flY=this.H*(zfY[GameState.currentZoneId]||0.73);
+    return {x: this.W*.14+sz.w/2, y: flY-sz.h/2};
   },
 
   drawMinimap(ctx, W, H) {
@@ -3595,7 +3596,7 @@ const Combat = {
     if(spell.castCount===10&&!spell.evolved){
       spell.evolved=true;spell.maxCd=Math.max(1,spell.maxCd-1);
       spell.name='EX '+spell.name;spell.desc='[EVOLVED] '+spell.desc;
-      Arena.spawnBurst(Arena.getPlayerPos().x,Arena.getPlayerPos().y,'#FFD700',60,2.0);
+      Arena.spawnBurst(Arena.getPlayerPos().x,Arena.getPlayerPos().y,'#FFD700',30,1.5);
       Arena.spawnText('SPELL EVOLVED!',Arena.getPlayerPos().x,Arena.getPlayerPos().y-40,'#FFD700',14);
       Audio.play('evolve');
       DM.say('SPELL EVOLVED! Power surging!');
@@ -4323,15 +4324,22 @@ const DungeonGen = {
     const fc = this.getFloorCfg(floor);
     const n  = overrideRooms ? Math.max(5, Math.min(overrideRooms, 12)) : Math.max(5, Math.min(fc.rooms||8, 12));
 
-    // Build type list: [combat, ...shuffled middle..., boss]
-    // Middle must contain at least one rest and one merchant
-    const mid = ['rest', 'merchant'];
-    while (mid.length < n - 2) mid.push(this._pickType(['boss']));
-    for (let i = mid.length-1; i > 0; i--) {
-      const j = Math.floor(Math.random()*(i+1));
-      [mid[i], mid[j]] = [mid[j], mid[i]];
+    // Structured room layout: combat blocks with rest/merchant breaks
+    // Pattern for 10 rooms: C C C R C C M C C BOSS
+    // Pattern for 7 rooms:  C C R C M C BOSS
+    // Pattern for 5 rooms:  C C R C BOSS
+    const types = [];
+    types.push('combat'); // room 1 always combat
+    const midSlots = n - 2; // exclude first combat and last boss
+    // Place rest at ~1/3 and merchant at ~2/3 through the middle
+    const restPos = Math.floor(midSlots * 0.33);
+    const merchPos = Math.floor(midSlots * 0.66);
+    for (let i = 0; i < midSlots; i++) {
+      if (i === restPos) types.push('rest');
+      else if (i === merchPos) types.push('merchant');
+      else types.push('combat');
     }
-    const types = ['combat', ...mid, 'boss'];
+    types.push('boss');
 
     // Assign snake-layout grid positions (3 columns)
     const COLS = 3;
