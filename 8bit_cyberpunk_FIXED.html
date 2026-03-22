@@ -251,21 +251,27 @@ html,body{width:100%;height:100%;overflow:hidden;background:#060618;font-family:
 ::-webkit-scrollbar-track{background:#0a0a14;}
 ::-webkit-scrollbar-thumb{background:var(--P);}
 
-/* ══ DIALOG ENGINE — slim bottom bar ══ */
+/* ══ DIALOG ENGINE — anime JRPG style ══ */
 #dlgBox{
-  position:absolute;bottom:0;left:0;right:0;
-  background:linear-gradient(0deg,rgba(2,2,20,.95),rgba(2,2,20,.8));
-  border-top:1px solid rgba(0,255,255,.3);
-  padding:clamp(5px,0.7vh,10px) clamp(10px,1.2vw,16px);
+  position:absolute;bottom:clamp(4px,0.8vh,10px);left:clamp(8px,2vw,20px);right:clamp(8px,2vw,20px);
+  background:linear-gradient(135deg,rgba(2,2,30,.94),rgba(8,0,20,.92));
+  border:2px solid var(--C);
+  border-image:linear-gradient(135deg,var(--C),var(--M)) 1;
+  padding:clamp(8px,1vh,14px) clamp(10px,1.2vw,16px);
   z-index:50;display:flex;flex-direction:column;gap:4px;
-  animation:dlgIn .15s ease;
+  animation:dlgSlideUp .2s ease;
+  /* Scanline overlay */
+  background-image:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.08) 3px);
 }
-@keyframes dlgIn{from{opacity:0}to{opacity:1}}
-.dlg-inner{display:flex;align-items:center;gap:clamp(6px,0.8vw,10px);}
-.dlg-portrait{display:none;}
-.dlg-name{color:var(--M);font-family:'Share Tech Mono',monospace;font-size:clamp(7px,0.8vw,10px);letter-spacing:2px;text-shadow:0 0 6px var(--M);text-transform:uppercase;white-space:nowrap;flex-shrink:0;}
-.dlg-text{color:#cce8ff;font-size:clamp(9px,0.95vw,13px);line-height:1.9;min-height:clamp(14px,1.8vh,22px);}
-.dlg-skip{font-size:clamp(6px,0.65vw,9px);color:rgba(0,255,255,.3);cursor:pointer;flex-shrink:0;padding:4px 2px;transition:color .12s;user-select:none;}
+@keyframes dlgSlideUp{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+.dlg-inner{display:flex;align-items:flex-start;gap:clamp(8px,1vw,14px);}
+.dlg-portrait{display:flex;align-items:center;justify-content:center;width:clamp(36px,5vw,52px);height:clamp(36px,5vw,52px);flex-shrink:0;
+  background:rgba(0,0,20,.8);border:1.5px solid var(--M);font-size:clamp(18px,2.5vw,28px);
+  image-rendering:pixelated;}
+.dlg-name{color:var(--M);font-family:'Share Tech Mono',monospace;font-size:clamp(8px,0.9vw,12px);letter-spacing:3px;text-shadow:0 0 8px var(--M);text-transform:uppercase;white-space:nowrap;margin-bottom:2px;display:block;}
+.dlg-text{color:#ddeeff;font-family:'Share Tech Mono',monospace;font-size:clamp(9px,1vw,14px);line-height:1.7;min-height:clamp(16px,2vh,24px);}
+.dlg-content{flex:1;min-width:0;}
+.dlg-skip{font-size:clamp(8px,0.8vw,11px);color:rgba(0,255,255,.4);cursor:pointer;flex-shrink:0;padding:4px 6px;transition:color .12s;user-select:none;align-self:flex-end;}
 .dlg-skip:hover{color:var(--C);}
 .dlg-choices{display:flex;gap:8px;padding-top:6px;border-top:1px solid rgba(0,255,255,.18);}
 .dlg-btn{flex:1;font-family:'Press Start 2P',monospace;font-size:clamp(7px,0.75vw,10px);padding:clamp(6px,0.7vh,10px) 4px;cursor:pointer;letter-spacing:1px;transition:all .14s;}
@@ -985,13 +991,15 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
           <!-- Dialog Engine — slim bottom bar -->
           <div id="dlgBox" style="display:none">
             <div class="dlg-inner">
-              <div class="dlg-name" id="dlgName" style="flex-shrink:0"></div>
-              <div class="dlg-text" id="dlgText" style="flex:1"></div>
+              <div class="dlg-portrait" id="dlgPortrait">👾</div>
+              <div class="dlg-content">
+                <div class="dlg-name" id="dlgName"></div>
+                <div class="dlg-text" id="dlgText"></div>
+              </div>
               <div class="dlg-skip" id="dlgSkip" title="Click to skip">▶▶</div>
             </div>
             <div class="dlg-choices" id="dlgChoices" style="display:none"></div>
           </div>
-          <div class="dlg-portrait" id="dlgPortrait" style="display:none">👾</div>
         </div>
         <!-- Compact Player HUD — single row -->
         <div class="phud">
@@ -1869,6 +1877,10 @@ const SPRITE_SIZE = {
 // ═══════════════════════════════════════════════════════════════
 const Arena = {
   cv:null, ctx:null, W:0, H:0, time:0, vfx:[], particles:[], floatTexts:[],
+  // Kill cam state
+  _killCam:{active:false,timer:0,x:0,y:0,color:'#fff'},
+  // Spell name flash
+  _spellFlash:{active:false,timer:0,name:'',icon:''},
   shake:{frames:0,intensity:0}, bgPulse:{color:'',alpha:0}, screenFlash:{color:'',alpha:0},
   hexParticles:[],
 
@@ -1952,33 +1964,49 @@ const Arena = {
       ctx.beginPath(); ctx.ellipse(px2+sz.w/2, FLOOR_Y+2, sz.w*.45, 5, 0, 0, Math.PI*2); ctx.fill();
       ctx.restore();
 
-      // Animation offsets
-      let lunge=0, dodgeY=0, scaleX=1, scaleY=1;
-      // Attack — lunge forward
+      // Animation — dash movement system
+      let lunge=0, scaleX=1, scaleY=1;
+      // Get first alive enemy position for dash target
+      const firstAlive=enemies.find(e=>e.hp>0);
+      const dashTarget=firstAlive?Math.floor(W*0.45+(enemies.indexOf(firstAlive))*(W*0.52/Math.max(enemies.filter(e=>e.hp>0).length,1))):W*0.6;
+      // Attack — DASH forward to enemy, strike, retreat
       if (p.animState === 'attack' && p.animTimer !== undefined) {
-        const prog = p.animTimer / 22;
-        lunge = Math.sin(prog * Math.PI) * 60;
-        scaleX = 1 + Math.sin(prog * Math.PI) * 0.08;
+        const totalFrames=30;
+        const prog = p.animTimer / totalFrames;
+        if(prog<0.3) {
+          // Dash forward (0-30%)
+          const dashProg=prog/0.3;
+          lunge = (dashTarget-px2-sz.w)*0.7*Math.sin(dashProg*Math.PI/2);
+        } else if(prog<0.45) {
+          // Strike hold (30-45%)
+          lunge = (dashTarget-px2-sz.w)*0.7;
+          scaleX=1.1;
+        } else {
+          // Retreat (45-100%)
+          const retProg=(prog-0.45)/0.55;
+          lunge = (dashTarget-px2-sz.w)*0.7*(1-Math.sin(retProg*Math.PI/2));
+        }
         p.animTimer++;
-        if (p.animTimer >= 22) { p.animState = 'idle'; p.animTimer = 0; }
+        if (p.animTimer >= totalFrames) { p.animState = 'idle'; p.animTimer = 0; }
       }
-      // Hurt — knockback + flash
+      // Hurt — knockback + white flash
       const pWasHurt = p.animState === 'hurt';
       if (pWasHurt) {
         ctx.save();
-        lunge = -Math.sin(p.animTimer / 25 * Math.PI) * 20;
-        ctx.globalAlpha = .55 + Math.sin(p.animTimer * 1.2) * .44;
+        lunge = -Math.sin(p.animTimer / 20 * Math.PI) * 25;
+        ctx.globalAlpha = .55 + Math.sin(p.animTimer * 1.5) * .44;
         ctx.filter = 'brightness(200%) saturate(0%)';
-        p.animTimer++; if (p.animTimer > 25) { p.animState = 'idle'; p.animTimer = 0; }
+        p.animTimer++; if (p.animTimer > 20) { p.animState = 'idle'; p.animTimer = 0; }
+        this.triggerShake(2,3); // micro-shake on every hit
       }
-      // Cast — glow + scale up
+      // Cast — step forward + glow + spell name flash
       if (p.animState === 'cast') {
-        ctx.save(); ctx.globalAlpha = .45 - p.animTimer/66;
-        const g = ctx.createRadialGradient(px2+sz.w/2, py2+sz.h/2, 0, px2+sz.w/2, py2+sz.h/2, 70);
+        lunge = Math.sin(p.animTimer / 30 * Math.PI) * 20;
+        ctx.save(); ctx.globalAlpha = .5 - p.animTimer/60;
+        const g = ctx.createRadialGradient(px2+sz.w/2+lunge, py2+sz.h/2, 0, px2+sz.w/2+lunge, py2+sz.h/2, 80);
         g.addColorStop(0, ac); g.addColorStop(1, 'transparent');
-        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(px2+sz.w/2, py2+sz.h/2, 70, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(px2+sz.w/2+lunge, py2+sz.h/2, 80, 0, Math.PI*2); ctx.fill();
         ctx.restore();
-        scaleY = 1 + Math.sin(p.animTimer / 30 * Math.PI) * 0.06;
         p.animTimer++; if (p.animTimer > 30) { p.animState = 'idle'; p.animTimer = 0; }
       }
       // Idle bob + breathing
@@ -2064,21 +2092,27 @@ const Arena = {
       ctx.beginPath(); ctx.ellipse(ex+sz.w/2, FLOOR_Y+2, sz.w*.45, 5, 0, 0, Math.PI*2); ctx.fill();
       ctx.restore();
 
-      // Animation offsets
+      // Animation — dash movement
       let lunge=0, scaleX2=1, scaleY2=1;
+      const playerHomeX=Math.floor(W*0.18);
       if (en.animState === 'attack') {
-        const prog2 = en.animTimer / 22;
-        lunge = -Math.sin(prog2 * Math.PI) * 50;
-        scaleX2 = 1 + Math.sin(prog2 * Math.PI) * 0.08;
-        en.animTimer++; if (en.animTimer >= 22) { en.animState = 'idle'; en.animTimer = 0; }
+        const totalF=25;const prog2=en.animTimer/totalF;
+        if(prog2<0.35){
+          lunge=-(ex-playerHomeX)*0.6*Math.sin((prog2/0.35)*Math.PI/2);
+        }else if(prog2<0.5){
+          lunge=-(ex-playerHomeX)*0.6;scaleX2=1.1;
+        }else{
+          lunge=-(ex-playerHomeX)*0.6*(1-Math.sin(((prog2-0.5)/0.5)*Math.PI/2));
+        }
+        en.animTimer++;if(en.animTimer>=totalF){en.animState='idle';en.animTimer=0;}
       }
       const enWasHurt = en.animState === 'hurt';
       if (enWasHurt) {
         ctx.save();
-        lunge = Math.sin(en.animTimer / 25 * Math.PI) * 15;
-        ctx.globalAlpha = .55 + Math.sin(en.animTimer*1.2)*.44;
+        lunge = Math.sin(en.animTimer / 20 * Math.PI) * 20;
+        ctx.globalAlpha = .55 + Math.sin(en.animTimer*1.5)*.44;
         ctx.filter = 'brightness(200%) saturate(0%)';
-        en.animTimer++; if (en.animTimer > 25) { en.animState='idle'; en.animTimer=0; }
+        en.animTimer++; if (en.animTimer > 20) { en.animState='idle'; en.animTimer=0; }
       }
       // Idle bob + breathing
       const bob = Math.sin(t * .04 + i * 1.3) * 3;
@@ -2245,6 +2279,65 @@ const Arena = {
       ctx.save(); ctx.globalAlpha=this.screenFlash.alpha;
       ctx.fillStyle=this.screenFlash.color; ctx.fillRect(0,0,W,H);
       ctx.restore(); this.screenFlash.alpha=Math.max(0,this.screenFlash.alpha-0.04);
+    }
+
+    // ── ANIME KILL CAM ──
+    if(this._killCam.active){
+      const kc=this._killCam;kc.timer++;
+      const kp=kc.timer/45;
+      ctx.save();
+      if(kp<0.12){
+        // Freeze + darken
+        ctx.globalAlpha=kp/0.12*0.4;ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
+      }else if(kp<0.35){
+        // Zoom in toward kill point
+        const zp=(kp-0.12)/0.23;
+        const scale=1+zp*0.15;
+        ctx.translate(kc.x,kc.y);ctx.scale(scale,scale);ctx.translate(-kc.x,-kc.y);
+        ctx.globalAlpha=0.3;ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
+      }else if(kp<0.6){
+        // Anime slash lines
+        const sp=(kp-0.35)/0.25;
+        ctx.globalAlpha=0.7*(1-sp);ctx.strokeStyle=kc.color;ctx.lineWidth=3;
+        for(let sl=0;sl<4;sl++){
+          const angle=-0.5+sl*0.35;const len=W*0.8*sp;
+          const sx=kc.x-Math.cos(angle)*len/2,sy=kc.y-Math.sin(angle)*len/2;
+          ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(sx+Math.cos(angle)*len,sy+Math.sin(angle)*len);ctx.stroke();
+        }
+      }else if(kp<0.8){
+        // White flash
+        ctx.globalAlpha=(1-(kp-0.6)/0.2)*0.5;ctx.fillStyle='#ffffff';ctx.fillRect(0,0,W,H);
+      }else{
+        // "ELIMINATED" text
+        const ep=(kp-0.8)/0.2;
+        ctx.globalAlpha=1-ep;
+        ctx.font=`bold ${Math.floor(P*5)}px 'Press Start 2P',monospace`;ctx.textAlign='center';
+        ctx.fillStyle=kc.color;ctx.fillText('ELIMINATED',W/2,H*0.4-ep*30);
+      }
+      ctx.restore();
+      if(kc.timer>=45)kc.active=false;
+    }
+
+    // ── SPELL NAME FLASH ──
+    if(this._spellFlash.active){
+      const sf=this._spellFlash;sf.timer++;
+      const sp2=sf.timer/25;
+      ctx.save();
+      if(sp2<0.3){
+        // Darken background
+        ctx.globalAlpha=sp2/0.3*0.3;ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
+      }
+      if(sp2<0.8){
+        // Spell name text — large, centered
+        ctx.globalAlpha=sp2<0.15?sp2/0.15:sp2>0.6?(1-(sp2-0.6)/0.2):1;
+        ctx.font=`bold ${Math.floor(P*4)}px 'Press Start 2P',monospace`;ctx.textAlign='center';
+        ctx.fillStyle='#ffffff';
+        ctx.fillText(sf.icon+' '+sf.name,W/2+1,H*0.35+1);
+        ctx.fillStyle=GameState.selectedAccent||CY;
+        ctx.fillText(sf.icon+' '+sf.name,W/2,H*0.35);
+      }
+      ctx.restore();
+      if(sf.timer>=25)sf.active=false;
     }
   },
 
@@ -2722,6 +2815,8 @@ const Arena = {
     else if (en) { en.animState='hurt'; en.animTimer=0; }
   },
   triggerCast() { if(GameState.player){GameState.player.animState='cast';GameState.player.animTimer=0;} },
+  triggerKillCam(x,y,color){this._killCam={active:true,timer:0,x,y,color:color||'#ff00ff'};Audio.play('death');},
+  triggerSpellFlash(name,icon){this._spellFlash={active:true,timer:0,name:name||'SKILL',icon:icon||'⚡'};},
 
   getEnemyPos(idx) {
     const enemies = GameState.enemies;
@@ -3568,7 +3663,14 @@ const Combat = {
     if(QM._cleanRun){QM.track('cleanKills',1);}
     QM._cleanRun=true;// reset per-fight clean tracking
     const idx=GameState.enemies.indexOf(en);
-    if(idx>=0){const pos=Arena.getEnemyPos(idx);Arena.spawnVFX('explode',pos.x,pos.y,en.color||RD);}
+    if(idx>=0){
+      const pos=Arena.getEnemyPos(idx);
+      Arena.spawnVFX('explode',pos.x,pos.y,en.color||RD);
+      // Anime kill cam on last enemy
+      if(!GameState.enemies.some(e=>e.hp>0&&e!==en)){
+        Arena.triggerKillCam(pos.x,pos.y,en.color||MG);
+      }
+    }
     DM.say(`${en.name} destroyed!`);
     DialogEngine.showDeath(en);
     AIDialog.onEnemyDeath(en);
@@ -3683,6 +3785,7 @@ const Combat = {
     spell.effect(p,aliveEn);
     GameState.spellDmg+=(GameState.totalDmg-dmgBefore);
     Arena.triggerCast();
+    Arena.triggerSpellFlash(spell.name,spell.icon);
     // Spell-specific particle effects
     const pp3=Arena.getPlayerPos();
     if(spell.id==='ghostStep'){Arena.spawnRing(pp3.x,pp3.y,'#4499ff',65);}
