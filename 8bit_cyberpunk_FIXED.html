@@ -3702,6 +3702,7 @@ const Combat = {
   endCombat(won){
     if(this._endingCombat)return;this._endingCombat=true;
     clearInterval(GameState.combatInterval);GameState.combatInterval=null;GameState.combatRunning=false;
+    console.log('[endCombat] won='+won+' room='+GameState.currentRoomIdx+' levelUp='+GameState.levelUpPending);
     const p=GameState.player;
     if(!won){
       UI.flash();
@@ -6063,13 +6064,21 @@ const VictoryScreen = {
   },
 
   _render() {
-    this._renderTopBar();
-    this._renderCharSummary();
-    this._renderLoot();
-    this._renderPaperdoll();
-    this._renderInventory();
-    this._renderUpgrades();
-    this._updateContinue();
+    try{
+      this._renderTopBar();
+      this._renderCharSummary();
+      this._renderLoot();
+      this._renderPaperdoll();
+      this._renderInventory();
+      this._renderUpgrades();
+      this._updateContinue();
+    }catch(e){
+      console.error('[VictoryScreen._render] CRASH:',e);
+      // Force continue button active so game isn't stuck
+      const btn=document.getElementById('vicContinueBtn');
+      if(btn){btn.disabled=false;btn.classList.add('active');}
+      this._selectedUpgrade={name:'SKIP',apply(){}};
+    }
   },
 
   _renderCharSummary() {
