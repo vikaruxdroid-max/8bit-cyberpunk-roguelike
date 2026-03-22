@@ -5306,9 +5306,11 @@ const Game={
     if(!floorData)return;
     const room=floorData.rooms[idx];
     if(!room)return;
-    UI.show('sCM');UI.updateFloor();
-    room.visited=true;
     GameState.currentRoomIdx=idx;
+    room.visited=true;
+    UI.show('sCM');UI.updateFloor();
+    // Clear stale DM toast
+    const toast=document.getElementById('dmToast');if(toast)toast.style.opacity='0';
     const exEl=document.getElementById('roomExits');
     if(exEl)exEl.style.display='none';
     // Clear boss room tint for non-boss rooms
