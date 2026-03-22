@@ -127,6 +127,14 @@ html,body{width:100%;height:100%;overflow:hidden;background:#060618;font-family:
 /* Combat main area */
 .cmain{flex:1;display:flex;overflow:hidden;min-height:0;}
 .arena-col{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden;}
+#invOverlay .equip-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;padding:3px 0;}
+#invOverlay .bag-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:3px;}
+#invOverlay .inv-sec{font-size:clamp(7px,0.8vw,10px);color:rgba(255,0,255,.65);padding:4px 0 2px;letter-spacing:1px;}
+#invOverlay .inv-actions{display:flex;gap:4px;margin-top:6px;}
+#invOverlay .inv-equip,#invOverlay .inv-sell{flex:1;font-family:'Share Tech Mono',monospace;font-size:clamp(8px,0.9vw,11px);padding:6px;cursor:pointer;}
+#invOverlay .inv-equip{background:rgba(0,38,0,.9);border:1px solid var(--G);color:var(--G);}
+#invOverlay .inv-sell{background:rgba(40,0,0,.9);border:1px solid var(--RD);color:var(--RD);}
+#invOverlay .inv-tip{font-size:clamp(6px,0.7vw,9px);color:#445;text-align:center;padding:4px 0;}
 
 /* DM / narrator row */
 .dmrow{
@@ -163,44 +171,42 @@ html,body{width:100%;height:100%;overflow:hidden;background:#060618;font-family:
 .dn.phit{color:var(--RD);text-shadow:0 0 8px var(--RD);}
 @keyframes floUp{0%{transform:translateY(0) scale(1);opacity:1}50%{opacity:1}85%{transform:translateY(-80px) scale(.85);opacity:.6}100%{transform:translateY(-95px) scale(.75);opacity:0}}
 
-/* Player HUD — bottom strip */
+/* Player HUD — compact single row */
 .phud{
   flex-shrink:0;
   background:linear-gradient(180deg,rgba(3,0,12,.96),rgba(6,3,20,.98));
   border-top:2px solid rgba(136,0,255,.4);
-  padding:clamp(8px,1vh,14px) clamp(12px,1.2vw,20px);z-index:5;
-  display:grid;
-  grid-template-columns:1fr auto;
-  gap:clamp(10px,1vw,18px);align-items:start;
+  padding:clamp(4px,0.6vh,8px) clamp(8px,1vw,14px);z-index:5;
+  display:flex;align-items:center;
+  gap:clamp(6px,0.7vw,12px);
+  flex-wrap:wrap;
 }
-.phud-left{display:flex;flex-direction:column;gap:clamp(4px,0.5vh,8px);min-width:0;}
-.pnm{font-size:clamp(10px,1.2vw,16px);margin-bottom:clamp(2px,0.3vh,5px);text-shadow:0 0 8px currentColor;font-weight:bold;}
-.bars-block{display:flex;flex-direction:column;gap:clamp(4px,0.5vh,8px);}
-.br{display:flex;align-items:center;gap:clamp(6px,0.6vw,10px);}
-.bl2{font-size:clamp(9px,1vw,13px);min-width:clamp(22px,2.2vw,32px);flex-shrink:0;font-weight:bold;}
-.bt{flex:1;background:#060610;border:1px solid rgba(255,255,255,.1);height:clamp(10px,1.2vh,16px);overflow:hidden;position:relative;}
-.bt::after{content:'';position:absolute;inset:0 0 auto 0;height:3px;background:rgba(255,255,255,.1);}
+.pnm{font-size:clamp(9px,1vw,14px);text-shadow:0 0 8px currentColor;font-weight:bold;white-space:nowrap;}
+.br{display:flex;align-items:center;gap:clamp(3px,0.4vw,6px);}
+.bl2{font-size:clamp(7px,0.8vw,11px);flex-shrink:0;font-weight:bold;}
+.bt{flex:1;background:#060610;border:1px solid rgba(255,255,255,.1);height:clamp(8px,1vh,12px);overflow:hidden;position:relative;min-width:40px;}
+.bt::after{content:'';position:absolute;inset:0 0 auto 0;height:2px;background:rgba(255,255,255,.1);}
 .bfill{height:100%;transition:width .35s ease;}
 .hpf{background:linear-gradient(90deg,#cc0022,#ff6600,#39ff14);}
 .mpf{background:linear-gradient(90deg,#001188,#0066ff,#00ccff);}
-.bnum{font-size:clamp(9px,1vw,13px);color:#aabbd0;min-width:clamp(60px,5.5vw,90px);text-align:right;}
-.buffs{display:flex;gap:clamp(3px,0.4vw,6px);flex-wrap:wrap;margin-top:clamp(1px,0.2vh,3px);}
+.bnum{font-size:clamp(7px,0.8vw,11px);color:#aabbd0;white-space:nowrap;}
+.buffs{display:flex;gap:clamp(2px,0.3vw,4px);flex-wrap:nowrap;}
 .bico{font-size:clamp(8px,0.9vw,12px);background:rgba(12,12,32,.9);border:1px solid var(--C);padding:2px 6px;color:var(--C);}
 .bico.neg{border-color:var(--RD);color:var(--RD);}
 .phud-right{display:flex;flex-direction:column;align-items:flex-end;gap:clamp(5px,0.6vh,9px);}
-.spbar{display:flex;gap:clamp(6px,0.6vw,10px);flex-wrap:nowrap;}
+.spbar{display:flex;gap:clamp(3px,0.4vw,6px);flex-wrap:nowrap;}
 .spbtn{
-  width:clamp(54px,6vw,82px);height:clamp(54px,6vw,82px);
+  width:clamp(40px,4.5vw,60px);height:clamp(40px,4.5vw,60px);
   background:rgba(12,8,30,.92);
-  border:2px solid rgba(136,0,255,.5);
+  border:1.5px solid rgba(136,0,255,.5);
   cursor:pointer;position:relative;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   transition:all .15s;overflow:hidden;flex-shrink:0;
 }
-.spbtn:hover:not(.ocd){border-color:var(--C);box-shadow:0 0 14px rgba(0,255,255,.5);}
+.spbtn:hover:not(.ocd){border-color:var(--C);box-shadow:0 0 10px rgba(0,255,255,.4);}
 .spbtn.ocd{opacity:.4;cursor:not-allowed;}
-.spico{font-size:clamp(18px,2vw,28px);line-height:1;}
-.splbl{font-size:clamp(7px,0.75vw,10px);color:#aaa;text-align:center;line-height:1.4;margin-top:3px;padding:0 3px;}
+.spico{font-size:clamp(14px,1.6vw,22px);line-height:1;}
+.splbl{font-size:clamp(5px,0.6vw,8px);color:#aaa;text-align:center;line-height:1.2;margin-top:1px;padding:0 2px;}
 .cdov{position:absolute;inset:0;background:rgba(0,0,0,.78);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:clamp(13px,1.4vw,20px);color:var(--RD);}
 .cdov small{font-size:clamp(7px,0.8vw,11px);color:#999;}
 .equip-badge{font-size:clamp(8px,0.9vw,12px);background:rgba(12,8,30,.92);border:1px solid rgba(255,215,0,.4);color:var(--GD);padding:3px 8px;}
@@ -245,21 +251,19 @@ html,body{width:100%;height:100%;overflow:hidden;background:#060618;font-family:
 ::-webkit-scrollbar-track{background:#0a0a14;}
 ::-webkit-scrollbar-thumb{background:var(--P);}
 
-/* ══ DIALOG ENGINE ══ */
+/* ══ DIALOG ENGINE — slim bottom bar ══ */
 #dlgBox{
-  position:absolute;bottom:8px;left:8px;right:8px;
-  background:rgba(2,2,20,.97);
-  border:2px solid var(--C);
-  box-shadow:0 0 20px rgba(0,255,255,.22),inset 0 0 10px rgba(0,255,255,.04);
-  padding:clamp(8px,1vh,14px) clamp(10px,1.2vw,16px);
-  z-index:50;display:flex;flex-direction:column;gap:6px;
-  animation:dlgIn .18s ease;
+  position:absolute;bottom:0;left:0;right:0;
+  background:linear-gradient(0deg,rgba(2,2,20,.95),rgba(2,2,20,.8));
+  border-top:1px solid rgba(0,255,255,.3);
+  padding:clamp(5px,0.7vh,10px) clamp(10px,1.2vw,16px);
+  z-index:50;display:flex;flex-direction:column;gap:4px;
+  animation:dlgIn .15s ease;
 }
-@keyframes dlgIn{from{transform:translateY(8px);opacity:0}to{transform:translateY(0);opacity:1}}
-.dlg-inner{display:flex;align-items:center;gap:clamp(8px,1vw,14px);}
-.dlg-portrait{font-size:clamp(20px,2.4vw,32px);flex-shrink:0;width:clamp(30px,3vw,46px);text-align:center;filter:drop-shadow(0 0 6px rgba(0,255,255,.45));}
-.dlg-content{flex:1;min-width:0;}
-.dlg-name{color:var(--C);font-size:clamp(7px,0.75vw,10px);letter-spacing:2px;margin-bottom:4px;text-shadow:0 0 6px var(--C);text-transform:uppercase;}
+@keyframes dlgIn{from{opacity:0}to{opacity:1}}
+.dlg-inner{display:flex;align-items:center;gap:clamp(6px,0.8vw,10px);}
+.dlg-portrait{display:none;}
+.dlg-name{color:var(--M);font-family:'Share Tech Mono',monospace;font-size:clamp(7px,0.8vw,10px);letter-spacing:2px;text-shadow:0 0 6px var(--M);text-transform:uppercase;white-space:nowrap;flex-shrink:0;}
 .dlg-text{color:#cce8ff;font-size:clamp(9px,0.95vw,13px);line-height:1.9;min-height:clamp(14px,1.8vh,22px);}
 .dlg-skip{font-size:clamp(6px,0.65vw,9px);color:rgba(0,255,255,.3);cursor:pointer;flex-shrink:0;padding:4px 2px;transition:color .12s;user-select:none;}
 .dlg-skip:hover{color:var(--C);}
@@ -561,7 +565,7 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
 
 /* ══ BLOCK BUTTON ══ */
 #blockBtn{
-  width:clamp(54px,6vw,82px);height:clamp(54px,6vw,82px);
+  width:clamp(40px,4.5vw,60px);height:clamp(40px,4.5vw,60px);
   background:rgba(0,20,80,.92);
   border:2px solid rgba(0,100,255,.5);
   cursor:pointer;position:relative;
@@ -949,113 +953,95 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
 
   <!-- COMBAT -->
   <div class="scr" id="sCM">
-    <!-- Top HUD -->
+    <!-- Top HUD — compact single bar -->
     <div class="chdr">
-      <span class="fb" id="fbadge">ZONE: NEON NEXUS</span>
-      <button id="mapBtn" class="hidden">🗺 MAP</button>
+      <span class="fb" id="fbadge">NEON NEXUS</span>
+      <span class="fb" id="rbadge" style="color:var(--C)">ROOM 1/10</span>
       <span class="fb" style="color:var(--GD)" id="kbadge">KILLS:0</span>
       <span class="fb" style="color:var(--M)" id="dbadge">DMG:0</span>
       <span class="fb" style="color:var(--G)" id="tbadge">TURN:0</span>
+      <span class="fb" style="color:var(--GD)" id="goldbadge">⚡0 CR</span>
+      <button id="mapBtn" class="hidden">MAP</button>
     </div>
-    <!-- Main combat layout -->
+    <!-- Full-width arena -->
     <div class="cmain">
       <div class="arena-col">
-        <!-- DM Narrator -->
-        <div class="dmrow">
-          <div class="dm-sprite-area">
-            <canvas id="dmcv" width="52" height="60" style="image-rendering:pixelated;filter:drop-shadow(0 0 6px #8800ff)"></canvas>
-            <div class="dm-table"></div>
-          </div>
-          <div class="sbub"><span id="dmTxt">Welcome, adventurer. The dungeon awaits your courage...</span></div>
-        </div>
-        <!-- Battle Arena -->
         <div class="arena-wrap" id="arenaWrap">
           <canvas id="arenaCV"></canvas>
           <div id="dmgOv"></div>
-          <!-- Block shield bubble -->
           <div id="blockBubble"></div>
-          <!-- Combo Counter -->
-          <div id="comboDisplay">
-            <div id="comboCount">3x</div>
-            <div id="comboLabel">COMBO</div>
-            <div id="comboBonus">+10% DMG</div>
-          </div>
-          <!-- Golden screen edge (combo 7+) -->
+          <div id="comboDisplay"><div id="comboCount">3x</div><div id="comboLabel">COMBO</div><div id="comboBonus">+10% DMG</div></div>
           <div id="comboEdge"></div>
-          <!-- Turn Order -->
-          <div id="turnOrder">
-            <span class="to-label">NEXT:</span>
+          <div id="turnOrder"><span class="to-label">NEXT:</span></div>
+          <!-- DM toast message — slim bar at top of arena -->
+          <div id="dmToast" style="position:absolute;top:0;left:0;right:0;z-index:40;background:linear-gradient(180deg,rgba(2,2,16,.92),rgba(2,2,16,.6));padding:clamp(4px,0.5vh,8px) clamp(10px,1vw,16px);font-family:'Share Tech Mono',monospace;font-size:clamp(9px,1vw,13px);color:var(--C);text-shadow:0 0 6px var(--C);text-align:center;pointer-events:none;opacity:0;transition:opacity .3s;">
+            <span id="dmTxt"></span>
           </div>
           <!-- AI Speech Bubbles -->
           <div id="speechBubbleEnemy" class="speech-bubble" style="display:none"><div class="sb-text"></div></div>
           <div id="speechBubblePlayer" class="speech-bubble" style="display:none"><div class="sb-text"></div></div>
-          <!-- Dialog Engine overlay -->
+          <!-- Dialog Engine — slim bottom bar -->
           <div id="dlgBox" style="display:none">
             <div class="dlg-inner">
-              <div class="dlg-portrait" id="dlgPortrait">👾</div>
-              <div class="dlg-content">
-                <div class="dlg-name" id="dlgName">ENEMY</div>
-                <div class="dlg-text" id="dlgText"></div>
-              </div>
+              <div class="dlg-name" id="dlgName" style="flex-shrink:0"></div>
+              <div class="dlg-text" id="dlgText" style="flex:1"></div>
               <div class="dlg-skip" id="dlgSkip" title="Click to skip">▶▶</div>
             </div>
             <div class="dlg-choices" id="dlgChoices" style="display:none"></div>
           </div>
+          <div class="dlg-portrait" id="dlgPortrait" style="display:none">👾</div>
         </div>
-        <!-- Player HUD -->
+        <!-- Compact Player HUD — single row -->
         <div class="phud">
-          <div class="phud-left">
-            <div style="display:flex;align-items:center;gap:clamp(4px,0.5vw,8px);">
-              <div class="pnm" id="pnm" style="color:var(--OR)">WARRIOR</div>
-              <div id="passiveIcon" style="font-size:clamp(8px,0.9vw,12px);color:#888;cursor:help;" title=""></div>
-            </div>
-            <div class="bars-block">
-              <div class="br">
-                <span class="bl2" style="color:#ff4444">HP</span>
-                <div class="bt"><div class="bfill hpf" id="phpf" style="width:100%"></div></div>
-                <span class="bnum" id="phpn">120/120</span>
-              </div>
-              <div class="br">
-                <span class="bl2" style="color:#44aaff">MP</span>
-                <div class="bt"><div class="bfill mpf" id="pmpf" style="width:100%"></div></div>
-                <span class="bnum" id="pmpn">100/100</span>
-              </div>
-            </div>
-            <div class="buffs" id="pbuffs"></div>
+          <div class="pnm" id="pnm" style="color:var(--OR);flex-shrink:0;">MAN</div>
+          <div id="passiveIcon" style="font-size:clamp(7px,0.8vw,10px);color:#888;cursor:help;flex-shrink:0;" title=""></div>
+          <div class="br" style="flex:1;max-width:clamp(120px,14vw,200px);">
+            <span class="bl2" style="color:#ff4444">HP</span>
+            <div class="bt"><div class="bfill hpf" id="phpf" style="width:100%"></div></div>
+            <span class="bnum" id="phpn">120/120</span>
           </div>
-          <div class="phud-right">
-            <div class="spbar" id="spbar"></div>
-            <div style="display:flex;gap:clamp(4px,0.5vw,8px);align-items:center;margin-top:clamp(2px,0.3vh,4px)">
-              <button id="blockBtn" title="BLOCK: Reduce incoming damage 50%. Counter if below threshold. CD: 2 turns">
-                <div class="block-shield"></div>
-                <div style="font-size:clamp(18px,2vw,26px)">🛡</div>
-                <div style="font-size:clamp(6px,0.7vw,9px);color:#aac8ff;margin-top:2px">BLOCK</div>
-                <div class="cdov" id="blockCdOv" style="font-size:clamp(8px,0.9vw,12px);color:#4499ff;background:rgba(0,0,0,.78);position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;"></div>
-              </button>
-              <div id="eqbadge" class="equip-badge"></div>
-            </div>
-            <div class="hint-txt">CLICK ABILITY TO CAST · [BLOCK]</div>
+          <div class="br" style="flex:1;max-width:clamp(100px,12vw,180px);">
+            <span class="bl2" style="color:#44aaff">MP</span>
+            <div class="bt"><div class="bfill mpf" id="pmpf" style="width:100%"></div></div>
+            <span class="bnum" id="pmpn">100/100</span>
           </div>
+          <div class="buffs" id="pbuffs" style="flex-shrink:0;"></div>
+          <div class="spbar" id="spbar" style="flex-shrink:0;"></div>
+          <button id="blockBtn" title="BLOCK">
+            <div class="block-shield"></div>
+            <div style="font-size:clamp(14px,1.6vw,20px)">🛡</div>
+            <div class="cdov" id="blockCdOv" style="font-size:clamp(8px,0.9vw,12px);color:#4499ff;background:rgba(0,0,0,.78);position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;"></div>
+          </button>
+          <div id="eqbadge" class="equip-badge" style="flex-shrink:0;"></div>
+          <div id="bagBadge" class="equip-badge" style="flex-shrink:0;cursor:pointer;border-color:rgba(0,255,255,.4);color:var(--C);" onclick="document.getElementById('invOverlay').style.display='flex';">📦 0/24</div>
         </div>
       </div>
-      <!-- Inventory Panel -->
-      <div id="invPanel">
-        <div class="inv-hdr"><span>⟐ INVENTORY</span><span id="invGold">⚡ 0 CR</span></div>
+    </div>
+    <!-- Inventory Overlay (replaces sidebar) -->
+    <div id="invOverlay" style="display:none;position:absolute;inset:0;z-index:80;background:rgba(0,0,16,.92);backdrop-filter:blur(4px);flex-direction:column;align-items:center;justify-content:center;padding:20px;">
+      <div style="width:100%;max-width:500px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span style="font-family:'Share Tech Mono',monospace;color:var(--C);font-size:clamp(10px,1.2vw,16px);letter-spacing:3px;">⟐ INVENTORY</span>
+          <span id="invGold" style="font-family:'Share Tech Mono',monospace;color:var(--GD);font-size:clamp(9px,1vw,13px);">⚡ 0 CR</span>
+        </div>
         <div class="inv-sec">▶ EQUIPPED</div>
         <div class="equip-grid" id="equipGrid"></div>
         <div class="inv-sec">▶ BAG (4×6)</div>
-        <div class="inv-bag"><div class="bag-grid" id="bagGrid"></div></div>
+        <div class="inv-bag" style="max-height:200px;"><div class="bag-grid" id="bagGrid"></div></div>
         <div class="inv-actions">
           <button class="inv-equip" id="invEquipBtn" disabled>EQUIP</button>
           <button class="inv-sell" id="invSellBtn" disabled>SELL</button>
         </div>
         <div class="inv-tip" id="invTip">SELECT AN ITEM</div>
+        <button class="wm-back-btn" style="width:100%;text-align:center;margin-top:8px;padding:8px;" onclick="document.getElementById('invOverlay').style.display='none';">CLOSE INVENTORY</button>
       </div>
-      <!-- Quest panel — hidden but DOM kept for JS refs -->
-      <div class="qp" id="qpanel" style="display:none">
-        <div class="qhdr"><span id="qhdrTxt">QUESTS</span><span id="qtgl">◀</span></div>
-        <div class="ql" id="qlist"></div>
-      </div>
+    </div>
+    <!-- Hidden DM canvas (still needed for sprite rendering) -->
+    <canvas id="dmcv" width="52" height="60" style="display:none;"></canvas>
+    <!-- Quest panel — hidden but DOM kept for JS refs -->
+    <div class="qp" id="qpanel" style="display:none">
+      <div class="qhdr"><span id="qhdrTxt">QUESTS</span><span id="qtgl">◀</span></div>
+      <div class="ql" id="qlist"></div>
     </div>
     <!-- Room exit navigation — absolute overlay over full combat screen -->
     <div id="roomExits" style="display:none"></div>
@@ -3778,8 +3764,11 @@ const Combat = {
 const DM={
   say(t){
     const el=document.getElementById('dmTxt');if(!el)return;
-    el.textContent=t;el.style.animation='none';void el.offsetHeight;el.style.animation='dmPop .18s ease';
+    const toast=document.getElementById('dmToast');
+    el.textContent=t;
+    if(toast){toast.style.opacity='1';clearTimeout(this._toastTimer);this._toastTimer=setTimeout(()=>{toast.style.opacity='0';},2500);}
   },
+  _toastTimer:null,
   lines:['The dungeon pulses with neon corruption...','Your enemies sense your approach!','Beware the shadows in the grid lines...','Every floor deeper tests your resolve!','The circuits hum with dark power...','Roll for initiative! Battle joined!','Data streams grow hostile ahead!','Press on! Glory awaits the worthy!'],
   rand(){return this.lines[Math.floor(Math.random()*this.lines.length)];},
   _pick(arr){return arr[Math.floor(Math.random()*arr.length)];},
@@ -4127,6 +4116,18 @@ const UI={
         badge.style.color='';badge.style.textShadow='';
       }
     }
+    // Room progress
+    const rb=document.getElementById('rbadge');
+    if(rb){
+      const total=GameState.currentFloor?.rooms?.length||0;
+      rb.textContent=total?`ROOM ${GameState.currentRoomIdx+1}/${total}`:'';
+    }
+    // Gold display
+    const gb=document.getElementById('goldbadge');
+    if(gb)gb.textContent=`⚡${Inventory.gold||0} CR`;
+    // Bag badge
+    const bb=document.getElementById('bagBadge');
+    if(bb){const used=Inventory.items.filter(x=>x).length;bb.textContent=`📦 ${used}/24`;}
   },
   // Combo display
   updateCombo(){
@@ -5272,7 +5273,7 @@ const Game={
     if(!floorData)return;
     const room=floorData.rooms[idx];
     if(!room)return;
-    UI.show('sCM');
+    UI.show('sCM');UI.updateFloor();
     room.visited=true;
     GameState.currentRoomIdx=idx;
     const exEl=document.getElementById('roomExits');
