@@ -1177,19 +1177,20 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
         <div class="wm-hint">— CLICK A ZONE TO SELECT —</div>
       </div>
     </div>
-    <!-- Merchant Shop Overlay -->
-    <div id="merchantShop" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,16,.92);backdrop-filter:blur(4px);flex-direction:column;align-items:center;justify-content:center;padding:20px;">
-      <div style="width:100%;max-width:700px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-          <div style="font-family:'Share Tech Mono',monospace;font-size:clamp(12px,1.5vw,20px);color:var(--GD);letter-spacing:3px;">💰 MERCHANT</div>
-          <div style="font-family:'Share Tech Mono',monospace;font-size:clamp(10px,1.2vw,16px);color:var(--GD);" id="shopGold">0 CR</div>
-        </div>
-        <div style="font-family:'Share Tech Mono',monospace;font-size:clamp(8px,0.9vw,11px);color:#00ffff;margin-bottom:8px;">▶ FOR SALE</div>
-        <div id="shopItems" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-bottom:16px;"></div>
-        <div style="font-family:'Share Tech Mono',monospace;font-size:clamp(8px,0.9vw,11px);color:#ff00ff;margin-bottom:8px;">▶ SELL FROM BAG</div>
-        <div id="shopSellItems" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px;margin-bottom:16px;max-height:120px;overflow-y:auto;"></div>
-        <button class="wm-back-btn" id="shopClose" style="width:100%;text-align:center;padding:10px;">CLOSE SHOP</button>
+  </div>
+
+  <!-- Merchant Shop Overlay (outside all screens so position:fixed works) -->
+  <div id="merchantShop" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,16,.92);backdrop-filter:blur(4px);flex-direction:column;align-items:center;justify-content:center;padding:20px;">
+    <div style="width:100%;max-width:700px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div style="font-family:'Share Tech Mono',monospace;font-size:clamp(12px,1.5vw,20px);color:var(--GD);letter-spacing:3px;">💰 MERCHANT</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:clamp(10px,1.2vw,16px);color:var(--GD);" id="shopGold">0 CR</div>
       </div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:clamp(8px,0.9vw,11px);color:#00ffff;margin-bottom:8px;">▶ FOR SALE</div>
+      <div id="shopItems" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-bottom:16px;"></div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:clamp(8px,0.9vw,11px);color:#ff00ff;margin-bottom:8px;">▶ SELL FROM BAG</div>
+      <div id="shopSellItems" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px;margin-bottom:16px;max-height:120px;overflow-y:auto;"></div>
+      <button class="wm-back-btn" id="shopClose" style="width:100%;text-align:center;padding:10px;">CLOSE SHOP</button>
     </div>
   </div>
 
