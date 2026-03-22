@@ -3748,6 +3748,7 @@ const Combat = {
       const totalRooms=GameState.currentFloor?.rooms?.length||0;
       const roomNum=GameState.currentRoomIdx+1;
       DM.say(`Room ${roomNum}/${totalRooms} cleared!`);
+      LootScreen.reset();
       setTimeout(()=>VictoryScreen.show(false,()=>{
         if(nextIdx<totalRooms){
           Game.enterRoom(nextIdx);
@@ -5315,13 +5316,17 @@ const Game={
         DM.say('A loot cache — supplies from fallen runners.');
         const items=[LootSystem.roll(fl),LootSystem.roll(fl)];
         const gold=Math.floor(20+fl*8+Math.random()*20);
-        LootScreen.add(items,gold);
-        GameState.floorGold+=gold;
+        Inventory.gold+=gold;Inventory._gold();
+        GameState.floorGold+=gold;GameState.itemsCollected+=items.length;
+        // Add items directly to inventory
+        items.forEach(item=>{if(item)Inventory.addItem(item);});
         const nextLoot=GameState.currentRoomIdx+1;
         const totalLoot=GameState.currentFloor?.rooms?.length||0;
-        setTimeout(()=>VictoryScreen.show(false,()=>{
-          if(nextLoot<totalLoot)Game.enterRoom(nextLoot);else WorldMap.show();
-        }),700);
+        DM.say(`Found ${items.length} items and ${gold} credits!`);
+        UI.updateBars();
+        setTimeout(()=>{
+          if(nextLoot<totalLoot)this.enterRoom(nextLoot);else WorldMap.show();
+        },1200);
         break;
       }
       case 'rest':{
@@ -5333,21 +5338,29 @@ const Game={
         const nextRest=GameState.currentRoomIdx+1;
         const totalRest=GameState.currentFloor?.rooms?.length||0;
         setTimeout(()=>{
-          DialogEngine.showNPCGreeting('rest_node');
-          setTimeout(()=>{
-            if(nextRest<totalRest)Game.enterRoom(nextRest);else WorldMap.show();
-          },2500);
-        },400);
+          if(nextRest<totalRest)this.enterRoom(nextRest);else WorldMap.show();
+        },2000);
         break;
       }
       case 'merchant':{
         room.cleared=true;
-        DM.say('Merchant node detected. Cyberware available.');
+        DM.say('Merchant node detected. Opening shop...');
         const nextMerch=GameState.currentRoomIdx+1;
         const totalMerch=GameState.currentFloor?.rooms?.length||0;
-        setTimeout(()=>this.triggerMerchant(()=>{
-          if(nextMerch<totalMerch)Game.enterRoom(nextMerch);else WorldMap.show();
-        }),400);
+        MerchantShop.open();
+        // Override shop close to advance to next room
+        const origClose=MerchantShop.close.bind(MerchantShop);
+        const shopCloseEl=document.getElementById('shopClose');
+        if(shopCloseEl){
+          const handler=()=>{
+            origClose();
+            shopCloseEl.removeEventListener('click',handler);
+            setTimeout(()=>{
+              if(nextMerch<totalMerch)this.enterRoom(nextMerch);else WorldMap.show();
+            },400);
+          };
+          shopCloseEl.addEventListener('click',handler);
+        }
         break;
       }
     }
