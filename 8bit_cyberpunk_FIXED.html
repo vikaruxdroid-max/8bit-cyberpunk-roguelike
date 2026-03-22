@@ -3999,8 +3999,8 @@ const UI={
       mpEl.style.width=Math.max(0,p.mp/p.maxMp*100)+'%';
       mpEl.classList.toggle('mp-full',p.mp>=p.maxMp);
     }
-    document.getElementById('phpn').textContent=`${Math.max(0,p.hp)}/${p.maxHp}`;
-    document.getElementById('pmpn').textContent=`${Math.max(0,p.mp)}/${p.maxMp}`;
+    const hpN=document.getElementById('phpn');if(hpN)hpN.textContent=`${Math.max(0,p.hp)}/${p.maxHp}`;
+    const mpN=document.getElementById('pmpn');if(mpN)mpN.textContent=`${Math.max(0,p.mp)}/${p.maxMp}`;
   },
   updateSpells(){
     const p=GameState.player;
@@ -5341,9 +5341,9 @@ const Game={
         const nextLoot=GameState.currentRoomIdx+1;
         const totalLoot=GameState.currentFloor?.rooms?.length||0;
         DM.say(`Found ${items.length} items and ${gold} credits!`);
-        UI.updateBars();
+        try{UI.updateBars();UI.updateFloor();}catch(e){}
         setTimeout(()=>{
-          if(nextLoot<totalLoot)this.enterRoom(nextLoot);else WorldMap.show();
+          try{if(nextLoot<totalLoot)this.enterRoom(nextLoot);else WorldMap.show();}catch(e){console.error('Loot advance error:',e);}
         },1200);
         break;
       }
@@ -5351,12 +5351,13 @@ const Game={
         room.cleared=true;
         const heal=Math.floor(p.maxHp*0.3);
         p.hp=Math.min(p.maxHp,p.hp+heal);
-        UI.updateBars();
-        DM.say(`Rest node active. Restored ${heal} HP.`);
+        p.mp=Math.min(p.maxMp,p.mp+Math.floor(p.maxMp*0.2));
+        try{UI.updateBars();}catch(e){}
+        DM.say(`Rest node. +${heal} HP restored.`);
         const nextRest=GameState.currentRoomIdx+1;
         const totalRest=GameState.currentFloor?.rooms?.length||0;
         setTimeout(()=>{
-          if(nextRest<totalRest)this.enterRoom(nextRest);else WorldMap.show();
+          try{if(nextRest<totalRest)this.enterRoom(nextRest);else WorldMap.show();}catch(e){console.error('Rest advance error:',e);}
         },2000);
         break;
       }
