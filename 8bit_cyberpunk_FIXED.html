@@ -2287,55 +2287,93 @@ const Arena = {
     // ── PERSONA 5 STYLE KILL CAM ──
     if(this._killCam.active){
       const kc=this._killCam;kc.timer++;
-      const kp=kc.timer/55;
+      const totalF=kc.isCrit?90:60; // crit kill = 1.5s, normal = 1s
+      const kp=kc.timer/totalF;
       ctx.save();
+
+      // Black cinematic bars (persist throughout)
+      const barH=H*(kc.isCrit?0.18:0.12);
+      const barProg=Math.min(1,kp/0.08);
+      ctx.fillStyle='#000';
+      ctx.fillRect(0,0,W,barH*barProg);
+      ctx.fillRect(0,H-barH*barProg,W,barH*barProg);
+
       if(kp<0.1){
-        // Freeze frame — sharp black bars slide in from top/bottom
-        const bp=kp/0.1;
-        ctx.fillStyle='#000';
-        ctx.fillRect(0,0,W,H*0.15*bp);
-        ctx.fillRect(0,H-H*0.15*bp,W,H*0.15*bp);
-      }else if(kp<0.35){
-        // Diagonal red/black slash across screen (Persona style)
-        const sp=(kp-0.1)/0.25;
-        ctx.fillStyle='#000';ctx.fillRect(0,0,W,H*0.15);ctx.fillRect(0,H*0.85,W,H*0.15);
-        // Red diagonal cut
-        ctx.globalAlpha=0.8;
-        ctx.fillStyle='#ff0040';
-        const cutW=W*1.5*sp;
-        ctx.save();ctx.translate(W/2,H/2);ctx.rotate(-0.15);
-        ctx.fillRect(-cutW/2,-H*0.08,cutW,H*0.16);
-        ctx.restore();
-        // White edge line
-        ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.globalAlpha=1-sp;
-        ctx.beginPath();ctx.moveTo(-W*0.2,H*0.55);ctx.lineTo(W*1.2,H*0.35);ctx.stroke();
-      }else if(kp<0.55){
-        // "ALL OUT ATTACK" style — bold text on red band
-        const tp=(kp-0.35)/0.2;
-        ctx.fillStyle='#000';ctx.fillRect(0,0,W,H*0.15);ctx.fillRect(0,H*0.85,W,H*0.15);
+        // Freeze + slow darken
+        ctx.globalAlpha=kp/0.1*0.3;ctx.fillStyle='#000';ctx.fillRect(0,barH,W,H-barH*2);
+      }else if(kp<0.3){
+        // Diagonal slash cut — samurai style
+        const sp=(kp-0.1)/0.2;
+        ctx.globalAlpha=0.25;ctx.fillStyle='#000';ctx.fillRect(0,barH,W,H-barH*2);
+        // Main slash
+        ctx.globalAlpha=0.9;ctx.strokeStyle=kc.isCrit?'#ff0040':'#ffffff';
+        ctx.lineWidth=kc.isCrit?6:3;
+        const slashX=W*(-0.2+sp*1.4);
+        ctx.beginPath();ctx.moveTo(slashX,H*0.1);ctx.lineTo(slashX+W*0.3,H*0.9);ctx.stroke();
+        // Second slash for crit
+        if(kc.isCrit){
+          ctx.lineWidth=4;ctx.strokeStyle='#ffffff';
+          ctx.beginPath();ctx.moveTo(slashX+W*0.05,H*0.15);ctx.lineTo(slashX+W*0.35,H*0.85);ctx.stroke();
+        }
+        // Blood/ink splatter on crit kill
+        if(kc.isCrit&&sp>0.3){
+          ctx.globalAlpha=0.7*(1-((sp-0.3)/0.7));
+          // Large ink drops
+          const splats=[[0.3,0.3,35],[0.5,0.5,50],[0.7,0.35,30],[0.4,0.65,25],[0.65,0.55,40],[0.25,0.5,20],[0.8,0.4,28]];
+          splats.forEach(([sx,sy,r])=>{
+            ctx.fillStyle='#cc0030';
+            ctx.beginPath();ctx.arc(kc.x+W*(sx-0.5)*0.8,kc.y+H*(sy-0.5)*0.6,r*sp,0,Math.PI*2);ctx.fill();
+          });
+          // Smaller drops
+          for(let d=0;d<12;d++){
+            const dx=(Math.sin(d*2.3)*0.4)*W,dy=(Math.cos(d*1.7)*0.3)*H;
+            ctx.fillStyle=d%2?'#aa0020':'#ff0040';
+            ctx.beginPath();ctx.arc(kc.x+dx,kc.y+dy,4+d%5*3,0,Math.PI*2);ctx.fill();
+          }
+        }
+      }else if(kp<0.6){
+        // Hold — text on band
+        const tp=(kp-0.3)/0.3;
+        ctx.globalAlpha=0.2;ctx.fillStyle='#000';ctx.fillRect(0,barH,W,H-barH*2);
         // Red band
-        ctx.save();ctx.translate(W/2,H/2);ctx.rotate(-0.15);
-        ctx.fillStyle='#ff0040';ctx.fillRect(-W,-(H*0.06),W*2,H*0.12);
+        ctx.save();ctx.translate(W/2,H/2);ctx.rotate(kc.isCrit?-0.12:-0.08);
+        ctx.globalAlpha=0.9;
+        ctx.fillStyle=kc.isCrit?'#cc0020':'#ff0040';
+        const bandH=H*(kc.isCrit?0.1:0.07);
+        ctx.fillRect(-W,-bandH/2,W*2,bandH);
         // Text
-        ctx.globalAlpha=tp<0.2?tp/0.2:1;
+        ctx.globalAlpha=tp<0.15?tp/0.15:1;
         ctx.fillStyle='#fff';
-        ctx.font=`bold ${Math.floor(P*5)}px 'Press Start 2P',monospace`;
+        const fontSize=kc.isCrit?Math.floor(P*7):Math.floor(P*5);
+        ctx.font=`bold ${fontSize}px 'Press Start 2P',monospace`;
         ctx.textAlign='center';ctx.textBaseline='middle';
-        ctx.fillText('ELIMINATED',0,0);
+        ctx.fillText(kc.isCrit?'CRITICAL KILL':'ELIMINATED',0,0);
+        // Smaller subtitle for crit
+        if(kc.isCrit){
+          ctx.font=`${Math.floor(P*3)}px 'Share Tech Mono',monospace`;
+          ctx.fillStyle=kc.color;
+          ctx.fillText('FATAL BLOW',0,fontSize*0.7);
+        }
         ctx.restore();
-      }else if(kp<0.75){
-        // Chromatic flash — red/cyan offset
-        const fp=(kp-0.55)/0.2;
-        ctx.globalAlpha=(1-fp)*0.4;
-        ctx.fillStyle='#ff0040';ctx.fillRect(0,0,W/2,H);
-        ctx.fillStyle='#00ffff';ctx.fillRect(W/2,0,W/2,H);
+      }else if(kp<0.8){
+        // Flash
+        const fp=(kp-0.6)/0.2;
+        if(kc.isCrit){
+          // Red flash for crit
+          ctx.globalAlpha=(1-fp)*0.5;ctx.fillStyle='#ff0020';ctx.fillRect(0,0,W,H);
+        }else{
+          // Chromatic flash
+          ctx.globalAlpha=(1-fp)*0.3;
+          ctx.fillStyle='#ff0040';ctx.fillRect(0,0,W/2,H);
+          ctx.fillStyle='#00ffff';ctx.fillRect(W/2,0,W/2,H);
+        }
       }else{
         // Fade out
-        const fo=(kp-0.75)/0.25;
-        ctx.globalAlpha=(1-fo)*0.3;ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
+        const fo=(kp-0.8)/0.2;
+        ctx.globalAlpha=(1-fo)*0.2;ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
       }
       ctx.restore();
-      if(kc.timer>=55)kc.active=false;
+      if(kc.timer>=totalF)kc.active=false;
     }
 
     // ── PERSONA STYLE SPELL FLASH ──
@@ -2842,7 +2880,7 @@ const Arena = {
     else if (en) { en.animState='hurt'; en.animTimer=0; }
   },
   triggerCast() { if(GameState.player){GameState.player.animState='cast';GameState.player.animTimer=0;} },
-  triggerKillCam(x,y,color){this._killCam={active:true,timer:0,x,y,color:color||'#ff00ff'};Audio.play('death');},
+  triggerKillCam(x,y,color,isCrit){this._killCam={active:true,timer:0,x,y,color:color||'#ff00ff',isCrit:!!isCrit};Audio.play('death');},
   triggerSpellFlash(name,icon){this._spellFlash={active:true,timer:0,name:name||'SKILL',icon:icon||'⚡'};},
 
   getEnemyPos(idx) {
@@ -3661,7 +3699,7 @@ const Combat = {
     // Increment combo
     this.incrementCombo();
     if(enemy.hp<=0){
-      this.killEnemy(enemy);
+      this.killEnemy(enemy,isCrit);
     }
     else{if(enemy.checkPhase)enemy.checkPhase();if(!enemy.lowHpSaid&&enemy.hp/enemy.maxHp<=0.3){enemy.lowHpSaid=true;DialogEngine.showLowHp(enemy);AIDialog.onLowHPEnemy(enemy);}}
     return dmg;
@@ -3680,7 +3718,7 @@ const Combat = {
   breakCombo(){
     if(GameState.combo>0){GameState.combo=0;UI.updateCombo();}
   },
-  killEnemy(en){
+  killEnemy(en,wasCrit=false){
     Audio.play('death');
     GameState.totalKills++;
     Achievements.check();
@@ -3695,7 +3733,7 @@ const Combat = {
       Arena.spawnVFX('explode',pos.x,pos.y,en.color||RD);
       // Anime kill cam on last enemy
       if(!GameState.enemies.some(e=>e.hp>0&&e!==en)){
-        Arena.triggerKillCam(pos.x,pos.y,en.color||MG);
+        Arena.triggerKillCam(pos.x,pos.y,en.color||MG,wasCrit);
       }
     }
     DM.say(`${en.name} destroyed!`);
