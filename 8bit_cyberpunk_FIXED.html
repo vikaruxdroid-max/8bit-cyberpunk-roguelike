@@ -933,7 +933,7 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
     <div style="flex:1;display:flex;min-height:0;overflow:hidden;position:relative;z-index:5;">
       <!-- LEFT: Character Preview -->
       <div id="ccPreview" style="width:clamp(140px,18vw,240px);flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:8px;">
-        <canvas id="ccPreviewCV" width="120" height="160" style="image-rendering:pixelated;width:clamp(80px,12vw,160px);height:auto;filter:drop-shadow(0 0 14px rgba(0,255,255,.3));"></canvas>
+        <canvas id="ccPreviewCV" width="140" height="320" style="image-rendering:pixelated;width:clamp(100px,14vw,180px);height:auto;filter:drop-shadow(0 0 14px rgba(0,255,255,.3));"></canvas>
         <div id="ccPreviewName" style="font-family:'Share Tech Mono',monospace;font-size:clamp(9px,1.1vw,14px);color:#00ffff;text-shadow:0 0 8px #00ffff;letter-spacing:3px;">RUNNER</div>
         <div id="ccPreviewStats" style="font-family:'Share Tech Mono',monospace;font-size:clamp(6px,0.65vw,9px);color:#888;line-height:1.8;text-align:center;"></div>
       </div>
@@ -3023,6 +3023,243 @@ const GENDERS = {
   woman: { name:'WOMAN', sprite:'rogue',   lore:'Ghost in the wires. Strikes before you blink.' },
   cyber: { name:'CYBER', sprite:'druid',   lore:'Post-human construct. More machine than meat.' }
 };
+
+// ── PORTRAIT SYSTEM ──
+// Each portrait is a 24x24 pixel art face drawn programmatically
+const PORTRAITS = {
+  man: [
+    { id:'m1', name:'Street Samurai', draw(ctx,x,y,s,accent){
+      const p=(px,py,c)=>{ctx.fillStyle=c;ctx.fillRect(x+px*s,y+py*s,s,s);};
+      // Hair - dark mohawk
+      for(let i=8;i<16;i++)p(i,0,'#1a1a2e');
+      for(let i=7;i<17;i++)p(i,1,'#1a1a2e');
+      for(let i=9;i<15;i++)p(i,2,'#1a1a2e');
+      // Skin tone
+      const sk='#d4a574';
+      for(let i=6;i<18;i++)for(let j=3;j<18;j++)p(i,j,sk);
+      // Eyes - narrow, intense
+      p(8,8,'#111');p(9,8,'#111');p(10,8,accent);p(14,8,accent);p(15,8,'#111');p(16,8,'#111');
+      // Cyber implant scar left cheek
+      p(6,10,accent);p(6,11,accent);p(6,12,accent);p(7,11,accent);
+      // Nose
+      p(11,10,sk);p(12,10,sk);p(11,11,'#c49464');p(12,11,'#c49464');
+      // Mouth - stern
+      for(let i=9;i<15;i++)p(i,14,'#8b5e3c');
+      // Jaw shadow
+      for(let i=6;i<18;i++)p(i,17,'#c49464');
+      // Stubble
+      for(let i=7;i<17;i+=2)p(i,16,'#998877');
+      // Neck
+      for(let i=9;i<15;i++)for(let j=18;j<21;j++)p(i,j,sk);
+      // Collar - dark armor
+      for(let i=5;i<19;i++)for(let j=21;j<24;j++)p(i,j,'#2a2a3e');
+      for(let i=7;i<17;i++)p(i,21,accent);
+    }},
+    { id:'m2', name:'Corp Runner', draw(ctx,x,y,s,accent){
+      const p=(px,py,c)=>{ctx.fillStyle=c;ctx.fillRect(x+px*s,y+py*s,s,s);};
+      const sk='#e0b88a';
+      // Slicked back hair
+      for(let i=6;i<18;i++)for(let j=0;j<4;j++)p(i,j,'#2c1810');
+      for(let i=5;i<7;i++)for(let j=2;j<6;j++)p(i,j,'#2c1810');
+      // Face
+      for(let i=6;i<18;i++)for(let j=4;j<18;j++)p(i,j,sk);
+      // Sunglasses
+      for(let i=7;i<12;i++)p(i,8,'#111');for(let i=13;i<18;i++)p(i,8,'#111');
+      for(let i=7;i<12;i++)p(i,9,'#1a1a3e');for(let i=13;i<18;i++)p(i,9,'#1a1a3e');
+      p(12,8,accent);p(12,9,accent); // bridge
+      // Nose
+      p(11,11,'#d0a070');p(12,11,'#d0a070');
+      // Smirk
+      for(let i=9;i<14;i++)p(i,14,'#8b5e3c');p(14,13,'#8b5e3c');
+      // Clean jaw
+      for(let i=6;i<18;i++)p(i,17,'#d0a070');
+      // Neck + suit collar
+      for(let i=9;i<15;i++)for(let j=18;j<20;j++)p(i,j,sk);
+      for(let i=4;i<20;i++)for(let j=20;j<24;j++)p(i,j,'#1a1a2e');
+      for(let i=10;i<14;i++)p(i,20,accent);p(11,21,accent);p(12,21,accent);
+    }},
+    { id:'m3', name:'Wasteland Merc', draw(ctx,x,y,s,accent){
+      const p=(px,py,c)=>{ctx.fillStyle=c;ctx.fillRect(x+px*s,y+py*s,s,s);};
+      const sk='#8b6942';
+      // Bandana
+      for(let i=5;i<19;i++)for(let j=0;j<4;j++)p(i,j,accent);
+      for(let i=5;i<19;i++)p(i,3,'#000');
+      // Face - darker skin
+      for(let i=6;i<18;i++)for(let j=4;j<18;j++)p(i,j,sk);
+      // Scar across right eye
+      p(14,5,'#cc4444');p(15,6,'#cc4444');p(15,7,'#cc4444');p(16,8,'#cc4444');p(16,9,'#cc4444');
+      // Eyes
+      p(8,8,'#eee');p(9,8,accent);p(14,8,'#888');p(15,8,'#555'); // damaged eye
+      // Nose wide
+      p(10,10,sk);p(11,10,sk);p(12,10,sk);p(13,10,sk);p(11,11,'#7a5a3a');p(12,11,'#7a5a3a');
+      // Beard
+      for(let i=7;i<17;i++)for(let j=14;j<17;j++)p(i,j,'#2a2a2a');
+      for(let i=8;i<16;i++)p(i,13,'#2a2a2a');
+      // Neck + armor collar
+      for(let i=9;i<15;i++)for(let j=18;j<20;j++)p(i,j,sk);
+      for(let i=4;i<20;i++)for(let j=20;j<24;j++)p(i,j,'#3a3a2e');
+      p(6,21,accent);p(7,21,accent);p(16,21,accent);p(17,21,accent);
+    }}
+  ],
+  woman: [
+    { id:'f1', name:'Netrunner', draw(ctx,x,y,s,accent){
+      const p=(px,py,c)=>{ctx.fillStyle=c;ctx.fillRect(x+px*s,y+py*s,s,s);};
+      const sk='#f0c8a0';
+      // Long hair - asymmetric
+      for(let i=5;i<19;i++)for(let j=0;j<5;j++)p(i,j,accent);
+      for(let i=4;i<6;i++)for(let j=3;j<16;j++)p(i,j,accent); // left side long
+      for(let i=18;i<20;i++)for(let j=3;j<10;j++)p(i,j,accent); // right short
+      // Face
+      for(let i=6;i<18;i++)for(let j=5;j<17;j++)p(i,j,sk);
+      // Eyes - large, expressive
+      p(8,9,'#fff');p(9,9,accent);p(10,9,'#111');
+      p(14,9,'#fff');p(15,9,accent);p(16,9,'#111');
+      // Eyeliner
+      p(7,8,'#222');p(11,8,'#222');p(13,8,'#222');p(17,8,'#222');
+      // Nose small
+      p(11,11,'#e0b890');p(12,11,'#e0b890');
+      // Lips
+      p(10,13,'#cc3366');p(11,13,'#cc3366');p(12,13,'#cc3366');p(13,13,'#cc3366');
+      // Chin
+      for(let i=8;i<16;i++)p(i,16,'#e0b890');
+      // Neck
+      for(let i=10;i<14;i++)for(let j=17;j<20;j++)p(i,j,sk);
+      // Collar - tech suit
+      for(let i=5;i<19;i++)for(let j=20;j<24;j++)p(i,j,'#1a1a2e');
+      for(let i=8;i<16;i++)p(i,20,accent);
+    }},
+    { id:'f2', name:'Chrome Angel', draw(ctx,x,y,s,accent){
+      const p=(px,py,c)=>{ctx.fillStyle=c;ctx.fillRect(x+px*s,y+py*s,s,s);};
+      const sk='#d4a574';
+      // Short spiky hair
+      for(let i=7;i<17;i++)p(i,0,'#e0e0e0');
+      for(let i=6;i<18;i++)p(i,1,'#c0c0c0');
+      for(let i=6;i<18;i++)for(let j=2;j<4;j++)p(i,j,'#d0d0d0');
+      p(5,1,'#e0e0e0');p(18,1,'#e0e0e0');p(5,2,'#c0c0c0'); // spikes
+      // Face
+      for(let i=6;i<18;i++)for(let j=4;j<17;j++)p(i,j,sk);
+      // Cyber eye left
+      p(8,8,accent);p(9,8,accent);p(8,9,accent);p(9,9,'#fff');
+      // Normal eye right
+      p(14,8,'#fff');p(15,8,'#2244aa');p(14,9,'#111');p(15,9,'#111');
+      // Nose
+      p(11,11,'#c49464');p(12,11,'#c49464');
+      // Lips
+      p(10,13,'#aa4466');p(11,13,'#aa4466');p(12,13,'#aa4466');p(13,13,'#aa4466');
+      // Face tattoo
+      p(6,8,accent);p(6,9,accent);p(5,9,accent);p(6,10,accent);
+      // Neck + armor
+      for(let i=9;i<15;i++)for(let j=17;j<20;j++)p(i,j,sk);
+      for(let i=4;i<20;i++)for(let j=20;j<24;j++)p(i,j,'#2e2e3e');
+      p(8,21,accent);p(9,21,accent);p(14,21,accent);p(15,21,accent);
+    }},
+    { id:'f3', name:'Shadow Dancer', draw(ctx,x,y,s,accent){
+      const p=(px,py,c)=>{ctx.fillStyle=c;ctx.fillRect(x+px*s,y+py*s,s,s);};
+      const sk='#4a3528';
+      // Braids/dreads
+      for(let i=6;i<18;i++)for(let j=0;j<3;j++)p(i,j,'#1a0a05');
+      for(let i=4;i<6;i++)for(let j=2;j<18;j++)p(i,j,'#1a0a05');
+      for(let i=18;i<20;i++)for(let j=2;j<18;j++)p(i,j,'#1a0a05');
+      // Hair beads
+      p(4,8,accent);p(4,12,accent);p(19,7,accent);p(19,11,accent);
+      // Face
+      for(let i=6;i<18;i++)for(let j=3;j<17;j++)p(i,j,sk);
+      // Eyes
+      p(8,8,'#fff');p(9,8,accent);p(14,8,'#fff');p(15,8,accent);
+      // Nose
+      p(11,10,'#3a2518');p(12,10,'#3a2518');
+      // Lips
+      p(10,13,'#884455');p(11,13,'#884455');p(12,13,'#884455');p(13,13,'#884455');
+      // Face paint / markings
+      p(7,6,accent);p(8,6,accent);p(15,6,accent);p(16,6,accent);
+      p(7,12,accent);p(16,12,accent);
+      // Neck
+      for(let i=9;i<15;i++)for(let j=17;j<20;j++)p(i,j,sk);
+      // Hooded collar
+      for(let i=3;i<21;i++)for(let j=20;j<24;j++)p(i,j,'#1a1a1a');
+      for(let i=5;i<19;i++)p(i,20,'#2a2a2a');
+    }}
+  ],
+  cyber: [
+    { id:'c1', name:'Unit-7', draw(ctx,x,y,s,accent){
+      const p=(px,py,c)=>{ctx.fillStyle=c;ctx.fillRect(x+px*s,y+py*s,s,s);};
+      const mt='#556677';
+      // Head casing
+      for(let i=5;i<19;i++)for(let j=0;j<18;j++)p(i,j,mt);
+      // Face plate - darker
+      for(let i=7;i<17;i++)for(let j=3;j<16;j++)p(i,j,'#3a4455');
+      // Visor - single glowing bar
+      for(let i=7;i<17;i++)p(i,8,accent);for(let i=7;i<17;i++)p(i,9,accent);
+      // Scan line
+      for(let i=8;i<16;i++)p(i,8,'#fff');
+      // Mouth grill
+      for(let i=9;i<15;i++){p(i,12,accent);p(i,14,accent);}
+      for(let i=9;i<15;i++)p(i,13,'#2a3344');
+      // Antenna
+      p(18,0,accent);p(18,1,accent);p(19,0,accent);
+      // Neck pistons
+      for(let i=8;i<16;i++)for(let j=18;j<20;j++)p(i,j,'#445566');
+      p(8,18,'#333');p(15,18,'#333');p(8,19,'#333');p(15,19,'#333');
+      // Shoulder armor
+      for(let i=3;i<21;i++)for(let j=20;j<24;j++)p(i,j,'#445566');
+      for(let i=5;i<19;i++)p(i,21,accent);
+    }},
+    { id:'c2', name:'Echo-9', draw(ctx,x,y,s,accent){
+      const p=(px,py,c)=>{ctx.fillStyle=c;ctx.fillRect(x+px*s,y+py*s,s,s);};
+      const mt='#2a2a3e';
+      // Sleek head
+      for(let i=6;i<18;i++)for(let j=0;j<18;j++)p(i,j,mt);
+      for(let i=8;i<16;i++)p(i,0,'#3a3a4e');
+      // Face - humanoid with seams
+      for(let i=7;i<17;i++)for(let j=3;j<16;j++)p(i,j,'#c8b8a0'); // synthetic skin
+      // Seam lines
+      for(let j=2;j<17;j++)p(12,j,'#aaa090');
+      // Eyes - different sizes, glowing
+      p(8,8,accent);p(9,8,accent);p(9,9,accent); // large left
+      p(15,8,accent);p(15,9,'#fff'); // small right
+      // No nose - smooth face
+      // Mouth - thin line
+      for(let i=9;i<15;i++)p(i,13,'#8a7a6a');
+      // Exposed wiring on sides
+      p(6,6,'#ff4444');p(6,8,accent);p(6,10,'#44ff44');
+      p(17,6,'#ff4444');p(17,8,accent);p(17,10,'#44ff44');
+      // Neck + body
+      for(let i=9;i<15;i++)for(let j=17;j<20;j++)p(i,j,mt);
+      for(let i=4;i<20;i++)for(let j=20;j<24;j++)p(i,j,mt);
+      for(let i=7;i<17;i++)p(i,21,accent);
+    }},
+    { id:'c3', name:'Null-∅', draw(ctx,x,y,s,accent){
+      const p=(px,py,c)=>{ctx.fillStyle=c;ctx.fillRect(x+px*s,y+py*s,s,s);};
+      // Skull-like android
+      const bn='#e8e0d0';
+      // Cranium
+      for(let i=6;i<18;i++)for(let j=0;j<17;j++)p(i,j,bn);
+      for(let i=8;i<16;i++)p(i,0,'#f0e8d8');
+      // Eye sockets - deep black with glow
+      for(let i=7;i<11;i++)for(let j=6;j<10;j++)p(i,j,'#111');
+      for(let i=13;i<17;i++)for(let j=6;j<10;j++)p(i,j,'#111');
+      p(9,7,accent);p(9,8,accent);p(14,7,accent);p(14,8,accent);
+      // Nose hole
+      p(11,10,'#333');p(12,10,'#333');p(11,11,'#333');p(12,11,'#333');
+      // Teeth/jaw
+      for(let i=8;i<16;i++)p(i,13,bn);
+      for(let i=8;i<16;i++)p(i,14,'#222');
+      p(8,14,bn);p(10,14,bn);p(12,14,bn);p(14,14,bn); // teeth
+      // Cracks
+      p(7,3,'#aaa');p(7,4,'#aaa');p(8,5,'#aaa');
+      p(16,2,'#aaa');p(15,3,'#aaa');
+      // Jaw lines
+      for(let i=6;i<18;i++)p(i,16,'#d0c8b8');
+      // Spine/neck
+      for(let i=10;i<14;i++)for(let j=17;j<20;j++)p(i,j,'#445');
+      for(let i=10;i<14;i++)p(i,18,accent);
+      // Dark cloak
+      for(let i=3;i<21;i++)for(let j=20;j<24;j++)p(i,j,'#111');
+      p(6,21,accent);p(17,21,accent);
+    }}
+  ]
+};
+
 const ACCENT_COLORS = { cyan:CY, magenta:MG, green:GR, orange:OR, purple:PU };
 const BASE_STATS = { hp:90, atk:14, def:6, spd:7, mp:85 };
 const STAT_PER_POINT = { hp:10, atk:3, def:2, spd:2, mp:10 };
@@ -5352,7 +5589,7 @@ const Game={
     if(!GameState.ccState) GameState.ccState={
       gender:'man', accent:'cyan',
       statAlloc:{hp:0,atk:0,def:0,spd:0,mp:0}, pointsLeft:STAT_POINTS_TOTAL,
-      activeIdx:0, passiveIdx:0
+      activeIdx:0, passiveIdx:0, portraitIdx:0
     };
     const cc=GameState.ccState;
     const grid=document.getElementById('cgrid');grid.innerHTML='';
@@ -5381,12 +5618,25 @@ const Game={
       const lr=document.createElement('div');lr.style.cssText=F+'font-size:clamp(6px,0.7vw,9px);color:#667;text-align:center;margin-top:2px;';lr.textContent=g.lore;
       card.appendChild(lr);
       card.addEventListener('click',()=>{
-        cc.gender=key;genderRow.querySelectorAll('.cc').forEach(c=>c.classList.remove('sel'));card.classList.add('sel');this._updatePreview();
+        cc.gender=key;cc.portraitIdx=0;
+        genderRow.querySelectorAll('.cc').forEach(c=>c.classList.remove('sel'));card.classList.add('sel');
+        const pr=document.getElementById('ccPortraitRow');if(pr)this._buildPortraitCards(pr,cc);
+        this._updatePreview();
       });
       genderRow.appendChild(card);
       setTimeout(()=>{const cx=cv.getContext('2d');cx.clearRect(0,0,cv.width,cv.height);if(SPR[g.sprite])SPR[g.sprite](cx,4,4,false,0);},60);
     });
     genderBox.appendChild(genderRow);
+
+    // Portrait selection row
+    const portraitSec=document.createElement('div');portraitSec.style.cssText='margin-top:clamp(6px,0.8vh,10px);';
+    portraitSec.innerHTML=`<div class="slbl">PORTRAIT</div>`;
+    const portraitRow=document.createElement('div');portraitRow.id='ccPortraitRow';
+    portraitRow.style.cssText='display:flex;gap:clamp(6px,0.8vw,12px);justify-content:center;';
+    this._buildPortraitCards(portraitRow,cc);
+    portraitSec.appendChild(portraitRow);
+    genderBox.appendChild(portraitSec);
+
     topRow.appendChild(genderBox);
 
     // Color + Stats stacked
@@ -5403,7 +5653,9 @@ const Game={
       sw.style.cssText=`width:clamp(28px,3vw,42px);height:clamp(28px,3vw,42px);border-radius:4px;background:${hex};cursor:pointer;border:2px solid ${cc.accent===name?'#fff':'#222'};box-shadow:${cc.accent===name?'0 0 12px '+hex:'none'};transition:all .15s;`;
       sw.addEventListener('click',()=>{
         cc.accent=name;colorRow.querySelectorAll('div').forEach(d=>{d.style.borderColor='#222';d.style.boxShadow='none';});
-        sw.style.borderColor='#fff';sw.style.boxShadow='0 0 12px '+hex;this._updatePreview();
+        sw.style.borderColor='#fff';sw.style.boxShadow='0 0 12px '+hex;
+        const pr=document.getElementById('ccPortraitRow');if(pr)this._buildPortraitCards(pr,cc);
+        this._updatePreview();
       });
       colorRow.appendChild(sw);
     });
@@ -5483,6 +5735,36 @@ const Game={
     setTimeout(()=>this._updatePreview(),100);
   },
 
+  _buildPortraitCards(container,cc){
+    container.innerHTML='';
+    const portraits=PORTRAITS[cc.gender]||PORTRAITS.man;
+    const accent=ACCENT_COLORS[cc.accent]||CY;
+    if(cc.portraitIdx>=portraits.length)cc.portraitIdx=0;
+    portraits.forEach((pt,i)=>{
+      const card=document.createElement('div');
+      card.className='cc'+(cc.portraitIdx===i?' sel':'');
+      card.style.cssText='padding:clamp(4px,0.5vh,8px);cursor:pointer;text-align:center;flex:0 0 auto;';
+      const cv=document.createElement('canvas');
+      cv.width=96;cv.height=96;cv.style.cssText='width:clamp(64px,6vw,96px);height:clamp(64px,6vw,96px);image-rendering:pixelated;display:block;margin:0 auto;';
+      card.appendChild(cv);
+      const nm=document.createElement('div');
+      nm.style.cssText='font-family:"Share Tech Mono",monospace;font-size:clamp(7px,0.7vw,10px);color:#99a;margin-top:2px;';
+      nm.textContent=pt.name;
+      card.appendChild(nm);
+      card.addEventListener('click',()=>{
+        cc.portraitIdx=i;
+        container.querySelectorAll('.cc').forEach(c=>c.classList.remove('sel'));
+        card.classList.add('sel');
+        this._updatePreview();
+      });
+      container.appendChild(card);
+      setTimeout(()=>{
+        const cx=cv.getContext('2d');cx.clearRect(0,0,96,96);
+        pt.draw(cx,0,0,4,accent);
+      },80);
+    });
+  },
+
   _updatePreview(){
     const cc=GameState.ccState;
     const accent=ACCENT_COLORS[cc.accent]||CY;
@@ -5491,25 +5773,44 @@ const Game={
       const nm=card.querySelector('.cn');
       if(nm){nm.style.color=accent;nm.style.textShadow='0 0 8px '+accent;}
     });
-    // Draw large preview sprite
+    // Draw large preview sprite + portrait
     const cv=document.getElementById('ccPreviewCV');
     if(!cv)return;
     const ctx=cv.getContext('2d');
     ctx.clearRect(0,0,cv.width,cv.height);
     const gender=GENDERS[cc.gender]||GENDERS.man;
     const sz=SPRITE_SIZE[gender.sprite]||{w:56,h:88};
-    // Draw at 2x scale centered
+
+    // Draw portrait at top
+    const portraits=PORTRAITS[cc.gender]||PORTRAITS.man;
+    const portrait=portraits[cc.portraitIdx||0];
+    if(portrait){
+      const ps=5; // pixel scale for portrait
+      const pxOff=Math.floor((cv.width-24*ps)/2);
+      ctx.save();
+      // Portrait frame glow
+      ctx.shadowColor=accent;ctx.shadowBlur=12;
+      ctx.strokeStyle=accent;ctx.lineWidth=2;
+      ctx.strokeRect(pxOff-4,4,24*ps+8,24*ps+8);
+      ctx.shadowBlur=0;
+      // Dark background behind portrait
+      ctx.fillStyle='#0a0a1a';ctx.fillRect(pxOff-2,6,24*ps+4,24*ps+4);
+      portrait.draw(ctx,pxOff,8,ps,accent);
+      ctx.restore();
+    }
+
+    // Draw sprite below portrait
     const scale=2;
+    const spriteY=portrait?24*5+20:0;
     const ox=Math.floor((cv.width-sz.w*scale)/2)/scale;
-    const oy=Math.floor((cv.height-sz.h*scale)/2)/scale;
+    const oy=Math.floor(spriteY/scale)+4;
     ctx.save();
     ctx.scale(scale,scale);
-    // Glow in accent color
     ctx.shadowColor=accent;ctx.shadowBlur=10;
     if(SPR[gender.sprite]) SPR[gender.sprite](ctx,ox,oy,false,Date.now()*0.06);
     ctx.restore();
     // Platform/ground line
-    const gy=Math.floor(cv.height/2+sz.h*scale/2)+4;
+    const gy=spriteY+sz.h*scale+8;
     ctx.strokeStyle=accent;ctx.lineWidth=1;ctx.globalAlpha=0.3;
     ctx.beginPath();ctx.moveTo(cv.width*.2,gy);ctx.lineTo(cv.width*.8,gy);ctx.stroke();
     ctx.globalAlpha=1;
@@ -5553,6 +5854,7 @@ const Game={
       passiveSkill: PASSIVE_SKILLS[cc.passiveIdx||0]
     };
     GameState.selectedGender=cc.gender;
+    GameState.selectedPortrait=cc.portraitIdx||0;
     GameState.selectedAccent=ACCENT_COLORS[cc.accent]||CY;
     GameState.player=new Player(cfg,GameState.selectedEquip);
     GameState.floor=1;GameState.totalDmg=0;GameState.spellDmg=0;GameState.totalKills=0;
