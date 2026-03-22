@@ -1108,12 +1108,12 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
     <div class="vic-scanlines"></div>
     <!-- TOP BAR -->
     <div class="vic-top">
-      <div class="vic-floor-title" id="vicFloorTitle">◆ FLOOR X CLEARED ◆</div>
-      <div class="vic-stats-line" id="vicStatsLine">FLOOR:0/10 · KILLS:0 · HP:0/0 · MP:0/0 · ATK:0 DEF:0 SPD:0 · TOTAL DMG:0 · QUESTS:0</div>
+      <div class="vic-floor-title" id="vicFloorTitle">◆ ROOM CLEARED ◆</div>
+      <div class="vic-stats-line" id="vicStatsLine"></div>
     </div>
-    <!-- MAIN 3-COLUMN AREA -->
-    <div class="vic-main">
-      <!-- LEFT: LOOT ACQUIRED -->
+    <!-- MAIN: 2-column — loot left, character right -->
+    <div class="vic-main" style="grid-template-columns:1fr minmax(260px,1fr);">
+      <!-- LEFT: LOOT + CREDITS -->
       <div class="vic-loot">
         <div class="vic-loot-hdr">
           <div class="vic-loot-title" id="vicLootTitle">◆ LOOT ACQUIRED ◆</div>
@@ -1121,23 +1121,31 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
         </div>
         <div class="vic-loot-scroll" id="vicLootItems"></div>
       </div>
-      <!-- CENTER: PAPERDOLL -->
-      <div class="vic-paperdoll">
-        <div class="vic-pd-title">◆ EQUIPMENT ◆</div>
-        <div class="vic-pd-area" id="vicPdArea">
-          <canvas id="vicPaperdollCV" width="90" height="112"></canvas>
+      <!-- RIGHT: CHARACTER SUMMARY (paperdoll + equipped + bag) -->
+      <div style="display:flex;flex-direction:column;overflow:hidden;background:rgba(2,2,18,.95);border:1px solid rgba(0,255,255,.15);margin:8px 8px 8px 4px;">
+        <!-- Character sprite + stats -->
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-bottom:1px solid rgba(0,255,255,.12);">
+          <canvas id="vicPaperdollCV" width="90" height="112" style="image-rendering:pixelated;width:70px;height:auto;flex-shrink:0;"></canvas>
+          <div style="flex:1;font-family:'Share Tech Mono',monospace;">
+            <div style="color:var(--C);font-size:clamp(9px,1vw,13px);letter-spacing:2px;margin-bottom:4px;" id="vicCharName">RUNNER</div>
+            <div style="font-size:clamp(7px,0.8vw,10px);color:#99a;line-height:1.8;" id="vicCharStats"></div>
+          </div>
         </div>
-      </div>
-      <!-- RIGHT: INVENTORY -->
-      <div class="vic-inventory">
-        <div class="vic-inv-hdr"><span>⟐ INVENTORY</span><span class="vic-inv-gold" id="vicInvGold">⚡ 0 CR</span></div>
-        <div class="vic-inv-sec">▶ EQUIPPED</div>
-        <div class="vic-equip-grid" id="vicEquipGrid"></div>
-        <div class="vic-inv-sec">▶ BAG (4×6)</div>
-        <div class="vic-bag-wrap"><div class="vic-bag-grid" id="vicBagGrid"></div></div>
+        <!-- Equipped grid -->
+        <div style="padding:6px 10px;">
+          <div style="font-size:clamp(6px,0.7vw,9px);color:var(--M);letter-spacing:1px;margin-bottom:4px;">▶ EQUIPPED</div>
+          <div class="vic-equip-grid" id="vicEquipGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:3px;"></div>
+        </div>
+        <!-- Bag grid -->
+        <div style="flex:1;overflow-y:auto;padding:6px 10px;min-height:0;">
+          <div style="font-size:clamp(6px,0.7vw,9px);color:var(--M);letter-spacing:1px;margin-bottom:4px;">▶ BAG</div>
+          <div class="vic-bag-grid" id="vicBagGrid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:3px;"></div>
+        </div>
+        <!-- Gold -->
+        <div style="padding:4px 10px;border-top:1px solid rgba(0,255,255,.12);font-family:'Share Tech Mono',monospace;font-size:clamp(8px,0.9vw,12px);color:var(--GD);text-align:center;" id="vicInvGold">⚡ 0 CR</div>
       </div>
     </div>
-    <!-- BOTTOM: UPGRADES + CONTINUE -->
+    <!-- BOTTOM: UPGRADES (boss only) + CONTINUE -->
     <div class="vic-bottom">
       <div class="vic-upg-hdr">◆ CHOOSE AN UPGRADE ◆</div>
       <div class="vic-upg-row" id="vicUpgrades"></div>
@@ -6054,11 +6062,20 @@ const VictoryScreen = {
 
   _render() {
     this._renderTopBar();
+    this._renderCharSummary();
     this._renderLoot();
     this._renderPaperdoll();
     this._renderInventory();
     this._renderUpgrades();
     this._updateContinue();
+  },
+
+  _renderCharSummary() {
+    const p=GameState.player;if(!p)return;
+    const nm=document.getElementById('vicCharName');
+    if(nm)nm.textContent=p.className;
+    const st=document.getElementById('vicCharStats');
+    if(st)st.innerHTML=`<span style="color:#ff4444">HP:${p.hp}/${p.maxHp}</span> <span style="color:#44aaff">MP:${p.mp}/${p.maxMp}</span><br><span style="color:${OR}">ATK:${p.atk}</span> <span style="color:#4488ff">DEF:${p.def}</span> <span style="color:${GR}">SPD:${p.spd}</span><br><span style="color:#aa66ff">LV:${p.level}</span> <span style="color:${CY}">CRIT:${Math.round((p.critBonus||0)*100)}%</span>`;
   },
 
   _renderTopBar() {
