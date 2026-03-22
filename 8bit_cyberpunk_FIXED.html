@@ -487,11 +487,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:#060618;font-family:
 /* ══ SPEECH BUBBLES ══ */
 @keyframes sbIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 .speech-bubble{position:absolute;background:rgba(2,2,20,.96);border:2px solid;padding:clamp(5px,.7vh,8px) clamp(8px,1vw,12px);font-family:'Press Start 2P',monospace;font-size:clamp(6px,.72vw,10px);line-height:1.7;max-width:clamp(160px,20vw,260px);pointer-events:none;z-index:45;animation:sbIn .18s ease;transition:opacity .5s;}
-.speech-bubble::after{content:'';position:absolute;bottom:-9px;left:50%;transform:translateX(-50%);border:5px solid transparent;}
+.speech-bubble::after{content:'';position:absolute;top:-9px;left:50%;transform:translateX(-50%);border:5px solid transparent;}
 #speechBubbleEnemy{border-color:#ff2244;box-shadow:0 0 14px rgba(255,34,68,.3);}
-#speechBubbleEnemy::after{border-top-color:#ff2244;}
+#speechBubbleEnemy::after{border-bottom-color:#ff2244;}
 #speechBubblePlayer{border-color:#00ffff;box-shadow:0 0 14px rgba(0,255,255,.3);}
-#speechBubblePlayer::after{border-top-color:#00ffff;}
+#speechBubblePlayer::after{border-bottom-color:#00ffff;}
 .sb-text{color:#ddeeff;}
 .sb-typing{color:rgba(0,255,255,.45);font-size:clamp(8px,.9vw,12px);}
 
@@ -6896,12 +6896,15 @@ const AIDialog = {
     const domY = cy * scaleY;
     const bw = el.offsetWidth || 220;
     const bh = el.offsetHeight || 70;
-    const gap = 14;
+    const gap = 12;
     const parentW = (el.parentElement||document.body).clientWidth;
+    const parentH = (el.parentElement||document.body).clientHeight;
+    // Position BELOW character (like RPG dialog under sprites)
+    const spriteH = 88 * (cv.clientHeight / Arena.H); // approximate sprite height in DOM px
     let left = domX - bw / 2;
-    let top  = domY - bh - gap;
+    let top  = domY + spriteH * 0.5 + gap;
     left = Math.max(4, Math.min(left, parentW - bw - 4));
-    top  = Math.max(4, top);
+    top  = Math.min(top, parentH - bh - 4);
     el.style.left = left + 'px';
     el.style.top  = top  + 'px';
   },
