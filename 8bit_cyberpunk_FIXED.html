@@ -2972,7 +2972,7 @@ const SaveSystem = {
         baseAtk:p.baseAtk,atk:p.atk,baseDef:p.baseDef,def:p.def,
         baseSpd:p.baseSpd,spd:p.spd,level:p.level||1,
         xp:p.xp||0,xpToNext:p.xpToNext||50,critBonus:p.critBonus||0,
-        spells:p.spells.map(s=>({id:s.id,cd:s.cd||0,maxCd:s.maxCd})),
+        spells:p.spells.map(s=>({id:s.id,cd:s.cd||0,maxCd:s.maxCd,castCount:s.castCount||0,evolved:s.evolved||false})),
         inventoryItems:Inventory.items.map(i=>i?{...i}:null),
         equipped:Object.fromEntries(Object.entries(Inventory.equipped).map(([k,v])=>[k,v?{...v}:null])),
         gold:Inventory.gold,
@@ -3001,7 +3001,11 @@ const SaveSystem = {
       p.baseSpd=d.baseSpd;p.spd=d.spd;p.level=d.level||1;
       p.xp=d.xp||0;p.xpToNext=d.xpToNext||50;p.critBonus=d.critBonus||0;
       if(d.spells)d.spells.forEach((ss,i)=>{
-        if(p.spells[i]){p.spells[i].cd=ss.cd||0;p.spells[i].maxCd=ss.maxCd||p.spells[i].maxCd;}
+        if(p.spells[i]){
+          p.spells[i].cd=ss.cd||0;p.spells[i].maxCd=ss.maxCd||p.spells[i].maxCd;
+          p.spells[i].castCount=ss.castCount||0;
+          if(ss.evolved){p.spells[i].evolved=true;p.spells[i].name='EX '+p.spells[i].name.replace(/^EX /,'');p.spells[i].desc='[EVOLVED] '+p.spells[i].desc.replace(/^\[EVOLVED\] /,'');}
+        }
       });
       GameState.player=p;
       Inventory.init();
@@ -3813,9 +3817,9 @@ const DialogEngine={
     this._cancel();
     this._onDismiss=onDismiss;this._fullText=text;this._choices=choices;
     const box=document.getElementById('dlgBox');if(!box)return;
-    document.getElementById('dlgPortrait').textContent=portrait;
-    document.getElementById('dlgName').textContent=speaker;
-    const textEl=document.getElementById('dlgText');textEl.textContent='';
+    const dlgPort=document.getElementById('dlgPortrait');if(dlgPort)dlgPort.textContent=portrait;
+    const dlgNm=document.getElementById('dlgName');if(dlgNm)dlgNm.textContent=speaker;
+    const textEl=document.getElementById('dlgText');if(textEl)textEl.textContent='';
     const choicesEl=document.getElementById('dlgChoices');
     choicesEl.style.display='none';choicesEl.innerHTML='';
     box.style.display='flex';box.style.animation='none';
@@ -3967,7 +3971,7 @@ const UI={
     GameState.currentScreen=id;
     if(id!=='sCM'){DialogEngine._cancel();AIDialog.hideAll();}
   },
-  flash(){const f=document.getElementById('fl');f.style.opacity='.65';setTimeout(()=>f.style.opacity='0',320);},
+  flash(){const f=document.getElementById('fl');if(!f)return;f.style.opacity='.65';setTimeout(()=>f.style.opacity='0',320);},
   dmgNumAt(x,y,val,type){
     const ov=document.getElementById('dmgOv');if(!ov)return;
     const d=document.createElement('div');d.className='dn '+(type||'');
@@ -4415,9 +4419,9 @@ const MerchantShop={
     const fl=GameState.floor||1;
     this.stock=Array.from({length:4},()=>LootSystem.roll(fl));
     this.render();
-    document.getElementById('merchantShop').style.display='flex';
+    const el=document.getElementById('merchantShop');if(el)el.style.display='flex';
   },
-  close(){document.getElementById('merchantShop').style.display='none';},
+  close(){const el=document.getElementById('merchantShop');if(el)el.style.display='none';},
   getPrice(item){
     const base=item.rarity==='legendary'?300:item.rarity==='rare'?100:40;
     return Math.floor(base*(1+(GameState.floor||1)*0.15));
