@@ -117,12 +117,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:#060618;font-family:
 /* Top HUD bar */
 .chdr{
   display:flex;justify-content:space-between;align-items:center;
-  padding:clamp(6px,0.8vh,12px) clamp(12px,1.2vw,20px);
-  background:linear-gradient(90deg,rgba(0,0,10,.95),rgba(4,0,20,.95));
-  border-bottom:2px solid rgba(136,0,255,.5);
+  padding:clamp(4px,0.6vh,8px) clamp(12px,1.2vw,20px);
+  background:linear-gradient(135deg,rgba(10,0,0,.95),rgba(4,0,20,.95));
+  border-bottom:3px solid #ff0040;
   flex-shrink:0;z-index:20;gap:clamp(8px,1vw,16px);
 }
-.fb{font-size:clamp(9px,1vw,14px);color:var(--C);text-shadow:0 0 6px var(--C);}
+.fb{font-family:'Share Tech Mono',monospace;font-size:clamp(9px,1vw,14px);color:var(--C);text-shadow:0 0 6px var(--C);letter-spacing:1px;}
 
 /* Combat main area */
 .cmain{flex:1;display:flex;overflow:hidden;min-height:0;}
@@ -174,8 +174,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#060618;font-family:
 /* Player HUD — compact single row */
 .phud{
   flex-shrink:0;
-  background:linear-gradient(180deg,rgba(3,0,12,.96),rgba(6,3,20,.98));
-  border-top:2px solid rgba(136,0,255,.4);
+  background:linear-gradient(180deg,rgba(10,0,0,.96),rgba(6,3,20,.98));
+  border-top:3px solid #ff0040;
   padding:clamp(4px,0.6vh,8px) clamp(8px,1vw,14px);z-index:5;
   display:flex;align-items:center;
   gap:clamp(6px,0.7vw,12px);
@@ -1276,39 +1276,44 @@ function glow(ctx, x, y, w, h, col, str=8) {
 // ═══════════════════════════════════════════════════════════════
 const SPR = {
 
-  // WARRIOR – armored cyber-knight, orange visor
+  // WARRIOR – cyberpunk knight with neon visor, detailed armor, energy blade
   warrior(ctx, ox, oy, flip, t=0) {
     const vc = `rgba(255,${130+Math.floor(Math.sin(t*.09)*40)},0,.95)`;
+    const vc2 = `rgba(255,${160+Math.floor(Math.sin(t*.12)*30)},40,.9)`;
+    const ar='#445577',ar2='#556688',ar3='#667799'; // armor shading
     pg(ctx, ox, oy, [
-      [_,_,sd,ST,ST,ST,ST,ST,ST,ST,ST,sd,_,_],
-      [_,sd,ST,st,st,st,st,st,st,st,st,ST,sd,_],
-      [sd,ST,st,st,BK,BK,BK,BK,BK,BK,st,st,ST,sd],
-      [sd,ST,st,BK,OR,vc,vc,vc,vc,OR,BK,st,ST,sd],
-      [sd,ST,st,BK,vc,vc,vc,vc,vc,vc,BK,st,ST,sd],
-      [sd,ST,st,BK,BK,BK,BK,BK,BK,BK,BK,st,ST,sd],
-      [_,sd,ST,st,st,st,st,st,st,st,st,ST,sd,_],
-      [_,_,sd,sd,OR,OR,_,_,OR,OR,sd,sd,_,_],
-      [_,OR,ST,W2,W3,W3,W3,W3,W3,W3,W2,ST,OR,_],
-      [OR,st,W2,W3,OR,'#ff6611','#ff6611',OR,W3,W2,st,OR,st,OR],
-      [OR,st,W2,W3,'#ff6611',OR,OR,OR,'#ff6611',W3,W2,st,OR,_],
-      [OR,st,W2,W3,W3,W3,W3,W3,W3,W3,W3,W2,st,OR],
-      [_,OR,ST,st,sd,sd,sd,sd,sd,sd,st,ST,OR,_],
-      [_,OR,GD,GD,GD,GD,GD,GD,GD,GD,GD,GD,OR,_],
-      [_,sd,st,ST,ST,_,_,_,_,ST,ST,st,sd,_],
-      [_,sd,st,ST,ST,_,_,_,_,ST,ST,st,sd,_],
-      [_,_,sd,ST,st,_,_,_,_,st,ST,sd,_,_],
-      [_,_,OR,ST,st,_,_,_,_,st,ST,OR,_,_],
-      [_,_,sd,ST,ST,_,_,_,_,ST,ST,sd,_,_],
-      [_,_,sd,ST,ST,_,_,_,_,ST,ST,sd,_,_],
-      [_,_,BK,sd,sd,_,_,_,_,sd,sd,BK,_,_],
-      [_,sd,sd,sd,BK,_,_,_,_,BK,sd,sd,sd,_],
+      [_,_,_,sd,ar,ar2,ar2,ar2,ar2,ar2,ar2,ar,sd,_],
+      [_,_,sd,ar,ar2,ar3,ar3,ar3,ar3,ar3,ar2,ar,sd,_],
+      [_,sd,ar,ar2,BK,BK,BK,BK,BK,BK,BK,ar2,ar,sd],
+      [_,sd,ar,BK,OR,vc,vc,vc,vc,vc,OR,BK,ar,sd],
+      [_,sd,ar,BK,vc,vc2,vc2,vc2,vc2,vc,BK,ar,sd,_],
+      [_,sd,ar,BK,BK,BK,OR,OR,BK,BK,BK,ar,sd,_],
+      [_,_,sd,ar,SK,SK,SK,SK,SK,SK,ar,sd,_,_],
+      [_,_,sd,sd,ar,OR,_,_,OR,ar,sd,sd,_,_],
+      [_,OR,ar,ar2,ar3,ar3,ar3,ar3,ar3,ar3,ar2,ar,OR,_],
+      [OR,ar,ar2,ar3,OR,vc,'#ff4400',OR,ar3,ar2,ar,OR,_,_],
+      [OR,ar,ar2,ar3,vc,OR,OR,OR,vc,ar3,ar2,ar,OR,_],
+      [OR,ar,ar2,ar3,ar3,CY,CY,CY,ar3,ar3,ar2,ar,OR,_],
+      [_,OR,ar,ar2,ar3,ar3,ar3,ar3,ar3,ar2,ar,OR,_,_],
+      [_,OR,ar,GD,GD,GD,GD,GD,GD,GD,GD,ar,OR,_],
+      [_,_,ar,ar2,ar3,ar3,_,_,ar3,ar3,ar2,ar,_,_],
+      [_,_,ar,ar2,ar3,ar3,_,_,ar3,ar3,ar2,ar,_,_],
+      [_,_,sd,ar,ar2,ar3,_,_,ar3,ar2,ar,sd,_,_],
+      [_,_,OR,ar,ar2,ar3,_,_,ar3,ar2,ar,OR,_,_],
+      [_,_,sd,ar,ar2,ar2,_,_,ar2,ar2,ar,sd,_,_],
+      [_,_,sd,ar,ar2,ar2,_,_,ar2,ar2,ar,sd,_,_],
+      [_,_,BK,sd,ar,ar,_,_,ar,ar,sd,BK,_,_],
+      [_,sd,BK,sd,ar,BK,_,_,BK,ar,sd,BK,sd,_],
     ], flip);
-    // Sword
+    // Energy blade — glowing cyan
     const sx = flip ? ox - P*3 : ox + P*14;
-    for(let i=0;i<14;i++){ctx.fillStyle=i<2?GD:W1;ctx.fillRect(sx,oy+i*P,P,P);}
-    ctx.fillStyle=W2;for(let i=2;i<14;i++)ctx.fillRect(sx+P,oy+i*P,P/2,P);
-    ctx.fillStyle=ST;ctx.fillRect(sx-P,oy+P*4,P*3,P);// guard
-    glow(ctx,sx,oy+P*2,P,P*10,CY,6);
+    const bladeGlow=`rgba(0,255,255,${0.6+Math.sin(t*0.15)*0.3})`;
+    for(let i=0;i<14;i++){
+      ctx.fillStyle=i<2?'#ffffff':bladeGlow;
+      ctx.fillRect(sx,oy+i*P,P,P);
+      if(i>1){ctx.fillStyle=`rgba(0,255,255,${0.2+Math.sin(t*0.1+i*0.3)*0.15})`;ctx.fillRect(sx+P,oy+i*P,P/2,P);}
+    }
+    ctx.fillStyle=GD;ctx.fillRect(sx-P,oy+P*4,P*3,P);// guard
   },
 
   // RANGER – cyber-leather hunter, green neon bow
@@ -2279,63 +2284,87 @@ const Arena = {
       ctx.restore(); this.screenFlash.alpha=Math.max(0,this.screenFlash.alpha-0.04);
     }
 
-    // ── ANIME KILL CAM ──
+    // ── PERSONA 5 STYLE KILL CAM ──
     if(this._killCam.active){
       const kc=this._killCam;kc.timer++;
-      const kp=kc.timer/45;
+      const kp=kc.timer/55;
       ctx.save();
-      if(kp<0.12){
-        // Freeze + darken
-        ctx.globalAlpha=kp/0.12*0.4;ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
+      if(kp<0.1){
+        // Freeze frame — sharp black bars slide in from top/bottom
+        const bp=kp/0.1;
+        ctx.fillStyle='#000';
+        ctx.fillRect(0,0,W,H*0.15*bp);
+        ctx.fillRect(0,H-H*0.15*bp,W,H*0.15*bp);
       }else if(kp<0.35){
-        // Zoom in toward kill point
-        const zp=(kp-0.12)/0.23;
-        const scale=1+zp*0.15;
-        ctx.translate(kc.x,kc.y);ctx.scale(scale,scale);ctx.translate(-kc.x,-kc.y);
-        ctx.globalAlpha=0.3;ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
-      }else if(kp<0.6){
-        // Anime slash lines
-        const sp=(kp-0.35)/0.25;
-        ctx.globalAlpha=0.7*(1-sp);ctx.strokeStyle=kc.color;ctx.lineWidth=3;
-        for(let sl=0;sl<4;sl++){
-          const angle=-0.5+sl*0.35;const len=W*0.8*sp;
-          const sx=kc.x-Math.cos(angle)*len/2,sy=kc.y-Math.sin(angle)*len/2;
-          ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(sx+Math.cos(angle)*len,sy+Math.sin(angle)*len);ctx.stroke();
-        }
-      }else if(kp<0.8){
-        // White flash
-        ctx.globalAlpha=(1-(kp-0.6)/0.2)*0.5;ctx.fillStyle='#ffffff';ctx.fillRect(0,0,W,H);
+        // Diagonal red/black slash across screen (Persona style)
+        const sp=(kp-0.1)/0.25;
+        ctx.fillStyle='#000';ctx.fillRect(0,0,W,H*0.15);ctx.fillRect(0,H*0.85,W,H*0.15);
+        // Red diagonal cut
+        ctx.globalAlpha=0.8;
+        ctx.fillStyle='#ff0040';
+        const cutW=W*1.5*sp;
+        ctx.save();ctx.translate(W/2,H/2);ctx.rotate(-0.15);
+        ctx.fillRect(-cutW/2,-H*0.08,cutW,H*0.16);
+        ctx.restore();
+        // White edge line
+        ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.globalAlpha=1-sp;
+        ctx.beginPath();ctx.moveTo(-W*0.2,H*0.55);ctx.lineTo(W*1.2,H*0.35);ctx.stroke();
+      }else if(kp<0.55){
+        // "ALL OUT ATTACK" style — bold text on red band
+        const tp=(kp-0.35)/0.2;
+        ctx.fillStyle='#000';ctx.fillRect(0,0,W,H*0.15);ctx.fillRect(0,H*0.85,W,H*0.15);
+        // Red band
+        ctx.save();ctx.translate(W/2,H/2);ctx.rotate(-0.15);
+        ctx.fillStyle='#ff0040';ctx.fillRect(-W,-(H*0.06),W*2,H*0.12);
+        // Text
+        ctx.globalAlpha=tp<0.2?tp/0.2:1;
+        ctx.fillStyle='#fff';
+        ctx.font=`bold ${Math.floor(P*5)}px 'Press Start 2P',monospace`;
+        ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText('ELIMINATED',0,0);
+        ctx.restore();
+      }else if(kp<0.75){
+        // Chromatic flash — red/cyan offset
+        const fp=(kp-0.55)/0.2;
+        ctx.globalAlpha=(1-fp)*0.4;
+        ctx.fillStyle='#ff0040';ctx.fillRect(0,0,W/2,H);
+        ctx.fillStyle='#00ffff';ctx.fillRect(W/2,0,W/2,H);
       }else{
-        // "ELIMINATED" text
-        const ep=(kp-0.8)/0.2;
-        ctx.globalAlpha=1-ep;
-        ctx.font=`bold ${Math.floor(P*5)}px 'Press Start 2P',monospace`;ctx.textAlign='center';
-        ctx.fillStyle=kc.color;ctx.fillText('ELIMINATED',W/2,H*0.4-ep*30);
+        // Fade out
+        const fo=(kp-0.75)/0.25;
+        ctx.globalAlpha=(1-fo)*0.3;ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
       }
       ctx.restore();
-      if(kc.timer>=45)kc.active=false;
+      if(kc.timer>=55)kc.active=false;
     }
 
-    // ── SPELL NAME FLASH ──
+    // ── PERSONA STYLE SPELL FLASH ──
     if(this._spellFlash.active){
       const sf=this._spellFlash;sf.timer++;
-      const sp2=sf.timer/25;
+      const sp2=sf.timer/30;
       ctx.save();
-      if(sp2<0.3){
-        // Darken background
-        ctx.globalAlpha=sp2/0.3*0.3;ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
-      }
-      if(sp2<0.8){
-        // Spell name text — large, centered
-        ctx.globalAlpha=sp2<0.15?sp2/0.15:sp2>0.6?(1-(sp2-0.6)/0.2):1;
-        ctx.font=`bold ${Math.floor(P*4)}px 'Press Start 2P',monospace`;ctx.textAlign='center';
-        ctx.fillStyle='#ffffff';
-        ctx.fillText(sf.icon+' '+sf.name,W/2+1,H*0.35+1);
-        ctx.fillStyle=GameState.selectedAccent||CY;
-        ctx.fillText(sf.icon+' '+sf.name,W/2,H*0.35);
+      if(sp2<0.15){
+        // Quick vignette darken
+        ctx.globalAlpha=sp2/0.15*0.4;ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
+      }else if(sp2<0.7){
+        // Diagonal color band with spell name (Persona menu style)
+        const tp2=(sp2-0.15)/0.55;
+        ctx.globalAlpha=0.35;ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
+        // Accent color diagonal band
+        const accent=GameState.selectedAccent||CY;
+        ctx.save();ctx.translate(W/2,H*0.38);ctx.rotate(-0.08);
+        ctx.globalAlpha=0.85;ctx.fillStyle=accent+'33';
+        ctx.fillRect(-W,-(H*0.05),W*2,H*0.1);
+        // Spell name
+        ctx.globalAlpha=tp2<0.15?tp2/0.15:tp2>0.8?(1-(tp2-0.8)/0.2):1;
+        ctx.font=`bold ${Math.floor(P*4)}px 'Press Start 2P',monospace`;
+        ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillStyle='#fff';ctx.fillText(sf.icon+' '+sf.name,1,1);
+        ctx.fillStyle=accent;ctx.fillText(sf.icon+' '+sf.name,0,0);
+        ctx.restore();
       }
       ctx.restore();
-      if(sf.timer>=25)sf.active=false;
+      if(sf.timer>=30)sf.active=false;
     }
   },
 
@@ -3626,7 +3655,7 @@ const Combat = {
       const pq=GameState.settings.particles;
       const bc=pq==='high'?(isCrit?18:8):pq==='low'?4:0;
       if(bc>0)Arena.spawnBurst(pos.x,pos.y,burstColor,bc,isCrit?1.2:0.8);
-      if(isCrit){Arena.triggerShake(6,8);AIDialog.onCrit(enemy);}
+      if(isCrit){Arena.triggerShake(6,8);Arena.triggerScreenFlash(GameState.selectedAccent||CY,0.3);AIDialog.onCrit(enemy);}
       if(GameState.combo>=5&&pq==='high')Arena.spawnBurst(pos.x,pos.y,GD,6,0.5);
     }
     // Increment combo
