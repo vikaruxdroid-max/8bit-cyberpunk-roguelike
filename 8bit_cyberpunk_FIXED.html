@@ -2021,11 +2021,10 @@ const Arena = {
       if(scaleX!==1||scaleY!==1||breathe!==1){
         ctx.translate(dx+sz.w/2, dy+sz.h); ctx.scale(scaleX*breathe, scaleY*breathe); ctx.translate(-(dx+sz.w/2), -(dy+sz.h));
       }
-      // Simple dark backdrop for visibility (1 pass instead of 4)
-      ctx.globalAlpha = pDead ? 0.15 : 0.4;
-      ctx.filter='brightness(0%)';
-      if(SPR[p.sprite]) SPR[p.sprite](ctx, dx+1, dy+1, false, t);
-      ctx.filter='none';
+      // Dark silhouette backdrop for visibility (no filter for performance)
+      ctx.globalAlpha = pDead ? 0.1 : 0.3;
+      ctx.fillStyle='#000';
+      ctx.fillRect(dx+1, dy+1, sz.w, sz.h);
       // Main sprite
       ctx.globalAlpha = pDead ? 0.35 : 1;
       if (SPR[p.sprite]) SPR[p.sprite](ctx, dx, dy, false, t);
@@ -2124,11 +2123,10 @@ const Arena = {
       if(scaleX2!==1||scaleY2!==1||eBreathe!==1){
         ctx.translate(edx+sz.w/2, edy+sz.h); ctx.scale(scaleX2*eBreathe, scaleY2*eBreathe); ctx.translate(-(edx+sz.w/2), -(edy+sz.h));
       }
-      // Simple dark backdrop (1 pass instead of 4)
-      ctx.globalAlpha=0.4;
-      ctx.filter='brightness(0%)';
-      if(SPR[en.sprite]) SPR[en.sprite](ctx, edx+1, edy+1, true, t);
-      ctx.filter='none';
+      // Dark silhouette backdrop (no filter for performance)
+      ctx.globalAlpha=0.3;
+      ctx.fillStyle='#000';
+      ctx.fillRect(edx+1, edy+1, sz.w, sz.h);
       // Main sprite
       ctx.globalAlpha=1;
       if (SPR[en.sprite]) SPR[en.sprite](ctx, edx, edy, true, t);
