@@ -1956,9 +1956,9 @@ const Arena = {
     ctx.shadowColor = 'transparent';
 
     ctx.clearRect(0, 0, W, H);
-    // Subtle parallax on background image
-    const wrap=document.getElementById('arenaWrap');
-    if(wrap){const px=Math.sin(t*0.008)*8,py=Math.cos(t*0.006)*4;wrap.style.backgroundPosition=`calc(50% + ${px}px) calc(50% + ${py}px)`;}
+    // Subtle parallax on background image (cached DOM ref)
+    if(!this._wrapEl)this._wrapEl=document.getElementById('arenaWrap');
+    if(this._wrapEl&&t%2===0){const px=Math.sin(t*0.008)*8,py=Math.cos(t*0.006)*4;this._wrapEl.style.backgroundPosition=`calc(50% + ${px|0}px) calc(50% + ${py|0}px)`;}
     // Screen shake
     if(this.shake.frames>0){ctx.translate((Math.random()-.5)*this.shake.intensity,(Math.random()-.5)*this.shake.intensity);this.shake.frames--;if(!this.shake.frames)this.shake.intensity=0;}
     this.drawBg(ctx, W, H, t);
@@ -2203,7 +2203,7 @@ const Arena = {
     if (GameState.currentScreen === 'sCM') this.drawMinimap(ctx, W, H);
 
     // VFX
-    this.vfx = this.vfx.filter(v => v.t < v.maxT);
+    for(let i=this.vfx.length-1;i>=0;i--){if(this.vfx[i].t>=this.vfx[i].maxT)this.vfx.splice(i,1);}
     this.vfx.forEach(v => {
       const prog = v.t / v.maxT;
       ctx.save();
@@ -2248,7 +2248,7 @@ const Arena = {
     });
 
     // Particle system — Splatoon-style burst particles
-    this.particles = this.particles.filter(pt => pt.alpha > 0.02);
+    for(let i=this.particles.length-1;i>=0;i--){if(this.particles[i].alpha<=0.02)this.particles.splice(i,1);}
     this.particles.forEach(pt => {
       pt.vy += pt.gravity||0.08; pt.x+=pt.vx; pt.y+=pt.vy;
       pt.alpha = Math.max(0, pt.alpha - (pt.fade||0.018));
@@ -2259,7 +2259,7 @@ const Arena = {
     });
 
     // Floating combat text (CRIT, DEFEATED, MISS, etc.)
-    this.floatTexts = this.floatTexts.filter(ft => ft.life < ft.maxLife);
+    for(let i=this.floatTexts.length-1;i>=0;i--){if(this.floatTexts[i].life>=this.floatTexts[i].maxLife)this.floatTexts.splice(i,1);}
     this.floatTexts.forEach(ft => {
       ft.life++; ft.y += ft.vy; ft.vy *= 0.94;
       const prog = ft.life / ft.maxLife;
@@ -2279,15 +2279,16 @@ const Arena = {
     const pv = GameState.player;
     if(pv&&pv.hp>0&&pv.hp/pv.maxHp<0.25){
       const pulse=0.1+Math.sin(t*0.13)*0.09;
-      const vg=ctx.createRadialGradient(W/2,H/2,H*.15,W/2,H/2,H*.88);
-      vg.addColorStop(0,'transparent'); vg.addColorStop(1,`rgba(255,20,20,${pulse})`);
-      ctx.save(); ctx.fillStyle=vg; ctx.fillRect(0,0,W,H); ctx.restore();
+      ctx.save();ctx.globalAlpha=pulse;ctx.fillStyle='#ff1414';
+      ctx.fillRect(0,0,W*0.08,H);ctx.fillRect(W*0.92,0,W*0.08,H);
+      ctx.fillRect(0,0,W,H*0.06);ctx.fillRect(0,H*0.94,W,H*0.06);
+      ctx.restore();
     }
     if(GameState.enemies.some(e=>e.isBoss&&e.hp>0)){
-      const bp=0.07+Math.sin(t*0.07)*0.04;
-      const bg2=ctx.createRadialGradient(W/2,H/2,H*.22,W/2,H/2,H*0.95);
-      bg2.addColorStop(0,'transparent'); bg2.addColorStop(1,`rgba(255,0,255,${bp})`);
-      ctx.save(); ctx.fillStyle=bg2; ctx.fillRect(0,0,W,H); ctx.restore();
+      const bp=0.04+Math.sin(t*0.07)*0.03;
+      ctx.save();ctx.globalAlpha=bp;ctx.fillStyle=MG;
+      ctx.fillRect(0,0,W*0.04,H);ctx.fillRect(W*0.96,0,W*0.04,H);
+      ctx.restore();
     }
 
     // Screen flash overlay (on top of everything)
@@ -2969,43 +2970,63 @@ const Arena = {
   triggerCast() { if(GameState.player){GameState.player.animState='cast';GameState.player.animTimer=0;} },
 
   // ── BOSS INTRO CINEMATIC ──
-  _bossIntro:{active:false,timer:0,totalFrames:240,boss:null,onDone:null},
+  _bossIntro:{active:false,timer:0,totalFrames:360,boss:null,onDone:null,dialogShown:false},
+  _bossArrivalLines:[
+    "Nice {spell}. Shame it won't save you.",
+    "A {gender} with {spell}? How... adorable.",
+    "I parked in the boss lane. You parked in the grave.",
+    "Your {spell} is cute. I use it as a screensaver.",
+    "I was gonna take the bus but... dramatic entrance, y'know?",
+    "They said you cleared 9 rooms. I clear runners in 9 seconds.",
+    "Hold up — let me put on my 'pretending to be scared' face.",
+    "You brought {spell} to a quantum fight? Bold move.",
+    "Last runner who reached me? They're my coffee table now.",
+    "I'd say 'good luck' but luck left the server hours ago.",
+    "Plot twist: the motorcycle was the easy part.",
+    "Your HP bar looks tasty. Mind if I take a bite?",
+  ],
+  _getBossLine(){
+    const p=GameState.player;
+    const spell=p?.spells?.[0]?.name||'that spell';
+    const gender=p?.gender||'man';
+    const lines=this._bossArrivalLines;
+    const line=lines[Math.floor(Math.random()*lines.length)];
+    return line.replace(/\{spell\}/g,spell).replace(/\{gender\}/g,gender);
+  },
   triggerBossIntro(boss,onDone){
-    this._bossIntro={active:true,timer:0,totalFrames:240,boss,onDone};
+    this._bossIntro={active:true,timer:0,totalFrames:360,boss,onDone,dialogShown:false};
   },
   _renderBossIntro(ctx,W,H){
     const bi=this._bossIntro;if(!bi.active)return;
     bi.timer++;
-    const kp=bi.timer/bi.totalFrames;
+    const kp=bi.timer/bi.totalFrames; // 360 frames total
     const P2=4;
     ctx.save();
 
-    // PHASE 1 (0-0.15): Walls closing in — "oh no" moment
-    if(kp<0.15){
-      const wp=kp/0.15;
-      // Red warning flashes
-      ctx.globalAlpha=0.15+Math.sin(bi.timer*0.8)*0.1;
+    // PHASE 1 (0-0.12): Walls closing — "oh no" moment
+    if(kp<0.12){
+      const wp=kp/0.12;
+      ctx.globalAlpha=0.12+Math.sin(bi.timer*0.8)*0.08;
       ctx.fillStyle='#ff0020';ctx.fillRect(0,0,W,H);
-      // Left wall
+      const wallW=W*0.13*wp;
+      // Left wall gradient
       ctx.globalAlpha=0.85;
-      const wallW=W*0.12*wp;
-      const wallGrad=ctx.createLinearGradient(0,0,wallW,0);
-      wallGrad.addColorStop(0,'#1a0008');wallGrad.addColorStop(0.7,'#330015');wallGrad.addColorStop(1,'rgba(50,0,20,0)');
-      ctx.fillStyle=wallGrad;ctx.fillRect(0,0,wallW,H);
-      // Right wall
-      const wallGrad2=ctx.createLinearGradient(W,0,W-wallW,0);
-      wallGrad2.addColorStop(0,'#1a0008');wallGrad2.addColorStop(0.7,'#330015');wallGrad2.addColorStop(1,'rgba(50,0,20,0)');
-      ctx.fillStyle=wallGrad2;ctx.fillRect(W-wallW,0,wallW,H);
-      // Danger stripes on walls
+      const wg1=ctx.createLinearGradient(0,0,wallW,0);
+      wg1.addColorStop(0,'#1a0008');wg1.addColorStop(0.7,'#330015');wg1.addColorStop(1,'rgba(50,0,20,0)');
+      ctx.fillStyle=wg1;ctx.fillRect(0,0,wallW,H);
+      // Right wall gradient
+      const wg2=ctx.createLinearGradient(W,0,W-wallW,0);
+      wg2.addColorStop(0,'#1a0008');wg2.addColorStop(0.7,'#330015');wg2.addColorStop(1,'rgba(50,0,20,0)');
+      ctx.fillStyle=wg2;ctx.fillRect(W-wallW,0,wallW,H);
+      // Danger stripes
       ctx.globalAlpha=0.5*wp;ctx.strokeStyle='#ff0040';ctx.lineWidth=3;
       for(let i=0;i<10;i++){
         const sy=H*i/10;
         ctx.beginPath();ctx.moveTo(0,sy);ctx.lineTo(wallW*0.8,sy+20);ctx.stroke();
         ctx.beginPath();ctx.moveTo(W,sy);ctx.lineTo(W-wallW*0.8,sy+20);ctx.stroke();
       }
-      // WARNING text
-      if(wp>0.4){
-        ctx.globalAlpha=0.6+Math.sin(bi.timer*0.5)*0.4;
+      if(wp>0.3){
+        ctx.globalAlpha=0.5+Math.sin(bi.timer*0.5)*0.4;
         ctx.fillStyle='#ff0040';
         ctx.font=`bold ${Math.floor(P2*6)}px 'Press Start 2P',monospace`;
         ctx.textAlign='center';ctx.textBaseline='middle';
@@ -3013,144 +3034,178 @@ const Arena = {
         ctx.font=`${Math.floor(P2*3)}px 'Share Tech Mono',monospace`;
         ctx.fillText('BOSS DETECTED',W/2,H*0.3);
       }
-      // Shake
       if(bi.timer%4===0)this.triggerShake(3,4);
     }
-    // PHASE 2 (0.15-0.25): Screen darkens, walls hold
-    else if(kp<0.25){
-      const dp=(kp-0.15)/0.1;
-      ctx.globalAlpha=0.3+dp*0.4;ctx.fillStyle='#0a0008';ctx.fillRect(0,0,W,H);
-      // Walls persist
-      const wallW=W*0.12;
-      ctx.globalAlpha=0.85;
-      ctx.fillStyle='#1a0008';ctx.fillRect(0,0,wallW,H);ctx.fillRect(W-wallW,0,wallW,H);
-      // Ground shaking rumble
+    // PHASE 2 (0.12-0.18): Darkness + rumble
+    else if(kp<0.18){
+      const dp=(kp-0.12)/0.06;
+      ctx.globalAlpha=0.3+dp*0.3;ctx.fillStyle='#0a0008';ctx.fillRect(0,0,W,H);
+      const wallW=W*0.13*(1-dp*0.5);
+      ctx.globalAlpha=0.7;ctx.fillStyle='#1a0008';ctx.fillRect(0,0,wallW,H);ctx.fillRect(W-wallW,0,wallW,H);
       if(bi.timer%3===0)this.triggerShake(2,3);
     }
-    // PHASE 3 (0.25-0.65): Motorcycle entrance from right
-    else if(kp<0.65){
-      const mp=(kp-0.25)/0.4;
-      ctx.globalAlpha=0.4;ctx.fillStyle='#0a0008';ctx.fillRect(0,0,W,H);
-      // Walls fade out
-      const wallFade=Math.max(0,1-mp*3);
-      if(wallFade>0){
-        ctx.globalAlpha=0.85*wallFade;
-        ctx.fillStyle='#1a0008';ctx.fillRect(0,0,W*0.12,H);ctx.fillRect(W-W*0.12,0,W*0.12,H);
-      }
-      // Motorcycle + boss riding in from right side
-      const bikeX=W*1.2-mp*W*0.85; // slides from right to ~35% from right
-      const bikeY=H*0.65;
-      const arrived=mp>0.8;
+    // PHASE 3 (0.18-0.55): SLOW motorcycle entrance
+    else if(kp<0.55){
+      const mp=(kp-0.18)/0.37; // slower — 0.37 of total (was 0.4 of 240)
+      ctx.globalAlpha=0.25;ctx.fillStyle='#0a0008';ctx.fillRect(0,0,W,H);
+      // Walls fade
+      const wf=Math.max(0,1-mp*4);
+      if(wf>0){ctx.globalAlpha=0.7*wf;ctx.fillStyle='#1a0008';ctx.fillRect(0,0,W*0.1,H);ctx.fillRect(W-W*0.1,0,W*0.1,H);}
+
+      // Motorcycle slides from right — eased motion (starts fast, decelerates)
+      const eased=1-Math.pow(1-mp,2.5); // ease-out
+      const bikeX=W*1.3-eased*W*0.95;
+      const bikeY=H*0.62;
+      const arrived=mp>0.85;
       ctx.globalAlpha=1;
-      // Tire marks / sparks trail
+
+      // Ground line
+      ctx.strokeStyle=bi.boss?.color||MG;ctx.lineWidth=1;ctx.globalAlpha=0.3;
+      ctx.beginPath();ctx.moveTo(0,bikeY+25);ctx.lineTo(W,bikeY+25);ctx.stroke();
+      ctx.globalAlpha=1;
+
+      // Tire marks trail
       if(!arrived){
-        ctx.strokeStyle='#ff6600';ctx.lineWidth=2;ctx.globalAlpha=0.4;
-        for(let s=0;s<8;s++){
-          const sx=bikeX+30+s*15+Math.random()*5;
-          const sy=bikeY+20+Math.random()*6;
-          ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(sx+10+Math.random()*8,sy+Math.random()*4-2);ctx.stroke();
+        ctx.strokeStyle='#ff6600';ctx.lineWidth=2;ctx.globalAlpha=0.35;
+        for(let s=0;s<10;s++){
+          const sx=bikeX+35+s*18+Math.random()*4;
+          const sy=bikeY+22+Math.random()*4;
+          ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(sx+12+Math.random()*6,sy+Math.random()*3-1.5);ctx.stroke();
         }
-        // Spark particles
-        ctx.fillStyle='#ffaa00';ctx.globalAlpha=0.7;
-        for(let sp=0;sp<6;sp++){
-          const spx=bikeX+40+Math.random()*30;
-          const spy=bikeY+15+Math.random()*10;
-          ctx.fillRect(spx,spy,2,2);
+        ctx.fillStyle='#ffaa00';ctx.globalAlpha=0.8;
+        for(let sp=0;sp<8;sp++){
+          const spx=bikeX+45+Math.random()*35;
+          const spy=bikeY+18+Math.random()*8;
+          ctx.fillRect(spx,spy,2+Math.random()*2,2);
         }
       }
       ctx.globalAlpha=1;
-      // Draw motorcycle (8-bit style)
-      const bS=3; // bike pixel scale
+
+      // ── Draw motorcycle (bigger, more detailed) ──
       const bx=bikeX,by=bikeY;
-      // Wheels
-      ctx.fillStyle='#333';
-      ctx.beginPath();ctx.arc(bx,by+18*bS/4,8,0,Math.PI*2);ctx.fill();
-      ctx.beginPath();ctx.arc(bx+20*bS/4,by+18*bS/4,8,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#666';
-      ctx.beginPath();ctx.arc(bx,by+18*bS/4,4,0,Math.PI*2);ctx.fill();
-      ctx.beginPath();ctx.arc(bx+20*bS/4,by+18*bS/4,4,0,Math.PI*2);ctx.fill();
-      // Frame
-      ctx.fillStyle='#222';
-      ctx.fillRect(bx-5,by+5,50,12);
-      // Engine block
-      ctx.fillStyle='#444';ctx.fillRect(bx+5,by+2,20,14);
-      ctx.fillStyle=bi.boss?.color||'#ff00ff';ctx.fillRect(bx+8,by+4,14,4);
-      // Handlebars
-      ctx.fillStyle='#888';ctx.fillRect(bx-8,by-5,8,12);
-      // Headlight
-      ctx.fillStyle='#ffff00';ctx.globalAlpha=0.6+Math.sin(bi.timer*0.3)*0.4;
-      ctx.beginPath();ctx.arc(bx-10,by,5,0,Math.PI*2);ctx.fill();
-      ctx.globalAlpha=1;
-      // Exhaust
+      // Rear wheel
+      ctx.fillStyle='#2a2a2a';ctx.beginPath();ctx.arc(bx+50,by+20,12,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#555';ctx.beginPath();ctx.arc(bx+50,by+20,6,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle='#777';ctx.lineWidth=1;ctx.beginPath();ctx.arc(bx+50,by+20,10,0,Math.PI*2);ctx.stroke();
+      // Front wheel
+      ctx.fillStyle='#2a2a2a';ctx.beginPath();ctx.arc(bx-10,by+20,11,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#555';ctx.beginPath();ctx.arc(bx-10,by+20,5,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle='#777';ctx.beginPath();ctx.arc(bx-10,by+20,9,0,Math.PI*2);ctx.stroke();
+      // Frame + body
+      ctx.fillStyle='#1a1a1a';ctx.fillRect(bx-5,by+5,60,14);
+      // Engine
+      ctx.fillStyle='#333';ctx.fillRect(bx+10,by+2,25,16);
+      ctx.fillStyle=bi.boss?.color||MG;ctx.fillRect(bx+13,by+5,19,5);
+      // Tank
+      ctx.fillStyle='#222';ctx.fillRect(bx+5,by-5,30,12);
+      ctx.fillStyle=bi.boss?.color||MG;ctx.globalAlpha=0.6;ctx.fillRect(bx+8,by-3,24,3);ctx.globalAlpha=1;
+      // Handlebars + forks
+      ctx.fillStyle='#888';ctx.fillRect(bx-15,by-8,10,14);
+      ctx.fillStyle='#666';ctx.fillRect(bx-12,by+8,4,14);
+      // Headlight beam
+      ctx.fillStyle='#ffff00';ctx.globalAlpha=0.5+Math.sin(bi.timer*0.3)*0.3;
+      ctx.beginPath();ctx.arc(bx-18,by+2,6,0,Math.PI*2);ctx.fill();
+      // Headlight cone
       if(!arrived){
-        ctx.fillStyle='#555';ctx.globalAlpha=0.3;
-        for(let e=0;e<5;e++){
-          const ex=bx+55+e*12+Math.random()*8;
-          const ey=by+8+Math.random()*8-4;
-          ctx.beginPath();ctx.arc(ex,ey,3+e*2,0,Math.PI*2);ctx.fill();
+        ctx.globalAlpha=0.08;ctx.fillStyle='#ffff88';
+        ctx.beginPath();ctx.moveTo(bx-18,by-2);ctx.lineTo(bx-120,by-30);ctx.lineTo(bx-120,by+34);ctx.closePath();ctx.fill();
+      }
+      ctx.globalAlpha=1;
+      // Exhaust pipes
+      ctx.fillStyle='#666';ctx.fillRect(bx+55,by+8,12,4);ctx.fillRect(bx+55,by+14,12,4);
+      // Exhaust smoke
+      if(!arrived){
+        ctx.globalAlpha=0.2;ctx.fillStyle='#888';
+        for(let e=0;e<6;e++){
+          ctx.beginPath();ctx.arc(bx+70+e*14+Math.random()*8,by+11+Math.random()*6-3,4+e*2.5,0,Math.PI*2);ctx.fill();
         }
       }
       ctx.globalAlpha=1;
-      // Boss rider on bike (simplified)
-      const rx=bx+5,ry=by-25;
-      ctx.fillStyle=bi.boss?.color||MG;
-      // Body
-      ctx.fillRect(rx,ry+8,14,16);
-      // Head
-      ctx.fillStyle='#556677';ctx.fillRect(rx+2,ry,10,10);
+      // ── Boss rider ──
+      const rx=bx+12,ry=by-30;
+      // Legs straddling bike
+      ctx.fillStyle='#222';ctx.fillRect(rx-2,ry+18,8,10);ctx.fillRect(rx+12,ry+18,8,10);
+      // Body / torso
+      ctx.fillStyle=bi.boss?.color||MG;ctx.fillRect(rx,ry+8,18,12);
+      // Shoulders
+      ctx.fillStyle='#333';ctx.fillRect(rx-3,ry+8,5,6);ctx.fillRect(rx+16,ry+8,5,6);
+      // Head + helmet
+      ctx.fillStyle='#445';ctx.fillRect(rx+3,ry,12,10);
       // Visor
-      ctx.fillStyle=bi.boss?.color||MG;ctx.fillRect(rx+3,ry+3,8,4);
+      ctx.fillStyle=bi.boss?.color||MG;ctx.fillRect(rx+4,ry+3,10,4);
+      // Arms reaching handlebars
+      ctx.fillStyle='#333';ctx.fillRect(rx-8,ry+10,8,4);
 
-      // Boss name text
-      if(mp>0.5){
-        const nameAlpha=Math.min(1,(mp-0.5)/0.2);
-        ctx.globalAlpha=nameAlpha;
-        ctx.fillStyle=bi.boss?.color||'#ff00ff';
-        ctx.font=`bold ${Math.floor(P2*5)}px 'Press Start 2P',monospace`;
+      // Boss name + subtitle
+      if(mp>0.4){
+        const na=Math.min(1,(mp-0.4)/0.15);
+        ctx.globalAlpha=na;
+        ctx.fillStyle=bi.boss?.color||MG;
+        ctx.font=`bold ${Math.floor(P2*6)}px 'Press Start 2P',monospace`;
         ctx.textAlign='center';ctx.textBaseline='middle';
-        ctx.shadowColor=bi.boss?.color||MG;ctx.shadowBlur=20;
-        ctx.fillText(bi.boss?.name||'BOSS',W/2,H*0.25);
+        ctx.shadowColor=bi.boss?.color||MG;ctx.shadowBlur=25;
+        ctx.fillText(bi.boss?.name||'BOSS',W/2,H*0.18);
         ctx.shadowBlur=0;
-        ctx.font=`${Math.floor(P2*2)}px 'Share Tech Mono',monospace`;
+        ctx.font=`${Math.floor(P2*2.5)}px 'Share Tech Mono',monospace`;
         ctx.fillStyle='#ff4444';
-        ctx.fillText('▸ ENGAGE ◂',W/2,H*0.33);
+        ctx.fillText('▸ ZONE BOSS ◂',W/2,H*0.26);
       }
-
-      // Rumble on approach
-      if(bi.timer%5===0&&!arrived)this.triggerShake(4,5);
+      if(bi.timer%6===0&&!arrived)this.triggerShake(3,4);
     }
-    // PHASE 4 (0.65-0.85): Boss dismounts — flash + lands at position
-    else if(kp<0.85){
-      const dp=(kp-0.65)/0.2;
+    // PHASE 4 (0.55-0.72): Dismount flash + boss dialog
+    else if(kp<0.72){
+      const dp=(kp-0.55)/0.17;
       // White flash on dismount
-      if(dp<0.15){
-        ctx.globalAlpha=(1-dp/0.15)*0.6;ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+      if(dp<0.1){
+        ctx.globalAlpha=(1-dp/0.1)*0.7;ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
       }
       // Boss name persists
       ctx.globalAlpha=1;
-      ctx.fillStyle=bi.boss?.color||'#ff00ff';
+      ctx.fillStyle=bi.boss?.color||MG;
       ctx.font=`bold ${Math.floor(P2*5)}px 'Press Start 2P',monospace`;
       ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.shadowColor=bi.boss?.color||MG;ctx.shadowBlur=15;
-      ctx.fillText(bi.boss?.name||'BOSS',W/2,H*0.25);
+      ctx.shadowColor=bi.boss?.color||MG;ctx.shadowBlur=12;
+      ctx.fillText(bi.boss?.name||'BOSS',W/2,H*0.18);
       ctx.shadowBlur=0;
-      // "FIGHT" text fades in
-      if(dp>0.5){
-        ctx.globalAlpha=(dp-0.5)/0.5;
-        ctx.fillStyle='#ff0040';
-        ctx.font=`bold ${Math.floor(P2*8)}px 'Press Start 2P',monospace`;
-        ctx.fillText('FIGHT!',W/2,H*0.55);
+      // Show boss dialog bubble
+      if(!bi.dialogShown&&dp>0.2){
+        bi.dialogShown=true;
+        const line=this._getBossLine();
+        AIDialog._showEnemyDialog(bi.boss,`say exactly: "${line}"`, 'boss_arrival');
       }
+      // Dialog box drawn by AIDialog — just show dark overlay
+      ctx.globalAlpha=0.15;ctx.fillStyle='#0a0008';ctx.fillRect(0,0,W,H);
     }
-    // PHASE 5 (0.85-1.0): Fade out, begin combat
+    // PHASE 5 (0.72-0.88): "FIGHT!" banner
+    else if(kp<0.88){
+      const fp=(kp-0.72)/0.16;
+      // Dark bg
+      ctx.globalAlpha=0.3*(1-fp);ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
+      // FIGHT banner — scales in then holds
+      const scale=fp<0.2?fp/0.2*1.3:(fp<0.4?1.3-(fp-0.2)/0.2*0.3:1);
+      ctx.save();ctx.translate(W/2,H/2);ctx.scale(scale,scale);
+      // Red band behind
+      ctx.globalAlpha=0.85;ctx.fillStyle='#cc0020';
+      ctx.fillRect(-W*0.4,-H*0.06,W*0.8,H*0.12);
+      // FIGHT text
+      ctx.globalAlpha=1;ctx.fillStyle='#fff';
+      ctx.font=`bold ${Math.floor(P2*10)}px 'Press Start 2P',monospace`;
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.shadowColor='#ff0040';ctx.shadowBlur=30;
+      ctx.fillText('FIGHT!',0,0);
+      ctx.shadowBlur=0;
+      ctx.restore();
+    }
+    // PHASE 6 (0.88-1.0): Fade out
     else{
-      const fo=(kp-0.85)/0.15;
-      ctx.globalAlpha=(1-fo)*0.3;ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
+      const fo=(kp-0.88)/0.12;
+      ctx.globalAlpha=(1-fo)*0.25;ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
     }
 
     ctx.restore();
     if(bi.timer>=bi.totalFrames){
       bi.active=false;
+      AIDialog.hideAll();
       if(bi.onDone)bi.onDone();
     }
   },
@@ -7135,34 +7190,40 @@ const AIDialog = {
 
   // ── Trigger points ──────────────────────────────────────────────
 
-  // Turn 1 only: enemy taunts then player responds after 2.2s
+  _isBossFight(){return GameState.enemies?.some(e=>e.isBoss)||false;},
+
+  // Turn 1 only: enemy taunts then player responds (BOSS FIGHTS ONLY)
   onTurn(turnNum, enemies){
-    if(turnNum !== 1) return;
+    if(turnNum !== 1 || !this._isBossFight()) return;
     const en = enemies?.find(e=>e.hp>0); if(!en) return;
     this._showEnemyDialog(en, 'battle start, first encounter with this hero', 'enemy_taunt');
     setTimeout(()=>this._showPlayerDialog('responding to enemy opening taunt with confidence', 'player_comeback'), 2200);
   },
 
   onLowHPEnemy(enemy){
+    if(!this._isBossFight()) return;
     this._showEnemyDialog(enemy, 'critically wounded, desperate, near death', 'enemy_lowHp');
   },
 
   onLowHPPlayer(){
+    if(!this._isBossFight()) return;
     this._showPlayerDialog('critically wounded, fighting through pain and damage', 'player_lowHp');
   },
 
   onEnemyDeath(enemy){
+    if(!this._isBossFight()) return;
     this._showEnemyDialog(enemy, 'dying, speaking final words before shutdown', 'enemy_death');
   },
 
-  // Crit: one line from player only (whoever landed it)
+  // Crit: one line from player only (boss fights only)
   onCrit(enemy){
+    if(!this._isBossFight()) return;
     this._showPlayerDialog('you just landed a devastating critical hit on the enemy', 'player_crit');
   },
 
   // Skill use: one line from player only
   onSpell(spell, enemy){
-    if(!spell) return;
+    if(!spell || !this._isBossFight()) return;
     this._showPlayerDialog(`you just activated ${spell.name}, a powerful combat ability`, 'player_spell');
   },
 };
