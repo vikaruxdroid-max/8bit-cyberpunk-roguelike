@@ -4475,7 +4475,8 @@ const MerchantShop={
     this.render();
     const el=document.getElementById('merchantShop');if(el)el.style.display='flex';
   },
-  close(){const el=document.getElementById('merchantShop');if(el)el.style.display='none';},
+  close(){const el=document.getElementById('merchantShop');if(el)el.style.display='none';if(this._onClose)this._onClose();},
+  _onClose:null,
   getPrice(item){
     const base=item.rarity==='legendary'?300:item.rarity==='rare'?100:40;
     return Math.floor(base*(1+(GameState.floor||1)*0.15));
@@ -5317,8 +5318,12 @@ const Game={
     if(!floorData)return;
     const room=floorData.rooms[idx];
     if(!room)return;
+    // Reset combat state for new room
+    Combat._endingCombat=false;
+    GameState.enemies=[];
     GameState.currentRoomIdx=idx;
     room.visited=true;
+    console.log('[enterRoom] idx='+idx+' type='+room.type);
     UI.show('sCM');UI.updateFloor();
     // Clear stale DM toast
     const toast=document.getElementById('dmToast');if(toast)toast.style.opacity='0';
@@ -5404,20 +5409,14 @@ const Game={
         DM.say('Merchant node detected. Opening shop...');
         const nextMerch=GameState.currentRoomIdx+1;
         const totalMerch=GameState.currentFloor?.rooms?.length||0;
+        // Set callback on merchant shop — fires when shop is closed
+        MerchantShop._onClose=()=>{
+          MerchantShop._onClose=null;
+          setTimeout(()=>{
+            if(nextMerch<totalMerch)this.enterRoom(nextMerch);else WorldMap.show();
+          },400);
+        };
         MerchantShop.open();
-        // Override shop close to advance to next room
-        const origClose=MerchantShop.close.bind(MerchantShop);
-        const shopCloseEl=document.getElementById('shopClose');
-        if(shopCloseEl){
-          const handler=()=>{
-            origClose();
-            shopCloseEl.removeEventListener('click',handler);
-            setTimeout(()=>{
-              if(nextMerch<totalMerch)this.enterRoom(nextMerch);else WorldMap.show();
-            },400);
-          };
-          shopCloseEl.addEventListener('click',handler);
-        }
         break;
       }
     }
