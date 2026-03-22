@@ -1993,15 +1993,11 @@ const Arena = {
       if(scaleX!==1||scaleY!==1||breathe!==1){
         ctx.translate(dx+sz.w/2, dy+sz.h); ctx.scale(scaleX*breathe, scaleY*breathe); ctx.translate(-(dx+sz.w/2), -(dy+sz.h));
       }
-      // Dark outline pass (offset in 4 directions)
-      ctx.globalAlpha = (pDead ? 0.2 : 0.5);
-      if(SPR[p.sprite]){
-        for(const[ox2,oy2] of [[-2,0],[2,0],[0,-2],[0,2]]){
-          ctx.save(); ctx.filter='brightness(0%)';
-          SPR[p.sprite](ctx, dx+ox2, dy+oy2, false, t);
-          ctx.restore();
-        }
-      }
+      // Simple dark backdrop for visibility (1 pass instead of 4)
+      ctx.globalAlpha = pDead ? 0.15 : 0.4;
+      ctx.filter='brightness(0%)';
+      if(SPR[p.sprite]) SPR[p.sprite](ctx, dx+1, dy+1, false, t);
+      ctx.filter='none';
       // Main sprite
       ctx.globalAlpha = pDead ? 0.35 : 1;
       if (SPR[p.sprite]) SPR[p.sprite](ctx, dx, dy, false, t);
@@ -2094,15 +2090,11 @@ const Arena = {
       if(scaleX2!==1||scaleY2!==1||eBreathe!==1){
         ctx.translate(edx+sz.w/2, edy+sz.h); ctx.scale(scaleX2*eBreathe, scaleY2*eBreathe); ctx.translate(-(edx+sz.w/2), -(edy+sz.h));
       }
-      // Dark outline
-      ctx.globalAlpha=0.5;
-      if(SPR[en.sprite]){
-        for(const[ox3,oy3] of [[-2,0],[2,0],[0,-2],[0,2]]){
-          ctx.save(); ctx.filter='brightness(0%)';
-          SPR[en.sprite](ctx, edx+ox3, edy+oy3, true, t);
-          ctx.restore();
-        }
-      }
+      // Simple dark backdrop (1 pass instead of 4)
+      ctx.globalAlpha=0.4;
+      ctx.filter='brightness(0%)';
+      if(SPR[en.sprite]) SPR[en.sprite](ctx, edx+1, edy+1, true, t);
+      ctx.filter='none';
       // Main sprite
       ctx.globalAlpha=1;
       if (SPR[en.sprite]) SPR[en.sprite](ctx, edx, edy, true, t);
@@ -3540,23 +3532,15 @@ const Combat = {
       UI.dmgNumAt(pos.x,pos.y,dmg,isCrit?'crit':'enemy');
       const burstColor=p?.accent||CY;
       const pq=GameState.settings.particles;
-      const bc=pq==='high'?(isCrit?42:22):pq==='low'?8:0;
-      if(bc>0)Arena.spawnBurst(pos.x,pos.y,burstColor,bc,isCrit?1.4:1.0);
-      Arena.triggerBgPulse(burstColor);
-      if(isCrit){Arena.triggerShake(8,10);Arena.triggerScreenFlash('#ffffff',0.38);if(pq!=='off')Arena.spawnBurst(pos.x,pos.y,'#fff000',16,1.2);AIDialog.onCrit(enemy);}
-      // Combo trail (5+ combo)
-      if(GameState.combo>=5&&pq!=='off')Arena.spawnBurst(pos.x,pos.y,GD,12,0.7);
+      const bc=pq==='high'?(isCrit?18:8):pq==='low'?4:0;
+      if(bc>0)Arena.spawnBurst(pos.x,pos.y,burstColor,bc,isCrit?1.2:0.8);
+      if(isCrit){Arena.triggerShake(6,8);AIDialog.onCrit(enemy);}
+      if(GameState.combo>=5&&pq==='high')Arena.spawnBurst(pos.x,pos.y,GD,6,0.5);
     }
     // Increment combo
     this.incrementCombo();
     if(enemy.hp<=0){
       this.killEnemy(enemy);
-      // Check if all enemies dead — end combat immediately
-      const remaining=GameState.enemies.filter(e=>e.hp>0);
-      console.log('[deal] enemy killed, remaining alive:',remaining.length);
-      if(!remaining.length){
-        setTimeout(()=>this.endCombat(true),200);
-      }
     }
     else{if(enemy.checkPhase)enemy.checkPhase();if(!enemy.lowHpSaid&&enemy.hp/enemy.maxHp<=0.3){enemy.lowHpSaid=true;DialogEngine.showLowHp(enemy);AIDialog.onLowHPEnemy(enemy);}}
     return dmg;
@@ -3799,7 +3783,6 @@ const Combat = {
   endCombat(won){
     if(this._endingCombat)return;this._endingCombat=true;
     clearInterval(GameState.combatInterval);GameState.combatInterval=null;GameState.combatRunning=false;
-    console.log('[endCombat] won='+won+' room='+(GameState.currentRoomIdx+1)+'/'+((GameState.currentFloor?.rooms?.length)||'?')+' levelUp='+GameState.levelUpPending);
     const p=GameState.player;
     if(!won){
       UI.flash();
@@ -3853,14 +3836,11 @@ const Combat = {
       const roomNum=GameState.currentRoomIdx+1;
       DM.say(`Room ${roomNum}/${totalRooms} cleared!`);
       LootScreen.reset();
-      console.log('[endCombat] scheduling VictoryScreen for room '+roomNum);
       setTimeout(()=>{
         try{
-          console.log('[endCombat] showing VictoryScreen now');
           VictoryScreen.show(false,()=>{
             try{
               if(nextIdx<totalRooms){
-                console.log('[VictoryScreen cb] entering room '+nextIdx);
                 Game.enterRoom(nextIdx);
               } else {
                 WorldMap.show();
@@ -5463,7 +5443,6 @@ const Game={
     GameState.enemies=[];
     GameState.currentRoomIdx=idx;
     room.visited=true;
-    console.log('[enterRoom] idx='+idx+' type='+room.type);
     UI.show('sCM');UI.updateFloor();
     // Clear stale DM toast
     const toast=document.getElementById('dmToast');if(toast)toast.style.opacity='0';
