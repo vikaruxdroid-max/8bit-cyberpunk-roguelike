@@ -828,6 +828,107 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
   border:1px solid rgba(0,255,255,.4);color:rgba(0,255,255,.7);letter-spacing:1px;transition:all .15s;}
 #mapBtn:hover{border-color:var(--C);color:var(--C);box-shadow:0 0 8px rgba(0,255,255,.3);}
 #mapBtn.hidden{display:none;}
+/* ── MANGA INTRO SCREEN ── */
+#sMI{background:#050510;position:relative;overflow:hidden;}
+#sMI .manga-bg{position:absolute;inset:0;background:
+  radial-gradient(ellipse at 30% 20%, rgba(0,255,255,.04) 0%, transparent 50%),
+  radial-gradient(ellipse at 70% 80%, rgba(255,0,255,.04) 0%, transparent 50%),
+  #050510;}
+#sMI .manga-grid{position:absolute;inset:3vh 3vw;display:grid;
+  grid-template-columns:38% 62%;grid-template-rows:38% 32% 30%;gap:4px;}
+.manga-panel{position:relative;border:2.5px solid var(--C);overflow:hidden;
+  opacity:0;transform:scaleY(0);transform-origin:center;
+  background:#0a0a1a;}
+.manga-panel.reveal{animation:mpReveal .35s cubic-bezier(.22,.68,.36,1.2) forwards;}
+.manga-panel.reveal-slide{animation:mpSlide .4s cubic-bezier(.22,.68,.36,1.2) forwards;}
+.manga-panel.reveal-drop{animation:mpDrop .35s cubic-bezier(.22,.68,.36,1.2) forwards;}
+@keyframes mpReveal{0%{opacity:0;transform:scaleY(0);filter:hue-rotate(90deg) brightness(3);}
+  30%{opacity:1;transform:scaleY(1.02);filter:hue-rotate(45deg) brightness(1.8);}
+  60%{transform:scaleY(.98);filter:none;}100%{opacity:1;transform:scaleY(1);filter:none;}}
+@keyframes mpSlide{0%{opacity:0;transform:translateX(-100%);}
+  40%{opacity:1;transform:translateX(3%);filter:brightness(1.5);}
+  100%{opacity:1;transform:translateX(0);filter:none;}}
+@keyframes mpDrop{0%{opacity:0;transform:translateY(-80px) scaleX(.95);}
+  50%{opacity:1;transform:translateY(4px) scaleX(1.01);}
+  100%{opacity:1;transform:translateY(0) scaleX(1);}}
+.manga-panel .mp-glow{position:absolute;inset:-2px;
+  box-shadow:0 0 15px rgba(0,255,255,.4),inset 0 0 15px rgba(0,255,255,.15);pointer-events:none;}
+.manga-panel:nth-child(odd) .mp-glow{
+  box-shadow:0 0 15px rgba(255,0,255,.4),inset 0 0 15px rgba(255,0,255,.15);}
+.mp-halftone{position:absolute;inset:0;opacity:.06;pointer-events:none;
+  background:radial-gradient(circle,#fff 1px,transparent 1px);background-size:6px 6px;}
+.mp-speedlines{position:absolute;inset:0;opacity:0;pointer-events:none;
+  background:repeating-conic-gradient(rgba(255,255,255,.03) 0deg 2deg,transparent 2deg 8deg) center/100% 100%;}
+.manga-panel.reveal .mp-speedlines,.manga-panel.reveal-slide .mp-speedlines,
+.manga-panel.reveal-drop .mp-speedlines{animation:slFade .6s .2s forwards;}
+@keyframes slFade{0%{opacity:.5;}100%{opacity:.12;}}
+/* Panel positions */
+.mp-1{grid-column:1/3;grid-row:1;}
+.mp-2{grid-column:1;grid-row:2/4;}
+.mp-3{grid-column:2;grid-row:2;}
+.mp-4{grid-column:2;grid-row:3;}
+/* Panel backgrounds */
+.mp-1{background:linear-gradient(180deg,#0d0d2b 0%,#0a0a1a 60%,#050510 100%);}
+.mp-2{background:linear-gradient(135deg,#0a0a1a 0%,#120828 100%);border-color:var(--M);}
+.mp-3{background:radial-gradient(ellipse at 60% 40%,#1a0a2a 0%,#0a0a1a 70%);}
+.mp-4{background:linear-gradient(0deg,#0d1a0d 0%,#0a0a1a 100%);border-color:var(--G);}
+/* Narration boxes */
+.manga-narr{position:absolute;padding:6px 12px;background:rgba(0,0,0,.85);
+  border:1px solid rgba(0,255,255,.5);font:italic 11px 'Share Tech Mono',monospace;
+  color:#ccd;letter-spacing:.5px;z-index:2;opacity:0;transform:translateY(-5px);}
+.manga-panel.reveal .manga-narr,.manga-panel.reveal-slide .manga-narr,
+.manga-panel.reveal-drop .manga-narr{animation:narrIn .3s .25s forwards;}
+@keyframes narrIn{to{opacity:1;transform:translateY(0);}}
+/* Speech bubbles */
+.manga-bubble{position:absolute;padding:8px 14px;background:#fff;color:#111;
+  border-radius:16px 16px 16px 4px;font:bold 11px 'Share Tech Mono',monospace;
+  max-width:55%;z-index:2;opacity:0;box-shadow:2px 2px 0 #000;}
+.manga-bubble::after{content:'';position:absolute;bottom:-8px;left:12px;
+  border:6px solid transparent;border-top-color:#fff;border-right-color:#fff;}
+.manga-panel.reveal .manga-bubble,.manga-panel.reveal-slide .manga-bubble,
+.manga-panel.reveal-drop .manga-bubble{animation:bubbleIn .3s .35s forwards;}
+@keyframes bubbleIn{0%{opacity:0;transform:scale(.7);}100%{opacity:1;transform:scale(1);}}
+/* SFX text */
+.manga-sfx{position:absolute;font:900 clamp(28px,5vw,56px)/1 'Press Start 2P',monospace;
+  color:#fff;-webkit-text-stroke:2px #000;text-shadow:0 0 20px var(--C),0 0 40px var(--C);
+  z-index:3;opacity:0;letter-spacing:-2px;}
+.manga-panel.reveal .manga-sfx,.manga-panel.reveal-slide .manga-sfx,
+.manga-panel.reveal-drop .manga-sfx{animation:sfxIn .25s .15s forwards;}
+@keyframes sfxIn{0%{opacity:0;transform:scale(2) rotate(-5deg);}
+  60%{opacity:1;transform:scale(.9) rotate(2deg);}100%{opacity:1;transform:scale(1) rotate(0deg);}}
+.manga-sfx.mg{color:var(--M);text-shadow:0 0 20px var(--M),0 0 40px var(--M);}
+.manga-sfx.gr{color:var(--G);text-shadow:0 0 20px var(--G),0 0 40px var(--G);}
+/* City silhouette in panel 1 */
+.mp-city{position:absolute;bottom:0;left:0;right:0;height:45%;
+  background:linear-gradient(0deg,#0a0a1a 0%,transparent 100%);z-index:1;}
+.mp-city::before{content:'';position:absolute;bottom:0;left:0;right:0;height:80%;
+  background:
+    linear-gradient(0deg,#111 2px,transparent 2px) 5% 100%/8% 60% no-repeat,
+    linear-gradient(0deg,#111 2px,transparent 2px) 15% 100%/5% 75% no-repeat,
+    linear-gradient(0deg,#111 2px,transparent 2px) 22% 100%/10% 50% no-repeat,
+    linear-gradient(0deg,#111 2px,transparent 2px) 35% 100%/6% 85% no-repeat,
+    linear-gradient(0deg,#111 2px,transparent 2px) 43% 100%/12% 40% no-repeat,
+    linear-gradient(0deg,#111 2px,transparent 2px) 58% 100%/7% 70% no-repeat,
+    linear-gradient(0deg,#111 2px,transparent 2px) 67% 100%/5% 90% no-repeat,
+    linear-gradient(0deg,#111 2px,transparent 2px) 75% 100%/9% 55% no-repeat,
+    linear-gradient(0deg,#111 2px,transparent 2px) 87% 100%/6% 65% no-repeat,
+    linear-gradient(0deg,#111 2px,transparent 2px) 95% 100%/4% 80% no-repeat;}
+/* Character silhouette in panel 2 */
+.mp-char-sil{position:absolute;bottom:10%;left:50%;transform:translateX(-50%);
+  width:50px;height:80px;background:#111;clip-path:polygon(30% 0%,70% 0%,80% 15%,75% 40%,90% 45%,85% 70%,70% 100%,30% 100%,15% 70%,10% 45%,25% 40%,20% 15%);
+  box-shadow:0 0 30px rgba(255,0,255,.4);}
+.mp-char-sil::after{content:'';position:absolute;inset:-4px;
+  background:inherit;clip-path:inherit;opacity:.3;filter:blur(8px);}
+/* Glitch scan line */
+.mp-scanline{position:absolute;inset:0;pointer-events:none;z-index:4;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,255,255,.02) 2px,rgba(0,255,255,.02) 4px);}
+/* Skip button */
+#miSkip{position:absolute;bottom:2vh;right:3vw;padding:8px 24px;
+  background:transparent;border:1px solid rgba(0,255,255,.5);color:var(--C);
+  font:bold 12px 'Press Start 2P',monospace;cursor:pointer;z-index:10;
+  opacity:0;transition:all .3s;letter-spacing:1px;}
+#miSkip.show{opacity:1;}
+#miSkip:hover{background:rgba(0,255,255,.1);box-shadow:0 0 15px rgba(0,255,255,.3);}
 </style>
 </head>
 <body>
@@ -929,6 +1030,45 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
       </div>
       <div class="mm-footer">NEON DUNGEON ROGUELIKE</div>
     </div>
+  </div>
+
+  <!-- MANGA INTRO -->
+  <div class="scr" id="sMI">
+    <div class="manga-bg"></div>
+    <div class="manga-grid">
+      <!-- Panel 1: Wide top — city skyline -->
+      <div class="manga-panel mp-1" id="mp1">
+        <div class="mp-glow"></div><div class="mp-halftone"></div><div class="mp-speedlines"></div>
+        <div class="mp-city"></div>
+        <div class="manga-narr" style="top:8%;left:5%;">NEO-SECTOR 7. Year 20XX.</div>
+        <div class="manga-narr" style="top:8%;right:5%;left:auto;border-color:rgba(255,0,255,.5);">The grid never sleeps.</div>
+        <div class="manga-sfx" style="bottom:15%;right:8%;transform:rotate(-8deg);">BZZZT</div>
+        <div class="mp-scanline"></div>
+      </div>
+      <!-- Panel 2: Tall left — character silhouette -->
+      <div class="manga-panel mp-2" id="mp2">
+        <div class="mp-glow"></div><div class="mp-halftone"></div>
+        <div class="mp-char-sil"></div>
+        <div class="manga-bubble" style="top:12%;right:8%;">Another runner jacked in...</div>
+        <div class="manga-bubble" style="top:35%;left:8%;border-radius:16px 16px 4px 16px;">Let's see how long this one lasts.</div>
+        <div class="mp-scanline"></div>
+      </div>
+      <!-- Panel 3: Right middle — action -->
+      <div class="manga-panel mp-3" id="mp3">
+        <div class="mp-glow"></div><div class="mp-halftone"></div><div class="mp-speedlines"></div>
+        <div class="manga-narr" style="top:8%;left:5%;">The firewall shattered.</div>
+        <div class="manga-sfx mg" style="top:30%;left:10%;transform:rotate(-12deg);">CRASH!!</div>
+        <div class="manga-sfx" style="bottom:15%;right:5%;font-size:clamp(16px,3vw,32px);transform:rotate(5deg);">BOOM</div>
+        <div class="mp-scanline"></div>
+      </div>
+      <!-- Panel 4: Right bottom — call to action -->
+      <div class="manga-panel mp-4" id="mp4">
+        <div class="mp-glow"></div><div class="mp-halftone"></div>
+        <div class="manga-sfx gr" style="top:50%;left:50%;transform:translate(-50%,-50%);white-space:nowrap;font-size:clamp(18px,3.5vw,40px);">YOUR RUN BEGINS</div>
+        <div class="mp-scanline"></div>
+      </div>
+    </div>
+    <button id="miSkip" onclick="MangaIntro.hide()">JACK IN &gt;</button>
   </div>
 
   <!-- CHARACTER CREATE -->
@@ -1984,59 +2124,127 @@ const Arena = {
       ctx.restore();
 
       // Animation — dash movement system
-      let lunge=0, scaleX=1, scaleY=1;
+      let lunge=0, scaleX=1, scaleY=1, extraBob=0;
+      const animSub=(s)=>s.includes('.')?s.split('.')[1]:'';
       // Get first alive enemy position for dash target
       const firstAlive=enemies.find(e=>e.hp>0);
       const dashTarget=firstAlive?Math.floor(W*0.45+(enemies.indexOf(firstAlive))*(W*0.52/Math.max(enemies.filter(e=>e.hp>0).length,1))):W*0.6;
-      // Attack — DASH forward to enemy, strike, retreat
-      if (p.animState === 'attack' && p.animTimer !== undefined) {
-        const totalFrames=30;
+      // Attack — DASH forward to enemy, strike, retreat (slash/thrust/overhead variants)
+      if (p.animState.startsWith('attack') && p.animTimer !== undefined) {
+        const sub=animSub(p.animState);
+        const totalFrames=sub==='thrust'?25:sub==='overhead'?35:30;
         const prog = p.animTimer / totalFrames;
-        if(prog<0.3) {
-          // Dash forward (0-30%)
-          const dashProg=prog/0.3;
-          lunge = (dashTarget-px2-sz.w)*0.7*Math.sin(dashProg*Math.PI/2);
-        } else if(prog<0.45) {
-          // Strike hold (30-45%)
-          lunge = (dashTarget-px2-sz.w)*0.7;
-          scaleX=1.1;
+        const dashDist=(dashTarget-px2-sz.w)*0.7;
+        if(sub==='thrust'){
+          // Thrust — faster dash, shorter hold
+          if(prog<0.25){lunge=dashDist*Math.sin((prog/0.25)*Math.PI/2);}
+          else if(prog<0.4){lunge=dashDist;scaleX=1.05;}
+          else{lunge=dashDist*(1-Math.sin(((prog-0.4)/0.6)*Math.PI/2));}
+        } else if(sub==='overhead'){
+          // Overhead — slower, jump arc at strike
+          if(prog<0.35){lunge=dashDist*Math.sin((prog/0.35)*Math.PI/2);}
+          else if(prog<0.5){lunge=dashDist;scaleX=1.12;extraBob=-Math.sin((prog-0.35)/0.15*Math.PI)*15;}
+          else{lunge=dashDist*(1-Math.sin(((prog-0.5)/0.5)*Math.PI/2));scaleY=1+Math.sin((prog-0.5)/0.5*Math.PI)*0.04;}
         } else {
-          // Retreat (45-100%)
-          const retProg=(prog-0.45)/0.55;
-          lunge = (dashTarget-px2-sz.w)*0.7*(1-Math.sin(retProg*Math.PI/2));
+          // Slash — default horizontal sweep
+          if(prog<0.3){lunge=dashDist*Math.sin((prog/0.3)*Math.PI/2);}
+          else if(prog<0.45){lunge=dashDist;scaleX=1.1;}
+          else{lunge=dashDist*(1-Math.sin(((prog-0.45)/0.55)*Math.PI/2));}
         }
         p.animTimer++;
-        if (p.animTimer >= totalFrames) { p.animState = 'idle'; p.animTimer = 0; }
+        if (p.animTimer >= totalFrames) { p.animState = 'idle.base'; p.animTimer = 0; }
       }
-      // Hurt — knockback + white flash
-      const pWasHurt = p.animState === 'hurt';
+      // Hurt — flinch (small) or knockback (big)
+      const pWasHurt = p.animState.startsWith('hurt');
       if (pWasHurt) {
+        const sub=animSub(p.animState);
         ctx.save();
-        lunge = -Math.sin(p.animTimer / 20 * Math.PI) * 25;
-        ctx.globalAlpha = .55 + Math.sin(p.animTimer * 1.5) * .44;
-        ctx.filter = 'brightness(200%) saturate(0%)';
-        p.animTimer++; if (p.animTimer > 20) { p.animState = 'idle'; p.animTimer = 0; }
-        this.triggerShake(2,3); // micro-shake on every hit
+        if(sub==='flinch'){
+          // Flinch — subtle backward lean, brief flash
+          const fFrames=12;
+          lunge = -Math.sin(p.animTimer / fFrames * Math.PI) * 8;
+          scaleY = 1 - Math.sin(p.animTimer / fFrames * Math.PI) * 0.03;
+          ctx.globalAlpha = p.animTimer<4 ? (.7 + Math.sin(p.animTimer*2)*.3) : 1;
+          if(p.animTimer<4) ctx.filter = 'brightness(180%)';
+          p.animTimer++; if (p.animTimer > fFrames) { p.animState = 'idle.base'; p.animTimer = 0; }
+        } else {
+          // Knockback — existing heavy hit behavior
+          lunge = -Math.sin(p.animTimer / 20 * Math.PI) * 25;
+          ctx.globalAlpha = .55 + Math.sin(p.animTimer * 1.5) * .44;
+          ctx.filter = 'brightness(200%) saturate(0%)';
+          p.animTimer++; if (p.animTimer > 20) { p.animState = 'idle.base'; p.animTimer = 0; }
+        }
+        this.triggerShake(sub==='flinch'?1:2, sub==='flinch'?2:3);
       }
-      // Cast — step forward + glow + spell name flash
-      if (p.animState === 'cast') {
-        lunge = Math.sin(p.animTimer / 30 * Math.PI) * 20;
-        ctx.save(); ctx.globalAlpha = .5 - p.animTimer/60;
-        const g = ctx.createRadialGradient(px2+sz.w/2+lunge, py2+sz.h/2, 0, px2+sz.w/2+lunge, py2+sz.h/2, 80);
+      // Dodge — backward hop arc with ghost trail
+      if (p.animState === 'dodge') {
+        const dodgeFrames=18;
+        const prog=p.animTimer/dodgeFrames;
+        lunge = -Math.sin(prog * Math.PI) * 40;
+        extraBob = -Math.sin(prog * Math.PI) * 20;
+        scaleY = 1 - Math.sin(prog * Math.PI) * 0.05;
+        // Ghost trail — faded copy at previous position
+        if(p.animTimer>1 && p.animTimer<12){
+          ctx.save(); ctx.globalAlpha=0.15;
+          const ghostLunge = -Math.sin((p.animTimer-2)/dodgeFrames*Math.PI)*40;
+          if(SPR[p.sprite]) SPR[p.sprite](ctx, px2+ghostLunge, py2+Math.sin((p.animTimer-2)/dodgeFrames*Math.PI)*-20, false, t);
+          ctx.restore();
+        }
+        p.animTimer++;
+        if (p.animTimer >= dodgeFrames) { p.animState = 'idle.base'; p.animTimer = 0; }
+      }
+      // Cast — arm raise or channel variants
+      if (p.animState.startsWith('cast')) {
+        const sub=animSub(p.animState);
+        const castFrames=sub==='channel'?40:30;
+        lunge = Math.sin(p.animTimer / castFrames * Math.PI) * 20;
+        ctx.save(); ctx.globalAlpha = .5 - p.animTimer/(castFrames*2);
+        const g = ctx.createRadialGradient(px2+sz.w/2+lunge, py2+sz.h/2, 0, px2+sz.w/2+lunge, py2+sz.h/2, sub==='channel'?100:80);
         g.addColorStop(0, ac); g.addColorStop(1, 'transparent');
-        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(px2+sz.w/2+lunge, py2+sz.h/2, 80, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(px2+sz.w/2+lunge, py2+sz.h/2, sub==='channel'?100:80, 0, Math.PI*2); ctx.fill();
+        // Channel: sustained glow ring
+        if(sub==='channel' && p.animTimer>5 && p.animTimer<35){
+          ctx.globalAlpha=0.3;
+          ctx.strokeStyle=ac; ctx.lineWidth=2;
+          ctx.beginPath(); ctx.arc(px2+sz.w/2+lunge, py2+sz.h/2, 50+Math.sin(p.animTimer*0.3)*10, 0, Math.PI*2); ctx.stroke();
+        }
         ctx.restore();
-        p.animTimer++; if (p.animTimer > 30) { p.animState = 'idle'; p.animTimer = 0; }
+        p.animTimer++; if (p.animTimer > castFrames) { p.animState = 'idle.base'; p.animTimer = 0; }
       }
-      // Idle bob + breathing
-      const bob = Math.sin(t * .04) * 3;
+      // Idle bob + breathing + variations
+      if(!p._idleVarTimer) p._idleVarTimer=0;
+      if(p.animState.startsWith('idle')){
+        p._idleVarTimer++;
+        if(p._idleVarTimer>180){
+          p._idleVarTimer=0;
+          const vars=['idle.base','idle.look','idle.ready','idle.shift'];
+          p.animState=vars[Math.floor(Math.random()*vars.length)];
+          p.animTimer=0;
+        }
+      } else { p._idleVarTimer=0; }
+      let idleExtraX=0;
+      const idleSub=animSub(p.animState);
+      if(idleSub==='look'){
+        // Look around — slight horizontal scale shift
+        scaleX=1-Math.sin(p.animTimer/45*Math.PI)*0.03;
+        p.animTimer++; if(p.animTimer>45){p.animState='idle.base';p.animTimer=0;}
+      } else if(idleSub==='ready'){
+        // Weapon ready — lean forward
+        lunge=Math.sin(p.animTimer/35*Math.PI)*5;
+        p.animTimer++; if(p.animTimer>35){p.animState='idle.base';p.animTimer=0;}
+      } else if(idleSub==='shift'){
+        // Weight shift — side to side
+        idleExtraX=Math.sin(p.animTimer/30*Math.PI*2)*4;
+        p.animTimer++; if(p.animTimer>30){p.animState='idle.base';p.animTimer=0;}
+      }
+      const bob = Math.sin(t * .04) * 3 + extraBob;
       const breathe = 1 + Math.sin(t * .03) * 0.015;
       const pDead = p.hp <= 0;
       if (pDead) { ctx.save(); ctx.globalAlpha = .35; }
 
       // Draw sprite outline for visibility (dark border)
       ctx.save();
-      const dx = px2 + lunge, dy = py2 + bob;
+      const dx = px2 + lunge + idleExtraX, dy = py2 + bob;
       if(scaleX!==1||scaleY!==1||breathe!==1){
         ctx.translate(dx+sz.w/2, dy+sz.h); ctx.scale(scaleX*breathe, scaleY*breathe); ctx.translate(-(dx+sz.w/2), -(dy+sz.h));
       }
@@ -2050,30 +2258,80 @@ const Arena = {
       // ── Player limb animation overlay ──
       if(!pDead){
         const ac2=p.accent||CY;
-        const armSwing=p.animState==='attack'?Math.sin(p.animTimer/8*Math.PI)*12:
-                       p.animState==='cast'?Math.sin(p.animTimer/15*Math.PI)*-8:
-                       Math.sin(t*0.06)*2; // idle sway
-        const legSwing=p.animState==='attack'?Math.sin(p.animTimer/8*Math.PI)*6:
-                       Math.sin(t*0.04)*1.5; // idle step
+        const aSub=animSub(p.animState);
+        const isAtk=p.animState.startsWith('attack');
+        const isCast=p.animState.startsWith('cast');
+        // Arm swing per animation sub-type
+        let armSwing, armR2=0;
+        if(isAtk&&aSub==='slash'){
+          armSwing=Math.sin(p.animTimer/8*Math.PI)*18; // wide horizontal sweep
+        } else if(isAtk&&aSub==='thrust'){
+          armSwing=Math.sin(p.animTimer/6*Math.PI)*4; // minimal rotation, arm extends forward
+          armR2=Math.sin(p.animTimer/6*Math.PI)*-0.6; // thrust extension angle
+        } else if(isAtk&&aSub==='overhead'){
+          armSwing=-Math.abs(Math.sin(p.animTimer/9*Math.PI))*20; // arc from top down
+        } else if(isAtk){
+          armSwing=Math.sin(p.animTimer/8*Math.PI)*12;
+        } else if(isCast&&aSub==='channel'){
+          armSwing=Math.sin(p.animTimer/20*Math.PI)*-12; // both arms raised
+        } else if(isCast){
+          armSwing=Math.sin(p.animTimer/15*Math.PI)*-8;
+        } else if(idleSub==='ready'){
+          armSwing=Math.sin(t*0.06)*2+4; // raised slightly
+        } else {
+          armSwing=Math.sin(t*0.06)*2; // idle sway
+        }
+        // Leg swing — walk cycle during attack dash/retreat
+        let legSwing;
+        if(isAtk){
+          const atkFrames=aSub==='thrust'?25:aSub==='overhead'?35:30;
+          const aProg=p.animTimer/atkFrames;
+          if(aProg<0.3||aProg>0.45){
+            legSwing=Math.sin(p.animTimer*0.8)*8; // walk cycle during movement
+          } else {
+            legSwing=Math.sin(p.animTimer/8*Math.PI)*6; // planted during strike
+          }
+        } else if(idleSub==='shift'){
+          legSwing=Math.sin(p.animTimer/15*Math.PI)*3;
+        } else {
+          legSwing=Math.sin(t*0.04)*1.5; // idle step
+        }
         // Right arm (weapon arm)
         ctx.fillStyle=ac2;ctx.globalAlpha=0.7;
-        ctx.save();ctx.translate(dx+sz.w-P,dy+sz.h*0.35);ctx.rotate(armSwing*0.04);
+        ctx.save();ctx.translate(dx+sz.w-P,dy+sz.h*0.35);ctx.rotate(armSwing*0.04+armR2);
         ctx.fillRect(0,0,P*2,P*5);
         // Weapon glow on attack
-        if(p.animState==='attack'){
+        if(isAtk){
           ctx.fillStyle='#fff';ctx.globalAlpha=0.5;
-          ctx.fillRect(P*0.5,-P*2,P,P*3);
+          if(aSub==='slash'){
+            // Horizontal trail
+            ctx.fillRect(-P*2,-P,P*5,P*1.5);
+          } else if(aSub==='thrust'){
+            // Point glow at tip
+            ctx.fillRect(P*0.5,-P*3,P,P*4);
+          } else if(aSub==='overhead'){
+            // Vertical trail
+            ctx.fillRect(P*0.5,-P*4,P,P*5);
+          } else {
+            ctx.fillRect(P*0.5,-P*2,P,P*3);
+          }
         }
         ctx.restore();
-        // Left arm
-        ctx.fillStyle='#445577';ctx.globalAlpha=0.5;
+        // Left arm — mirror for channel cast
+        ctx.fillStyle=isCast&&aSub==='channel'?ac2:'#445577';
+        ctx.globalAlpha=isCast&&aSub==='channel'?0.6:0.5;
         ctx.save();ctx.translate(dx-P,dy+sz.h*0.38);ctx.rotate(-armSwing*0.03);
         ctx.fillRect(-P,0,P*2,P*4);
+        // Channel: glow on left hand too
+        if(isCast&&aSub==='channel'&&p.animTimer>5&&p.animTimer<35){
+          ctx.fillStyle=ac2;ctx.globalAlpha=0.4;ctx.fillRect(-P*2,-P,P*2,P*2);
+        }
         ctx.restore();
-        // Legs — subtle step animation
+        // Legs — walk cycle + idle step
         ctx.fillStyle='#334455';ctx.globalAlpha=0.5;
-        ctx.fillRect(dx+sz.w*0.25,dy+sz.h-P*3+legSwing,P*2,P*3);
-        ctx.fillRect(dx+sz.w*0.55,dy+sz.h-P*3-legSwing,P*2,P*3);
+        const legTuck=p.animState==='dodge'?Math.sin(p.animTimer/18*Math.PI)*-4:0;
+        ctx.fillRect(dx+sz.w*0.25,dy+sz.h-P*3+legSwing+legTuck,P*2,P*3+legTuck);
+        ctx.fillRect(dx+sz.w*0.55,dy+sz.h-P*3-legSwing+legTuck,P*2,P*3+legTuck);
         ctx.globalAlpha=1;
       }
       ctx.restore();
@@ -2155,26 +2413,53 @@ const Arena = {
       ctx.restore();
 
       // Animation — dash movement
-      let lunge=0, scaleX2=1, scaleY2=1;
+      let lunge=0, scaleX2=1, scaleY2=1, eExtraBob=0;
+      const eAnimSub=(s)=>s.includes('.')?s.split('.')[1]:'';
       const playerHomeX=Math.floor(W*0.18);
-      if (en.animState === 'attack') {
-        const totalF=25;const prog2=en.animTimer/totalF;
-        if(prog2<0.35){
-          lunge=-(ex-playerHomeX)*0.6*Math.sin((prog2/0.35)*Math.PI/2);
-        }else if(prog2<0.5){
-          lunge=-(ex-playerHomeX)*0.6;scaleX2=1.1;
-        }else{
-          lunge=-(ex-playerHomeX)*0.6*(1-Math.sin(((prog2-0.5)/0.5)*Math.PI/2));
+      if (en.animState.startsWith('attack')) {
+        const eSub=eAnimSub(en.animState);
+        const totalF=eSub==='thrust'?20:eSub==='overhead'?30:25;
+        const prog2=en.animTimer/totalF;
+        const eDashDist=-(ex-playerHomeX)*0.6;
+        if(eSub==='thrust'){
+          if(prog2<0.25){lunge=eDashDist*Math.sin((prog2/0.25)*Math.PI/2);}
+          else if(prog2<0.4){lunge=eDashDist;scaleX2=1.05;}
+          else{lunge=eDashDist*(1-Math.sin(((prog2-0.4)/0.6)*Math.PI/2));}
+        } else if(eSub==='overhead'){
+          if(prog2<0.35){lunge=eDashDist*Math.sin((prog2/0.35)*Math.PI/2);}
+          else if(prog2<0.5){lunge=eDashDist;scaleX2=1.12;eExtraBob=-Math.sin((prog2-0.35)/0.15*Math.PI)*12;}
+          else{lunge=eDashDist*(1-Math.sin(((prog2-0.5)/0.5)*Math.PI/2));}
+        } else {
+          if(prog2<0.35){lunge=eDashDist*Math.sin((prog2/0.35)*Math.PI/2);}
+          else if(prog2<0.5){lunge=eDashDist;scaleX2=1.1;}
+          else{lunge=eDashDist*(1-Math.sin(((prog2-0.5)/0.5)*Math.PI/2));}
         }
-        en.animTimer++;if(en.animTimer>=totalF){en.animState='idle';en.animTimer=0;}
+        en.animTimer++;if(en.animTimer>=totalF){en.animState='idle.base';en.animTimer=0;}
       }
-      const enWasHurt = en.animState === 'hurt';
+      // Enemy hurt — flinch or knockback
+      const enWasHurt = en.animState.startsWith('hurt');
       if (enWasHurt) {
+        const eSub=eAnimSub(en.animState);
         ctx.save();
-        lunge = Math.sin(en.animTimer / 20 * Math.PI) * 20;
-        ctx.globalAlpha = .55 + Math.sin(en.animTimer*1.5)*.44;
-        ctx.filter = 'brightness(200%) saturate(0%)';
-        en.animTimer++; if (en.animTimer > 20) { en.animState='idle'; en.animTimer=0; }
+        if(eSub==='flinch'){
+          lunge = Math.sin(en.animTimer / 12 * Math.PI) * 6;
+          scaleY2 = 1 - Math.sin(en.animTimer / 12 * Math.PI) * 0.03;
+          ctx.globalAlpha = en.animTimer<4 ? (.7 + Math.sin(en.animTimer*2)*.3) : 1;
+          if(en.animTimer<4) ctx.filter = 'brightness(180%)';
+          en.animTimer++; if (en.animTimer > 12) { en.animState='idle.base'; en.animTimer=0; }
+        } else {
+          lunge = Math.sin(en.animTimer / 20 * Math.PI) * 20;
+          ctx.globalAlpha = .55 + Math.sin(en.animTimer*1.5)*.44;
+          ctx.filter = 'brightness(200%) saturate(0%)';
+          en.animTimer++; if (en.animTimer > 20) { en.animState='idle.base'; en.animTimer=0; }
+        }
+      }
+      // Enemy dodge
+      if(en.animState==='dodge'){
+        const dodgeF=18;const dProg=en.animTimer/dodgeF;
+        lunge=Math.sin(dProg*Math.PI)*35;
+        eExtraBob=-Math.sin(dProg*Math.PI)*15;
+        en.animTimer++;if(en.animTimer>=dodgeF){en.animState='idle.base';en.animTimer=0;}
       }
       // ── Enemy-specific idle behavior ──
       let idleBob=Math.sin(t*.04+i*1.3)*3;
@@ -2204,11 +2489,31 @@ const Arena = {
         idleShiftX=Math.sin(t*.07)*10;
         idleBob=Math.abs(Math.sin(t*.14))*3;
       }
-      const bob=en.animState==='idle'?idleBob:Math.sin(t*.04+i*1.3)*3;
+      // Enemy idle variations
+      if(!en._idleVarTimer) en._idleVarTimer=0;
+      if(en.animState.startsWith('idle')){
+        en._idleVarTimer++;
+        if(en._idleVarTimer>200+i*40){
+          en._idleVarTimer=0;
+          const evars=['idle.base','idle.look','idle.shift'];
+          en.animState=evars[Math.floor(Math.random()*evars.length)];
+          en.animTimer=0;
+        }
+      } else { en._idleVarTimer=0; }
+      const eIdleSub=eAnimSub(en.animState);
+      if(eIdleSub==='look'){
+        scaleX2=1-Math.sin(en.animTimer/45*Math.PI)*0.03;
+        en.animTimer++;if(en.animTimer>45){en.animState='idle.base';en.animTimer=0;}
+      } else if(eIdleSub==='shift'){
+        idleShiftX+=Math.sin(en.animTimer/30*Math.PI*2)*4;
+        en.animTimer++;if(en.animTimer>30){en.animState='idle.base';en.animTimer=0;}
+      }
+      const bob=(en.animState.startsWith('idle')||en.animState==='idle')?idleBob:Math.sin(t*.04+i*1.3)*3;
+      const eBob=bob+eExtraBob;
 
       // Draw with outline for visibility
       ctx.save();
-      const edx=ex+lunge+idleShiftX,edy=ey+bob;
+      const edx=ex+lunge+idleShiftX,edy=ey+eBob;
       if(scaleX2!==1||scaleY2!==1||eBreathe!==1){
         ctx.translate(edx+sz.w/2, edy+sz.h); ctx.scale(scaleX2*eBreathe, scaleY2*eBreathe); ctx.translate(-(edx+sz.w/2), -(edy+sz.h));
       }
@@ -2220,26 +2525,47 @@ const Arena = {
       ctx.globalAlpha=1;
       if (SPR[en.sprite]) SPR[en.sprite](ctx, edx, edy, true, t);
       // ── Enemy limb animation overlay ──
-      const eArmSwing=en.animState==='attack'?Math.sin(en.animTimer/12*Math.PI)*15:
-                      Math.sin(t*0.05+i*2)*2;
-      const eLegSwing=en.animState==='attack'?Math.sin(en.animTimer/12*Math.PI)*8:
-                      Math.sin(t*0.035+i)*1.5;
+      const eIsAtk=en.animState.startsWith('attack');
+      const eAtkSub=eAnimSub(en.animState);
+      let eArmSwing;
+      if(eIsAtk&&eAtkSub==='slash'){eArmSwing=Math.sin(en.animTimer/12*Math.PI)*18;}
+      else if(eIsAtk&&eAtkSub==='thrust'){eArmSwing=Math.sin(en.animTimer/10*Math.PI)*5;}
+      else if(eIsAtk&&eAtkSub==='overhead'){eArmSwing=-Math.abs(Math.sin(en.animTimer/12*Math.PI))*18;}
+      else if(eIsAtk){eArmSwing=Math.sin(en.animTimer/12*Math.PI)*15;}
+      else{eArmSwing=Math.sin(t*0.05+i*2)*2;}
+      let eLegSwing;
+      if(eIsAtk){
+        const eTotalF=eAtkSub==='thrust'?20:eAtkSub==='overhead'?30:25;
+        const eAProg=en.animTimer/eTotalF;
+        eLegSwing=(eAProg<0.3||eAProg>0.5)?Math.sin(en.animTimer*0.8)*7:Math.sin(en.animTimer/12*Math.PI)*8;
+      } else if(eIdleSub==='shift'){
+        eLegSwing=Math.sin(en.animTimer/15*Math.PI)*3;
+      } else {
+        eLegSwing=Math.sin(t*0.035+i)*1.5;
+      }
       const eColor=en.color||MG;
       if(eid!=='glitchDrone'){ // drones have no limbs
         // Arms
         ctx.fillStyle=eColor;ctx.globalAlpha=0.5;
         ctx.save();ctx.translate(edx-P,edy+sz.h*0.35);ctx.rotate(-eArmSwing*0.035);
         ctx.fillRect(-P*2,0,P*2,P*4);
-        if(en.animState==='attack'){ctx.fillStyle='#ff4444';ctx.globalAlpha=0.6;ctx.fillRect(-P*2,-P,P*2,P*2);}
+        if(eIsAtk){
+          ctx.fillStyle='#ff4444';ctx.globalAlpha=0.6;
+          if(eAtkSub==='slash'){ctx.fillRect(-P*3,-P,P*5,P*1.5);}
+          else if(eAtkSub==='thrust'){ctx.fillRect(-P*2,-P*2,P*1.5,P*3);}
+          else if(eAtkSub==='overhead'){ctx.fillRect(-P*2,-P*3,P*1.5,P*4);}
+          else{ctx.fillRect(-P*2,-P,P*2,P*2);}
+        }
         ctx.restore();
         ctx.fillStyle=eColor;ctx.globalAlpha=0.4;
         ctx.save();ctx.translate(edx+sz.w,edy+sz.h*0.38);ctx.rotate(eArmSwing*0.03);
         ctx.fillRect(0,0,P*2,P*4);
         ctx.restore();
-        // Legs
+        // Legs — walk cycle during attack dash
+        const eLegTuck=en.animState==='dodge'?Math.sin(en.animTimer/18*Math.PI)*-3:0;
         ctx.fillStyle='#333';ctx.globalAlpha=0.4;
-        ctx.fillRect(edx+sz.w*0.25,edy+sz.h-P*3+eLegSwing,P*2,P*3);
-        ctx.fillRect(edx+sz.w*0.55,edy+sz.h-P*3-eLegSwing,P*2,P*3);
+        ctx.fillRect(edx+sz.w*0.25,edy+sz.h-P*3+eLegSwing+eLegTuck,P*2,P*3+eLegTuck);
+        ctx.fillRect(edx+sz.w*0.55,edy+sz.h-P*3-eLegSwing+eLegTuck,P*2,P*3+eLegTuck);
       }
       ctx.globalAlpha=1;
       ctx.restore();
@@ -3006,11 +3332,13 @@ const Arena = {
 
   spawnVFX(type, x, y, c) { this.vfx.push({type,x,y,c:c||'#fff',t:0,maxT:type==='explode'?50:35}); },
   spawnText(text, x, y, color='#fff', size=13) {
+    if(this.floatTexts.length>80) this.floatTexts.splice(0,20);
     this.floatTexts.push({text,x,y,vy:-1.4,color,size,life:0,maxLife:95});
   },
 
   // Splatoon-style particle burst — loud, saturated colors
   spawnBurst(x, y, baseColor, count=25, sizeMult=1) {
+    if(this.particles.length>500) this.particles.splice(0,100);
     for(let i=0;i<count;i++){
       const angle=Math.random()*Math.PI*2;
       const speed=2+Math.random()*7;
@@ -3026,6 +3354,7 @@ const Arena = {
 
   // Expanding ring VFX (Nano Shield etc.)
   spawnRing(x, y, color, maxR=55) {
+    if(this.vfx.length>50) this.vfx.splice(0,10);
     this.vfx.push({type:'ring',x,y,c:color||CY,t:0,maxT:22,maxR});
   },
 
@@ -3053,15 +3382,29 @@ const Arena = {
   triggerBgPulse(color) { this.bgPulse.color=color;this.bgPulse.alpha=0.28; },
   triggerScreenFlash(color,alpha=0.4) { this.screenFlash.color=color;this.screenFlash.alpha=alpha; },
 
-  triggerAttack(isPlayer, en) {
-    if (isPlayer && GameState.player) { GameState.player.animState='attack'; GameState.player.animTimer=0; }
-    else if (en) { en.animState='attack'; en.animTimer=0; }
+  triggerAttack(isPlayer, en, style) {
+    // style: 'slash','thrust','overhead' — defaults to 'slash'
+    const s=style||'slash';
+    if (isPlayer && GameState.player) { GameState.player.animState='attack.'+s; GameState.player.animTimer=0; }
+    else if (en) { en.animState='attack.'+(en.attackStyle||s); en.animTimer=0; }
   },
-  triggerHurt(isPlayer, en) {
-    if (isPlayer && GameState.player) { GameState.player.animState='hurt'; GameState.player.animTimer=0; }
-    else if (en) { en.animState='hurt'; en.animTimer=0; }
+  triggerHurt(isPlayer, en, severity) {
+    // severity: 'flinch' (small hit) or 'knockback' (big hit)
+    const s=severity||'knockback';
+    if (isPlayer && GameState.player) { GameState.player.animState='hurt.'+s; GameState.player.animTimer=0; }
+    else if (en) { en.animState='hurt.'+s; en.animTimer=0; }
   },
-  triggerCast() { if(GameState.player){GameState.player.animState='cast';GameState.player.animTimer=0;} },
+  triggerDodge(isPlayer, en) {
+    if (isPlayer && GameState.player) { GameState.player.animState='dodge'; GameState.player.animTimer=0; }
+    else if (en) { en.animState='dodge'; en.animTimer=0; }
+  },
+  triggerCast(spellId) {
+    if(!GameState.player) return;
+    // Map spell to cast sub-type
+    const channelSpells=['bioPulse','voidDrain'];
+    const sub=channelSpells.includes(spellId)?'channel':'arm';
+    GameState.player.animState='cast.'+sub; GameState.player.animTimer=0;
+  },
 
   // ── BOSS INTRO CINEMATIC ──
   _bossIntro:{active:false,timer:0,totalFrames:360,boss:null,onDone:null,dialogShown:false},
@@ -4055,6 +4398,52 @@ const SaveSystem = {
 };
 
 // ═══════════════════════════════════════════════════════════════
+// MANGA INTRO — cinematic panel reveal before world map
+// ═══════════════════════════════════════════════════════════════
+const MangaIntro = {
+  _timeouts:[],
+  _panels:[ // panel configs: id, animation class, delay ms
+    {id:'mp1', cls:'reveal',      delay:300},
+    {id:'mp2', cls:'reveal-slide', delay:1200},
+    {id:'mp3', cls:'reveal',      delay:2000},
+    {id:'mp4', cls:'reveal-drop',  delay:2800},
+  ],
+  show(){
+    // Reset all panels
+    this._timeouts.forEach(t=>clearTimeout(t));
+    this._timeouts=[];
+    this._panels.forEach(p=>{
+      const el=document.getElementById(p.id);
+      if(el){el.classList.remove('reveal','reveal-slide','reveal-drop');el.style.opacity='0';el.style.transform='';}
+    });
+    const skip=document.getElementById('miSkip');
+    if(skip)skip.classList.remove('show');
+    UI.show('sMI');
+    // Reveal panels sequentially
+    this._panels.forEach((p,i)=>{
+      this._timeouts.push(setTimeout(()=>{
+        const el=document.getElementById(p.id);
+        if(el){el.classList.add(p.cls);}
+        // Play SFX on each panel
+        if(typeof Audio!=='undefined'&&Audio.play){
+          Audio.play(i===0?'hit':i===2?'spell':'hit');
+        }
+      }, p.delay));
+    });
+    // Show skip button after last panel
+    this._timeouts.push(setTimeout(()=>{
+      const skip=document.getElementById('miSkip');
+      if(skip)skip.classList.add('show');
+    }, 3200));
+  },
+  hide(){
+    this._timeouts.forEach(t=>clearTimeout(t));
+    this._timeouts=[];
+    WorldMap.show();
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════
 // WORLD MAP — canvas-based zone map renderer and navigator
 // ═══════════════════════════════════════════════════════════════
 const WorldMap = {
@@ -4392,7 +4781,7 @@ class Player {
     this.baseSpd = BASE_STATS.spd + alloc.spd*STAT_PER_POINT.spd + (eq.bonus.spd||0);
     this.spd = this.baseSpd;
     this.actionCounter=0; this.buffs=[]; this.debuffs=[];
-    this.equip=eq; this.animState='idle'; this.animTimer=0;
+    this.equip=eq; this.animState='idle.base'; this.animTimer=0;
     // Active skill (single spell in array for combat system compatibility)
     const activeSkill = cfg.activeSkill || ACTIVE_SKILLS[0];
     this.spells=[{...activeSkill, effect:activeSkill.effect, cd:0, hackedTurns:0}];
@@ -4438,7 +4827,7 @@ class Enemy {
     this.baseDef=type.def||0; this.def=this.baseDef; this.baseSpd=type.spd;
     this.actionCounter=0; this.buffs=[]; this.debuffs=[];
     this.turnCount=0; this.phase=1; this.deathTimer=0;
-    this.animState='idle'; this.animTimer=0; this.lowHpSaid=false;
+    this.animState='idle.base'; this.animTimer=0; this.lowHpSaid=false;
   }
   addBuff(id,p){this.buffs=this.buffs.filter(b=>b.id!==id);this.buffs.push({id,...p});this.recalc();}
   addDebuff(id,p){this.debuffs=this.debuffs.filter(d=>d.id!==id);this.debuffs.push({id,...p});}
@@ -4510,7 +4899,8 @@ const Combat = {
     this._trackDPS(dmg);
     QM.track('totalDmg',dmg); QM.track('dmgBlocked',blocked);
     Audio.play(isCrit?'crit':'hit');
-    Arena.triggerHurt(false,enemy);
+    const hurtSev=(dmg/enemy.maxHp>0.15)?'knockback':'flinch';
+    Arena.triggerHurt(false,enemy,hurtSev);
     const idx=GameState.enemies.indexOf(enemy);
     if(idx>=0){
       const pos=Arena.getEnemyPos(idx);
@@ -4595,7 +4985,11 @@ const Combat = {
     }
   },
   playerAttack(target){
-    Arena.triggerAttack(true);
+    // Determine attack style from equipped weapon
+    const eqVals=Object.values(Inventory.equipped).filter(Boolean);
+    const hasGauntlets=eqVals.some(i=>i.id&&i.id.startsWith('shockGauntlets'));
+    const atkStyle=hasGauntlets?'thrust':(Math.random()<0.2?'overhead':'slash');
+    Arena.triggerAttack(true, null, atkStyle);
     const p=GameState.player;
     const critChance=(p.hasBuff('crit')?0.35:0)+(p.critBonus||0);
     const isCrit=Math.random()<critChance;
@@ -4613,7 +5007,7 @@ const Combat = {
   },
   enemyAttack(en,p){
     if(en.isStunned()||en.debuffs.some(d=>d.id==='exhausted')){DM.say(`${en.name} stunned!`);return;}
-    if(p.isDodging()){UI.dmgNumPlayer(0,'miss');Arena.spawnText('MISS!',Arena.getPlayerPos().x,Arena.getPlayerPos().y-25,'#888888',10);DM.say('Attack dodged!');return;}
+    if(p.isDodging()){UI.dmgNumPlayer(0,'miss');Arena.spawnText('MISS!',Arena.getPlayerPos().x,Arena.getPlayerPos().y-25,'#888888',10);DM.say('Attack dodged!');Arena.triggerDodge(true);return;}
     const blocked=Math.max(0,p.def);
     let rawDmg=Math.max(1,en.atk-(en.id==='ghostHacker'?0:blocked));
     // Block mechanic
@@ -4632,10 +5026,11 @@ const Combat = {
     }
     // Phase Cloak dodge chance
     const pc=Object.values(Inventory.equipped).find(i=>i&&i.id&&i.id.startsWith('phaseCloak'));
-    if(pc&&Math.random()<.2){UI.dmgNumPlayer(0,'miss');DM.say('PHASE CLOAK! Attack phased through!');return;}
+    if(pc&&Math.random()<.2){UI.dmgNumPlayer(0,'miss');DM.say('PHASE CLOAK! Attack phased through!');Arena.triggerDodge(true);return;}
     Audio.play('hit');
     p.hp=Math.max(0,p.hp-rawDmg);
-    Arena.triggerHurt(true);Arena.triggerAttack(false,en);
+    const pHurtSev=(rawDmg/p.maxHp>0.15)?'knockback':'flinch';
+    Arena.triggerHurt(true,null,pHurtSev);Arena.triggerAttack(false,en);
     UI.dmgNumPlayer(rawDmg,'phit');
     if(GameState.settings.shake!==false){Arena.triggerBgPulse(en.color||RD);Arena.triggerShake(4,8);}
     const pp2=Arena.getPlayerPos();
@@ -4676,7 +5071,7 @@ const Combat = {
     const dmgBefore=GameState.totalDmg;
     spell.effect(p,aliveEn);
     GameState.spellDmg+=(GameState.totalDmg-dmgBefore);
-    Arena.triggerCast();
+    Arena.triggerCast(spell.id);
     Arena.triggerSpellFlash(spell.name,spell.icon);
     // Spell-specific particle effects
     const pp3=Arena.getPlayerPos();
@@ -4772,7 +5167,7 @@ const Combat = {
           const d=Math.max(1,en.atk-p.def);
           const bonus=Math.floor(d*.2);
           p.hp=Math.max(0,p.hp-d-bonus);
-          Arena.triggerHurt(true);Arena.triggerAttack(false,en);
+          Arena.triggerHurt(true,null,((d+bonus)/p.maxHp>0.15)?'knockback':'flinch');Arena.triggerAttack(false,en);
           UI.dmgNumPlayer(d+bonus,'phit');
           if(GameState.settings.shake!==false)Arena.triggerShake(4,8);
           if(GameState.settings.particles!=='off')Arena.spawnBurst(Arena.getPlayerPos().x,Arena.getPlayerPos().y,en.color||RD,16,0.8);
@@ -6482,7 +6877,7 @@ const Game={
     GameState.currentZoneId=null;
     QM.init();Inventory.init();LootScreen.reset();
     SaveSystem.save();
-    WorldMap.show();
+    MangaIntro.show();
   },
 
   enterZone(zoneId){
@@ -6821,6 +7216,7 @@ const Game={
   },
   restart(){
     if(GameState.combatInterval)clearInterval(GameState.combatInterval);
+    if(this._autoInterval){clearInterval(this._autoInterval);this._autoInterval=null;}
     GameState.combatRunning=false;
     Object.assign(GameState,{selectedGender:null,selectedAccent:null,ccState:null,selectedEquip:null,totalDmg:0,totalKills:0,
       questsDone:0,turnCount:0,levelUpPending:false,
