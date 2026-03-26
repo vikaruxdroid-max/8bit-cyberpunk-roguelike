@@ -1134,7 +1134,7 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
       </div>
       <!-- RIGHT: Scrollable options -->
       <div id="cs-chars" style="flex:1;overflow-y:auto;min-height:0;">
-        <div class="cg" id="cgrid" style="width:100%;max-width:700px;margin:0 auto;"></div>
+        <div class="cg" id="cgrid" style="width:100%;max-width:1100px;margin:0 auto;"></div>
       </div>
     </div>
     <!-- Bottom bar: enter button only -->
@@ -4900,8 +4900,9 @@ class Enemy {
   constructor(type, floor) {
     Object.assign(this,type);
     this.ability={...type.ability,fn:type.ability.fn.bind(this)};
-    this.maxHp=Math.floor(type.hp*(1+floor*.15)); this.hp=this.maxHp;
-    this.atk=Math.floor(type.atk*(1+floor*.1)); this.baseAtk=this.atk;
+    const dm=GameState._diffMult||{hp:1,atk:1};
+    this.maxHp=Math.floor(type.hp*(1+floor*.15)*dm.hp); this.hp=this.maxHp;
+    this.atk=Math.floor(type.atk*(1+floor*.1)*dm.atk); this.baseAtk=this.atk;
     this.baseDef=type.def||0; this.def=this.baseDef; this.baseSpd=type.spd;
     this.actionCounter=0; this.buffs=[]; this.debuffs=[];
     this.turnCount=0; this.phase=1; this.deathTimer=0;
@@ -6677,17 +6678,18 @@ const Game={
     if(!GameState.ccState) GameState.ccState={
       gender:'man', accent:'cyan',
       statAlloc:{hp:0,atk:0,def:0,spd:0,mp:0}, pointsLeft:STAT_POINTS_TOTAL,
-      activeIdx:0, passiveIdx:0, portraitIdx:0
+      activeIdx:0, passiveIdx:0, portraitIdx:0,
+      runnerName:'', difficulty:'normal'
     };
     const cc=GameState.ccState;
     const grid=document.getElementById('cgrid');grid.innerHTML='';
     const F='font-family:\"Share Tech Mono\",monospace;';
 
-    // ── ROW 1: BODY + COLOR + STATS in one row ──
+    // ── ROW 1: BODY TYPE + PORTRAIT (left) | COLOR + NAME + DIFFICULTY (right) ──
     const topRow=document.createElement('div');
-    topRow.style.cssText='display:flex;gap:clamp(6px,1vw,14px);margin-bottom:clamp(6px,1vh,12px);';
+    topRow.style.cssText='display:flex;gap:clamp(8px,1.2vw,16px);margin-bottom:clamp(8px,1vh,14px);';
 
-    // Body selection
+    // LEFT: Body + Portrait
     const genderBox=document.createElement('div');genderBox.className='cc-panel';genderBox.style.cssText='flex:2;';
     genderBox.innerHTML=`<div class="slbl">◆ BODY TYPE</div>`;
     const genderRow=document.createElement('div');
@@ -6698,8 +6700,7 @@ const Game={
       card.dataset.gkey=key;
       card.style.cssText='flex:1;padding:clamp(6px,0.8vh,10px) clamp(4px,0.5vw,8px);';
       const sz=SPRITE_SIZE[g.sprite]||{w:56,h:88};
-      const cv=document.createElement('canvas');
-      cv.width=sz.w+8;cv.height=sz.h+8;
+      const cv=document.createElement('canvas');cv.width=sz.w+8;cv.height=sz.h+8;
       card.appendChild(cv);
       const nm=document.createElement('div');nm.className='cn';nm.style.cssText=F+'font-size:clamp(9px,1vw,14px);';nm.textContent=g.name;
       card.appendChild(nm);
@@ -6715,30 +6716,28 @@ const Game={
       setTimeout(()=>{const cx=cv.getContext('2d');cx.clearRect(0,0,cv.width,cv.height);if(SPR[g.sprite])SPR[g.sprite](cx,4,4,false,0);},60);
     });
     genderBox.appendChild(genderRow);
-
-    // Portrait selection row
-    const portraitSec=document.createElement('div');portraitSec.style.cssText='margin-top:clamp(6px,0.8vh,10px);';
+    // Portrait row
+    const portraitSec=document.createElement('div');portraitSec.style.cssText='margin-top:clamp(8px,1vh,12px);';
     portraitSec.innerHTML=`<div class="slbl">◆ PORTRAIT</div>`;
     const portraitRow=document.createElement('div');portraitRow.id='ccPortraitRow';
     portraitRow.style.cssText='display:flex;gap:clamp(6px,0.8vw,12px);justify-content:center;';
     this._buildPortraitCards(portraitRow,cc);
     portraitSec.appendChild(portraitRow);
     genderBox.appendChild(portraitSec);
-
     topRow.appendChild(genderBox);
 
-    // Color picker (compact, inline with body type)
+    // RIGHT: Color + Name + Difficulty stacked
     const rightCol=document.createElement('div');
-    rightCol.style.cssText='flex:1;display:flex;flex-direction:column;gap:clamp(6px,1vh,12px);';
+    rightCol.style.cssText='flex:1;display:flex;flex-direction:column;gap:clamp(8px,1vh,14px);';
 
-    // Color
+    // Accent Color
     const colorBox=document.createElement('div');colorBox.className='cc-panel';
     colorBox.innerHTML=`<div class="slbl">◆ ACCENT COLOR</div>`;
     const colorRow=document.createElement('div');
-    colorRow.style.cssText='display:flex;gap:clamp(6px,0.8vw,10px);justify-content:center;flex-wrap:wrap;';
+    colorRow.style.cssText='display:flex;gap:clamp(5px,0.6vw,8px);justify-content:center;flex-wrap:wrap;';
     Object.entries(ACCENT_COLORS).forEach(([name,hex])=>{
       const sw=document.createElement('div');
-      sw.style.cssText=`width:clamp(28px,3vw,42px);height:clamp(28px,3vw,42px);background:${hex};cursor:pointer;border:2px solid ${cc.accent===name?'#ffe100':'#222'};box-shadow:${cc.accent===name?'0 0 12px '+hex:'none'};transition:all .15s;clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);`;
+      sw.style.cssText=`width:clamp(24px,2.5vw,36px);height:clamp(24px,2.5vw,36px);background:${hex};cursor:pointer;border:2px solid ${cc.accent===name?'#ffe100':'#222'};box-shadow:${cc.accent===name?'0 0 12px '+hex:'none'};transition:all .15s;clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);`;
       sw.addEventListener('click',()=>{
         cc.accent=name;colorRow.querySelectorAll('div').forEach(d=>{d.style.borderColor='#222';d.style.boxShadow='none';});
         sw.style.borderColor='#ffe100';sw.style.boxShadow='0 0 12px '+hex;
@@ -6750,83 +6749,91 @@ const Game={
     colorBox.appendChild(colorRow);
     rightCol.appendChild(colorBox);
 
-    // Stats
-    const statSec=document.createElement('div');statSec.className='cc-panel';statSec.style.cssText='flex:1;';
-    statSec.innerHTML=`<div class="slbl">◆ STATS <span id="ccPtsLeft" style="color:#ffe100">${cc.pointsLeft} PTS LEFT</span></div>`;
-    const statGrid=document.createElement('div');
-    statGrid.style.cssText='display:flex;flex-direction:column;gap:clamp(3px,0.5vh,6px);';
-    const statNames={hp:'HP',atk:'ATK',def:'DEF',spd:'SPD',mp:'MP'};
-    const statColors={hp:'#ff4444',atk:OR,def:'#4488ff',spd:GR,mp:'#aa66ff'};
-    Object.entries(statNames).forEach(([key,label])=>{
-      const row=document.createElement('div');
-      row.style.cssText='display:flex;align-items:center;gap:clamp(4px,0.5vw,8px);';
-      const val=()=>BASE_STATS[key]+cc.statAlloc[key]*STAT_PER_POINT[key];
-      row.innerHTML=`<span style="width:clamp(28px,3vw,38px);color:${statColors[key]};${F}font-size:clamp(8px,0.9vw,13px);font-weight:bold">${label}</span><button class="cc-stat-btn" data-stat="${key}" data-dir="-1" style="width:clamp(22px,2.5vw,30px);height:clamp(22px,2.5vh,30px);background:rgba(255,0,64,.4);border:1px solid #ff0040;color:#fff;cursor:pointer;${F}font-size:clamp(10px,1.1vw,14px);padding:0;line-height:1;">-</button><div style="flex:1;background:#0a0a0a;height:clamp(12px,1.6vh,18px);border:1px solid rgba(255,225,0,.15);"><div class="cc-bar-${key}" style="height:100%;background:${statColors[key]};width:50%;transition:width .2s"></div></div><span class="cc-val-${key}" style="width:clamp(30px,3.5vw,44px);text-align:right;color:#dde;${F}font-size:clamp(9px,1vw,14px)">${val()}</span><button class="cc-stat-btn" data-stat="${key}" data-dir="1" style="width:clamp(22px,2.5vw,30px);height:clamp(22px,2.5vh,30px);background:rgba(255,225,0,.4);border:1px solid #ffe100;color:#fff;cursor:pointer;${F}font-size:clamp(10px,1.1vw,14px);padding:0;line-height:1;">+</button>`;
-      statGrid.appendChild(row);
+    // Runner Name
+    const nameBox=document.createElement('div');nameBox.className='cc-panel';
+    nameBox.innerHTML=`<div class="slbl">◆ RUNNER NAME</div>`;
+    const nameInput=document.createElement('input');
+    nameInput.type='text';nameInput.maxLength=16;nameInput.placeholder='ANONYMOUS';
+    nameInput.value=cc.runnerName||'';
+    nameInput.style.cssText=`width:100%;box-sizing:border-box;background:rgba(0,0,10,.8);border:1.5px solid rgba(255,225,0,.2);color:var(--CY);${F}font-size:clamp(10px,1.1vw,14px);padding:clamp(6px,.8vh,10px) clamp(8px,1vw,12px);letter-spacing:2px;text-transform:uppercase;outline:none;transition:border-color .15s;`;
+    nameInput.addEventListener('input',()=>{cc.runnerName=nameInput.value.toUpperCase();this._updatePreview();});
+    nameInput.addEventListener('focus',()=>{nameInput.style.borderColor='var(--CY)';nameInput.style.boxShadow='0 0 12px rgba(255,225,0,.2)';});
+    nameInput.addEventListener('blur',()=>{nameInput.style.borderColor='rgba(255,225,0,.2)';nameInput.style.boxShadow='none';});
+    nameBox.appendChild(nameInput);
+    rightCol.appendChild(nameBox);
+
+    // Difficulty
+    const diffBox=document.createElement('div');diffBox.className='cc-panel';
+    diffBox.innerHTML=`<div class="slbl">◆ DIFFICULTY</div>`;
+    const diffRow=document.createElement('div');
+    diffRow.style.cssText='display:flex;gap:clamp(4px,0.5vw,8px);';
+    const DIFFS=[
+      {id:'normal',name:'NORMAL',desc:'Standard run. Balanced enemies.',color:'#39ff14',icon:'◆'},
+      {id:'hard',name:'HARD',desc:'Enemies +30% HP/ATK. Less loot.',color:'#ff6600',icon:'◆◆'},
+      {id:'nightmare',name:'NIGHTMARE',desc:'Double HP. Brutal. No mercy.',color:'#ff0040',icon:'◆◆◆'},
+    ];
+    DIFFS.forEach(d=>{
+      const card=document.createElement('div');
+      card.className='cc'+(cc.difficulty===d.id?' sel':'');
+      card.style.cssText=`flex:1;padding:clamp(6px,.8vh,10px) clamp(4px,.5vw,8px);text-align:center;border-color:${cc.difficulty===d.id?d.color:'rgba(255,225,0,.12)'};`;
+      card.innerHTML=`<div style="${F}font-size:clamp(8px,.9vw,12px);color:${d.color};margin-bottom:3px;letter-spacing:1px;">${d.icon}</div><div style="${F}font-size:clamp(8px,.9vw,12px);color:${d.color};font-weight:bold;margin-bottom:2px;">${d.name}</div><div style="${F}font-size:clamp(5px,.6vw,8px);color:#667;line-height:1.4;">${d.desc}</div>`;
+      card.addEventListener('click',()=>{
+        cc.difficulty=d.id;
+        diffRow.querySelectorAll('.cc').forEach(c=>{c.classList.remove('sel');c.style.borderColor='rgba(255,225,0,.12)';});
+        card.classList.add('sel');card.style.borderColor=d.color;
+      });
+      diffRow.appendChild(card);
     });
-    statSec.appendChild(statGrid);
-    rightCol.appendChild(statSec);
+    diffBox.appendChild(diffRow);
+    rightCol.appendChild(diffBox);
+
     topRow.appendChild(rightCol);
     grid.appendChild(topRow);
 
-    const maxStats={hp:200,atk:59,def:36,spd:37,mp:235};
-    statGrid.addEventListener('click',e=>{
-      const btn=e.target.closest('[data-stat]');if(!btn)return;
-      const stat=btn.dataset.stat,dir=parseInt(btn.dataset.dir);
-      if(dir>0&&cc.pointsLeft<=0)return;
-      if(dir<0&&cc.statAlloc[stat]<=0)return;
-      cc.statAlloc[stat]+=dir;cc.pointsLeft-=dir;
-      document.getElementById('ccPtsLeft').textContent=`${cc.pointsLeft} PTS LEFT`;
-      document.getElementById('ccPtsLeft').style.color=cc.pointsLeft>0?'#ffe100':'#ff4444';
-      const val=BASE_STATS[stat]+cc.statAlloc[stat]*STAT_PER_POINT[stat];
-      document.querySelector(`.cc-bar-${stat}`).style.width=Math.round(val/maxStats[stat]*100)+'%';
-      document.querySelector(`.cc-val-${stat}`).textContent=val;
-      this._updatePreview();
-    });
-
-    // ── ROW 2: ACTIVE + PASSIVE side by side with descriptions ──
-    const skillRow=document.createElement('div');
-    skillRow.style.cssText='display:flex;gap:clamp(6px,1vw,14px);flex:1;min-height:0;';
+    // ── ROW 2: SKILLS + EQUIPMENT — three columns ──
+    const midRow=document.createElement('div');
+    midRow.style.cssText='display:flex;gap:clamp(8px,1.2vw,16px);flex:1;min-height:0;';
 
     // Active skills
-    const actBox=document.createElement('div');actBox.className='cc-panel';actBox.style.cssText='flex:1;display:flex;flex-direction:column;';
+    const actBox=document.createElement('div');actBox.className='cc-panel';actBox.style.cssText='flex:1;display:flex;flex-direction:column;overflow-y:auto;';
     actBox.innerHTML=`<div class="slbl">◆ ACTIVE SKILL</div>`;
     const actRow=document.createElement('div');
-    actRow.style.cssText='display:flex;flex-direction:column;gap:clamp(3px,0.4vh,6px);flex:1;';
+    actRow.style.cssText='display:flex;flex-direction:column;gap:clamp(4px,0.5vh,6px);';
     ACTIVE_SKILLS.forEach((sk,i)=>{
       const c=document.createElement('div');c.className='spc'+(cc.activeIdx===i?' sel':'');
-      c.style.cssText='cursor:pointer;padding:clamp(6px,0.8vh,10px) clamp(8px,1vw,14px);display:flex;align-items:center;gap:clamp(8px,1vw,14px);';
-      c.innerHTML=`<div style="${F}font-size:clamp(16px,2vw,24px);flex-shrink:0;width:clamp(24px,3vw,36px);text-align:center;">${sk.icon}</div><div style="flex:1;min-width:0;"><div style="${F}font-size:clamp(9px,1vw,13px);color:#ffe100;margin-bottom:2px;">${sk.name}</div><div style="${F}font-size:clamp(7px,0.75vw,10px);color:#99a;line-height:1.4;">${sk.desc}</div></div><div style="${F}font-size:clamp(6px,0.65vw,9px);color:#776;text-align:right;flex-shrink:0;">MP:${sk.mp}<br>CD:${sk.maxCd}</div>`;
+      c.style.cssText='cursor:pointer;padding:clamp(8px,1vh,12px) clamp(8px,1vw,14px);display:flex;align-items:center;gap:clamp(8px,1vw,14px);';
+      c.innerHTML=`<div style="${F}font-size:clamp(18px,2.2vw,28px);flex-shrink:0;width:clamp(28px,3vw,40px);text-align:center;">${sk.icon}</div><div style="flex:1;min-width:0;"><div style="${F}font-size:clamp(9px,1vw,13px);color:#ffe100;margin-bottom:3px;">${sk.name}</div><div style="${F}font-size:clamp(7px,0.75vw,10px);color:#99a;line-height:1.5;">${sk.desc}</div></div><div style="${F}font-size:clamp(7px,0.7vw,9px);color:#776;text-align:right;flex-shrink:0;line-height:1.6;">MP:${sk.mp}<br>CD:${sk.maxCd}</div>`;
       c.addEventListener('click',()=>{cc.activeIdx=i;actRow.querySelectorAll('.spc').forEach(x=>x.classList.remove('sel'));c.classList.add('sel');});
       actRow.appendChild(c);
     });
     actBox.appendChild(actRow);
-    skillRow.appendChild(actBox);
+    midRow.appendChild(actBox);
 
     // Passive skills
-    const pasBox=document.createElement('div');pasBox.className='cc-panel';pasBox.style.cssText='flex:1;display:flex;flex-direction:column;';
+    const pasBox=document.createElement('div');pasBox.className='cc-panel';pasBox.style.cssText='flex:1;display:flex;flex-direction:column;overflow-y:auto;';
     pasBox.innerHTML=`<div class="slbl">◆ PASSIVE SKILL</div>`;
     const pasRow=document.createElement('div');
-    pasRow.style.cssText='display:flex;flex-direction:column;gap:clamp(3px,0.4vh,6px);flex:1;';
+    pasRow.style.cssText='display:flex;flex-direction:column;gap:clamp(4px,0.5vh,6px);';
     PASSIVE_SKILLS.forEach((sk,i)=>{
       const c=document.createElement('div');c.className='spc'+(cc.passiveIdx===i?' sel':'');
-      c.style.cssText='cursor:pointer;padding:clamp(6px,0.8vh,10px) clamp(8px,1vw,14px);display:flex;align-items:center;gap:clamp(8px,1vw,14px);';
-      c.innerHTML=`<div style="${F}font-size:clamp(16px,2vw,24px);flex-shrink:0;width:clamp(24px,3vw,36px);text-align:center;">${sk.icon}</div><div style="flex:1;min-width:0;"><div style="${F}font-size:clamp(9px,1vw,13px);color:#ffe100;margin-bottom:2px;">${sk.name}</div><div style="${F}font-size:clamp(7px,0.75vw,10px);color:#99a;line-height:1.4;">${sk.desc}</div></div>`;
+      c.style.cssText='cursor:pointer;padding:clamp(8px,1vh,12px) clamp(8px,1vw,14px);display:flex;align-items:center;gap:clamp(8px,1vw,14px);';
+      c.innerHTML=`<div style="${F}font-size:clamp(18px,2.2vw,28px);flex-shrink:0;width:clamp(28px,3vw,40px);text-align:center;">${sk.icon}</div><div style="flex:1;min-width:0;"><div style="${F}font-size:clamp(9px,1vw,13px);color:#ffe100;margin-bottom:3px;">${sk.name}</div><div style="${F}font-size:clamp(7px,0.75vw,10px);color:#99a;line-height:1.5;">${sk.desc}</div></div>`;
       c.addEventListener('click',()=>{cc.passiveIdx=i;pasRow.querySelectorAll('.spc').forEach(x=>x.classList.remove('sel'));c.classList.add('sel');});
       pasRow.appendChild(c);
     });
     pasBox.appendChild(pasRow);
-    skillRow.appendChild(pasBox);
-    grid.appendChild(skillRow);
+    midRow.appendChild(pasBox);
 
-    // ── ROW 3: EQUIPMENT in main grid ──
+    // Starting Gear (vertical in third column)
     const equipBox=document.createElement('div');equipBox.className='cc-panel';
-    equipBox.style.cssText='margin-top:clamp(4px,0.5vh,8px);';
+    equipBox.style.cssText='flex:1;display:flex;flex-direction:column;overflow-y:auto;';
     equipBox.innerHTML=`<div class="slbl">◆ STARTING GEAR</div>`;
     const equipRow=document.createElement('div');equipRow.id='egrid';
-    equipRow.style.cssText='display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(4px,0.5vw,8px);';
+    equipRow.style.cssText='display:flex;flex-direction:column;gap:clamp(4px,0.5vh,6px);';
     equipBox.appendChild(equipRow);
-    grid.appendChild(equipBox);
+    midRow.appendChild(equipBox);
+
+    grid.appendChild(midRow);
 
     this.renderEquip();
     setTimeout(()=>this._updatePreview(),100);
@@ -6913,7 +6920,7 @@ const Game={
     ctx.globalAlpha=1;
     // Name label
     const nameEl=document.getElementById('ccPreviewName');
-    if(nameEl){nameEl.textContent=gender.name;nameEl.style.color=accent;nameEl.style.textShadow='0 0 8px '+accent;}
+    if(nameEl){nameEl.textContent=cc.runnerName||gender.name;nameEl.style.color=accent;nameEl.style.textShadow='0 0 8px '+accent;}
     // Stats summary
     const statsEl=document.getElementById('ccPreviewStats');
     if(statsEl){
@@ -6931,11 +6938,13 @@ const Game={
   renderEquip(){
     const pool=[...EQUIP_POOL].sort(()=>Math.random()-.5).slice(0,3);
     GameState.selectedEquip=pool[0];
-    const grid=document.getElementById('egrid');grid.innerHTML='';
+    const grid=document.getElementById('egrid');if(!grid)return;grid.innerHTML='';
+    const F='font-family:"Share Tech Mono",monospace;';
     pool.forEach((eq,i)=>{
-      const c=document.createElement('div');c.className='ec'+(i===0?' sel':'');
-      c.innerHTML=`<div class="en2">${eq.icon} ${eq.name}</div><div>${eq.desc}</div>`;
-      c.addEventListener('click',()=>{GameState.selectedEquip=eq;grid.querySelectorAll('.ec').forEach(e=>e.classList.remove('sel'));c.classList.add('sel');});
+      const c=document.createElement('div');c.className='spc'+(i===0?' sel':'');
+      c.style.cssText='cursor:pointer;padding:clamp(8px,1vh,12px) clamp(8px,1vw,14px);display:flex;align-items:center;gap:clamp(8px,1vw,14px);';
+      c.innerHTML=`<div style="${F}font-size:clamp(18px,2.2vw,28px);flex-shrink:0;width:clamp(28px,3vw,40px);text-align:center;">${eq.icon}</div><div style="flex:1;min-width:0;"><div style="${F}font-size:clamp(9px,1vw,13px);color:#ffe100;margin-bottom:3px;">${eq.name}</div><div style="${F}font-size:clamp(7px,0.75vw,10px);color:#99a;line-height:1.5;">${eq.desc}</div></div>`;
+      c.addEventListener('click',()=>{GameState.selectedEquip=eq;grid.querySelectorAll('.spc').forEach(e=>e.classList.remove('sel'));c.classList.add('sel');});
       grid.appendChild(c);
     });
   },
@@ -6953,7 +6962,13 @@ const Game={
     GameState.selectedGender=cc.gender;
     GameState.selectedPortrait=cc.portraitIdx||0;
     GameState.selectedAccent=ACCENT_COLORS[cc.accent]||CY;
+    GameState.runnerName=cc.runnerName||GENDERS[cc.gender].name;
+    GameState.difficulty=cc.difficulty||'normal';
     GameState.player=new Player(cfg,GameState.selectedEquip);
+    // Apply difficulty modifiers
+    if(GameState.difficulty==='hard'){GameState._diffMult={hp:1.3,atk:1.3,loot:0.8};}
+    else if(GameState.difficulty==='nightmare'){GameState._diffMult={hp:2,atk:1.5,loot:0.6};}
+    else{GameState._diffMult={hp:1,atk:1,loot:1};}
     GameState.floor=1;GameState.totalDmg=0;GameState.spellDmg=0;GameState.totalKills=0;
     GameState.roomsCleared=0;GameState.itemsCollected=0;GameState.itemsSold=0;GameState.runStartTime=Date.now();
     GameState.questsDone=0;GameState.turnCount=0;GameState.levelUpPending=false;
@@ -7979,7 +7994,7 @@ const VictoryScreen = {
   _renderCharSummary() {
     const p=GameState.player;if(!p)return;
     const nm=document.getElementById('vicCharName');
-    if(nm)nm.textContent=p.className;
+    if(nm)nm.textContent=GameState.runnerName||p.className;
     const st=document.getElementById('vicCharStats');
     if(st)st.innerHTML=`<span style="color:#ff4444">HP:${p.hp}/${p.maxHp}</span> <span style="color:#44aaff">MP:${p.mp}/${p.maxMp}</span><br><span style="color:${OR}">ATK:${p.atk}</span> <span style="color:#4488ff">DEF:${p.def}</span> <span style="color:${GR}">SPD:${p.spd}</span><br><span style="color:#aa66ff">LV:${p.level}</span> <span style="color:${CY}">CRIT:${Math.round((p.critBonus||0)*100)}%</span>`;
   },
