@@ -421,26 +421,27 @@ html,body{width:100%;height:100%;overflow:hidden;background:#060618;font-family:
   font-family:'Share Tech Mono',monospace;font-size:11px;color:#dde;pointer-events:none;
   box-shadow:0 0 12px rgba(0,255,255,.3);border-radius:3px;}
 .eqslot:hover .eq-tip{display:block;}
-#sVIC{background:#030312;overflow:hidden;position:relative;}
+#sVIC{background:#030312;overflow:hidden;position:relative;height:100%;}
+#sVIC.on{display:flex;flex-direction:column;height:100%;}
 #vicVaporBg{position:absolute;inset:0;z-index:0;pointer-events:none;}
 #sVIC>*:not(#vicVaporBg):not(.vic-scanlines){position:relative;z-index:1;}
-#sVIC.on{animation:vicFadeIn .35s ease forwards;}
-.vic-scanlines{position:absolute;inset:0;pointer-events:none;z-index:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,255,255,.015) 3px);}
-.vic-top{flex-shrink:0;background:linear-gradient(90deg,rgba(0,0,10,.98),rgba(4,0,18,.98),rgba(0,0,10,.98));border-bottom:2px solid var(--CY);padding:clamp(8px,1vh,14px) clamp(16px,2vw,32px);display:flex;flex-direction:column;gap:4px;position:relative;z-index:10;}
-.vic-top::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:6px;background:linear-gradient(180deg,rgba(255,225,0,.08),transparent);pointer-events:none;}
-.vic-floor-title{font-family:'Press Start 2P',monospace;font-size:clamp(11px,1.3vw,20px);color:var(--CY);text-align:center;letter-spacing:6px;text-shadow:0 0 14px var(--CY),0 0 28px rgba(255,225,0,.35);}
-.vic-stats-line{font-family:'Share Tech Mono',monospace;font-size:clamp(6px,.65vw,9px);color:rgba(255,225,0,.5);text-align:center;letter-spacing:2px;}
-.vic-main{flex:1;display:grid;grid-template-columns:1fr minmax(280px,1fr);min-height:0;overflow:hidden;position:relative;z-index:10;gap:0;}
-.vic-loot{display:flex;flex-direction:column;overflow:hidden;border:1px solid rgba(255,225,0,.15);background:linear-gradient(180deg,rgba(0,4,18,.9),rgba(0,2,12,.95));margin:clamp(6px,.8vh,10px) 4px clamp(6px,.8vh,10px) clamp(6px,.8vw,10px);box-shadow:0 0 20px rgba(0,0,0,.4) inset;}
-.vic-loot-hdr{flex-shrink:0;text-align:center;padding:clamp(10px,1.2vh,16px) clamp(12px,1.5vw,20px) clamp(8px,1vh,12px);border-bottom:1px solid rgba(255,225,0,.1);background:linear-gradient(180deg,rgba(255,225,0,.04),transparent);}
-.vic-loot-title{font-family:'Press Start 2P',monospace;font-size:clamp(8px,.9vw,13px);color:var(--CY);text-shadow:0 0 10px var(--CY);letter-spacing:3px;}
-.vic-loot-gold{font-family:'Share Tech Mono',monospace;font-size:clamp(7px,.75vw,11px);color:var(--GD);margin-top:6px;letter-spacing:2px;}
-.vic-loot-scroll{flex:1;overflow-x:hidden;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));grid-auto-rows:min-content;gap:clamp(10px,1.2vw,18px);padding:clamp(10px,1.2vw,18px);scrollbar-width:thin;scrollbar-color:rgba(255,225,0,.3) rgba(0,0,20,.8);}
-.vic-loot-scroll::-webkit-scrollbar{width:5px;}.vic-loot-scroll::-webkit-scrollbar-track{background:rgba(0,0,20,.8);}.vic-loot-scroll::-webkit-scrollbar-thumb{background:rgba(255,225,0,.3);border-radius:3px;}
-.vic-no-loot{grid-column:1/-1;font-family:'Share Tech Mono',monospace;color:rgba(255,225,0,.2);font-size:clamp(9px,.9vw,13px);text-align:center;padding:clamp(30px,5vh,60px) 0;letter-spacing:4px;}
-.vic-loot-card{background:linear-gradient(180deg,rgba(4,4,28,.97),rgba(2,2,18,.98));border:2px solid rgba(255,225,0,.2);padding:clamp(10px,1.2vh,16px) clamp(10px,1vw,14px);min-width:180px;min-height:260px;display:flex;flex-direction:column;gap:6px;position:relative;transition:all .2s;box-shadow:0 0 12px rgba(0,0,0,.4);clip-path:polygon(0% 0%,calc(100% - 10px) 0%,100% 10px,100% 100%,10px 100%,0% calc(100% - 10px));}
-.vic-loot-card.rare{border-color:var(--GD);box-shadow:0 0 16px rgba(255,215,0,.35);}
-.vic-loot-card.legendary{border-color:var(--OR);box-shadow:0 0 22px rgba(255,100,0,.5);animation:legborder 1.2s ease infinite alternate;}
+.vic-scanlines{position:absolute;inset:0;pointer-events:none;z-index:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,255,255,.012) 3px);}
+.vic-top{flex-shrink:0;background:linear-gradient(90deg,rgba(0,0,10,.98),rgba(4,0,18,.98),rgba(0,0,10,.98));border-bottom:2px solid #00ffff;padding:clamp(8px,1.2vh,16px) clamp(16px,2vw,32px);display:flex;flex-direction:column;gap:4px;position:relative;z-index:10;}
+.vic-top::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:8px;background:linear-gradient(180deg,rgba(0,255,255,.06),transparent);pointer-events:none;}
+.vic-floor-title{font-family:'Press Start 2P',monospace;font-size:clamp(12px,1.4vw,22px);color:#00ffff;text-align:center;letter-spacing:6px;text-shadow:0 0 14px #00ffff,0 0 30px rgba(0,255,255,.3);}
+.vic-stats-line{font-family:'Share Tech Mono',monospace;font-size:clamp(7px,.7vw,10px);color:rgba(0,255,255,.5);text-align:center;letter-spacing:2px;}
+.vic-main{flex:1;display:grid;grid-template-columns:1fr minmax(300px,1fr);min-height:0;overflow:hidden;position:relative;z-index:10;gap:0;}
+.vic-loot{display:flex;flex-direction:column;overflow:hidden;border:1px solid rgba(0,255,255,.15);background:linear-gradient(180deg,rgba(0,4,18,.92),rgba(0,2,12,.96));margin:clamp(6px,.8vh,10px) 4px clamp(6px,.8vh,10px) clamp(6px,.8vw,10px);box-shadow:0 0 20px rgba(0,0,0,.4) inset;}
+.vic-loot-hdr{flex-shrink:0;text-align:center;padding:clamp(10px,1.2vh,16px) clamp(12px,1.5vw,20px) clamp(8px,1vh,12px);border-bottom:1px solid rgba(0,255,255,.1);background:linear-gradient(180deg,rgba(0,255,255,.03),transparent);}
+.vic-loot-title{font-family:'Press Start 2P',monospace;font-size:clamp(9px,1vw,14px);color:#00ffff;text-shadow:0 0 10px #00ffff;letter-spacing:3px;}
+.vic-loot-gold{font-family:'Share Tech Mono',monospace;font-size:clamp(8px,.8vw,12px);color:var(--GD);margin-top:6px;letter-spacing:2px;}
+.vic-loot-scroll{flex:1;overflow-x:hidden;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));grid-auto-rows:min-content;gap:clamp(12px,1.4vw,20px);padding:clamp(12px,1.4vw,20px);scrollbar-width:thin;scrollbar-color:rgba(0,255,255,.25) rgba(0,0,20,.8);}
+.vic-loot-scroll::-webkit-scrollbar{width:5px;}.vic-loot-scroll::-webkit-scrollbar-track{background:rgba(0,0,20,.8);}.vic-loot-scroll::-webkit-scrollbar-thumb{background:rgba(0,255,255,.25);border-radius:3px;}
+.vic-no-loot{grid-column:1/-1;font-family:'Share Tech Mono',monospace;color:rgba(0,255,255,.18);font-size:clamp(10px,1vw,14px);text-align:center;padding:clamp(30px,5vh,60px) 0;letter-spacing:4px;}
+.vic-loot-card{background:linear-gradient(180deg,rgba(4,4,28,.97),rgba(2,2,18,.98));border:2px solid rgba(0,255,255,.25);padding:clamp(12px,1.4vh,18px) clamp(10px,1.2vw,16px);min-width:180px;min-height:240px;display:flex;flex-direction:column;gap:8px;position:relative;transition:all .2s;box-shadow:0 0 10px rgba(0,255,255,.06);clip-path:polygon(0% 0%,calc(100% - 10px) 0%,100% 10px,100% 100%,10px 100%,0% calc(100% - 10px));}
+.vic-loot-card:hover{box-shadow:0 0 18px rgba(0,255,255,.15);}
+.vic-loot-card.rare{border-color:var(--GD);box-shadow:0 0 16px rgba(255,215,0,.25);}
+.vic-loot-card.legendary{border-color:var(--OR);box-shadow:0 0 22px rgba(255,100,0,.4);animation:legborder 1.2s ease infinite alternate;}
 .vic-card-lvl-badge{position:absolute;top:5px;left:6px;font-size:clamp(6px,.62vw,9px);color:#fff;background:rgba(0,0,40,.9);border:1px solid rgba(0,255,255,.4);padding:2px 5px;letter-spacing:1px;}
 .vic-card-rar-badge{position:absolute;top:5px;right:6px;font-size:clamp(6px,.62vw,9px);padding:2px 6px;letter-spacing:1px;font-weight:bold;}
 .vic-card-rar-badge.common{background:rgba(80,100,120,.5);color:#aabbd0;border:1px solid #556677;}
@@ -462,14 +463,15 @@ html,body{width:100%;height:100%;overflow:hidden;background:#060618;font-family:
 .vic-pd-title{flex-shrink:0;font-size:clamp(6px,.7vw,9px);color:var(--M);letter-spacing:2px;text-shadow:0 0 8px var(--M);}
 .vic-pd-area{flex:1;position:relative;display:flex;align-items:center;justify-content:center;width:100%;min-height:0;}
 #vicPaperdollCV{image-rendering:pixelated;filter:drop-shadow(0 0 10px rgba(0,255,255,.22));}
-.vic-slot{position:absolute;background:rgba(0,0,22,.92);border:2px solid rgba(255,225,0,.2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:all .2s;width:clamp(48px,5.5vw,70px);height:clamp(42px,5vh,62px);clip-path:polygon(8% 0%,92% 0%,100% 12%,100% 88%,92% 100%,8% 100%,0% 88%,0% 12%);z-index:3;}
-.vic-slot.can-equip{cursor:pointer;border-color:var(--CY);box-shadow:0 0 14px rgba(255,225,0,.5);animation:slotPulse .8s ease infinite alternate;}
-@keyframes slotPulse{from{box-shadow:0 0 8px rgba(255,225,0,.4)}to{box-shadow:0 0 22px rgba(255,225,0,.9)}}
-.vic-slot.filled{border-color:rgba(255,225,0,.55);background:rgba(255,225,0,.06);box-shadow:0 0 8px rgba(255,225,0,.15);}
-.vic-slot.filled.rare{border-color:var(--GD);}
+.vic-slot{position:absolute;background:rgba(0,0,22,.92);border:2px solid rgba(136,0,255,.25);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:all .2s;width:clamp(52px,6vw,76px);height:clamp(46px,5.5vh,68px);clip-path:polygon(8% 0%,92% 0%,100% 12%,100% 88%,92% 100%,8% 100%,0% 88%,0% 12%);z-index:3;}
+.vic-slot:hover{border-color:rgba(136,0,255,.5);box-shadow:0 0 10px rgba(136,0,255,.2);}
+.vic-slot.can-equip{cursor:pointer;border-color:#ff00ff;box-shadow:0 0 14px rgba(255,0,255,.5);animation:slotPulse .8s ease infinite alternate;}
+@keyframes slotPulse{from{box-shadow:0 0 8px rgba(255,0,255,.4)}to{box-shadow:0 0 22px rgba(255,0,255,.8)}}
+.vic-slot.filled{border-color:rgba(0,255,255,.5);background:rgba(0,255,255,.05);box-shadow:0 0 8px rgba(0,255,255,.12);}
+.vic-slot.filled.rare{border-color:var(--GD);box-shadow:0 0 10px rgba(255,215,0,.2);}
 .vic-slot.filled.legendary{border-color:var(--OR);animation:legborder .9s ease infinite alternate;}
-.vic-slot-icon{font-size:clamp(14px,1.5vw,20px);}
-.vic-slot-lbl{font-family:'Share Tech Mono',monospace;font-size:clamp(5px,.5vw,7px);color:rgba(255,225,0,.4);text-align:center;line-height:1.2;letter-spacing:1px;text-transform:uppercase;}
+.vic-slot-icon{font-size:clamp(16px,1.7vw,22px);}
+.vic-slot-lbl{font-family:'Share Tech Mono',monospace;font-size:clamp(5px,.55vw,8px);color:rgba(136,0,255,.5);text-align:center;line-height:1.2;letter-spacing:1px;text-transform:uppercase;}
 .vic-inventory{display:flex;flex-direction:column;overflow:hidden;}
 .vic-inv-hdr{font-size:clamp(6px,.68vw,9px);color:var(--C);padding:clamp(4px,.55vh,7px) clamp(5px,.6vw,8px);border-bottom:1px solid rgba(0,255,255,.18);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
 .vic-inv-gold{color:var(--GD);font-size:clamp(6px,.68vw,9px);}
@@ -488,14 +490,14 @@ html,body{width:100%;height:100%;overflow:hidden;background:#060618;font-family:
 .vic-bag-slot.filled.rare{border-color:rgba(255,215,0,.55);}
 .vic-bag-slot.filled.legendary{border-color:rgba(255,100,0,.8);}
 /* ── Runner Profile Panel (Victory Screen Right Side) ── */
-.vic-runner-panel{display:flex;flex-direction:column;overflow:hidden;background:linear-gradient(180deg,rgba(2,2,18,.97),rgba(4,2,14,.95));border:1px solid rgba(255,225,0,.15);margin:clamp(6px,.8vh,10px) clamp(6px,.8vw,10px) clamp(6px,.8vh,10px) 4px;box-shadow:inset 0 0 40px rgba(0,0,0,.5);}
-.vic-runner-header{padding:clamp(10px,1.2vh,16px) clamp(12px,1.5vw,20px);border-bottom:1px solid rgba(255,225,0,.1);background:linear-gradient(90deg,rgba(255,225,0,.03),transparent,rgba(136,0,255,.03));display:flex;justify-content:space-between;align-items:center;}
-.vic-runner-name{font-family:'Press Start 2P',monospace;font-size:clamp(10px,1.1vw,16px);color:var(--CY);letter-spacing:4px;text-shadow:0 0 12px var(--CY);}
-.vic-runner-credits{font-family:'Share Tech Mono',monospace;font-size:clamp(9px,1vw,14px);color:var(--GD);text-shadow:0 0 8px var(--GD);}
+.vic-runner-panel{display:flex;flex-direction:column;overflow:hidden;background:linear-gradient(180deg,rgba(2,2,18,.97),rgba(6,0,16,.95));border:1px solid rgba(136,0,255,.2);margin:clamp(6px,.8vh,10px) clamp(6px,.8vw,10px) clamp(6px,.8vh,10px) 4px;box-shadow:inset 0 0 40px rgba(0,0,0,.5);}
+.vic-runner-header{padding:clamp(12px,1.4vh,18px) clamp(14px,1.6vw,22px);border-bottom:1px solid rgba(136,0,255,.12);background:linear-gradient(90deg,rgba(136,0,255,.04),transparent,rgba(0,255,255,.03));display:flex;justify-content:space-between;align-items:center;}
+.vic-runner-name{font-family:'Press Start 2P',monospace;font-size:clamp(11px,1.2vw,17px);color:#ff00ff;letter-spacing:4px;text-shadow:0 0 12px rgba(255,0,255,.5);}
+.vic-runner-credits{font-family:'Share Tech Mono',monospace;font-size:clamp(10px,1.1vw,15px);color:var(--GD);text-shadow:0 0 8px var(--GD);}
 .vic-runner-body{flex:1;position:relative;display:flex;align-items:center;justify-content:center;min-height:0;overflow:hidden;
-  background:radial-gradient(ellipse at center,rgba(255,225,0,.025) 0%,rgba(136,0,255,.02) 35%,rgba(0,0,10,.85) 75%);}
+  background:radial-gradient(ellipse at center,rgba(136,0,255,.03) 0%,rgba(0,255,255,.015) 35%,rgba(0,0,10,.85) 75%);}
 /* Relics section */
-.vic-relics-section{border-top:1px solid rgba(255,225,0,.08);background:linear-gradient(180deg,rgba(0,0,0,.15),rgba(0,0,0,.25));}
+.vic-relics-section{border-top:1px solid rgba(255,0,255,.1);background:linear-gradient(180deg,rgba(20,0,30,.3),rgba(10,0,20,.4));}
 .vic-relic-card{display:flex;align-items:center;gap:clamp(6px,.7vw,10px);padding:clamp(4px,.5vh,8px) clamp(8px,1vw,14px);border:1px solid rgba(255,225,0,.12);background:rgba(255,225,0,.03);margin:0 clamp(6px,.7vw,10px) clamp(3px,.4vh,6px);transition:all .15s;}
 .vic-relic-card:hover{border-color:var(--CY);box-shadow:0 0 10px rgba(255,225,0,.2);}
 .vic-relic-icon{font-size:clamp(16px,1.8vw,24px);flex-shrink:0;}
@@ -503,33 +505,33 @@ html,body{width:100%;height:100%;overflow:hidden;background:#060618;font-family:
 .vic-relic-desc{font-family:'Share Tech Mono',monospace;font-size:clamp(6px,.7vw,9px);color:#99a;}
 /* Bottom relics total bar */
 .vic-relics-total{display:flex;align-items:center;gap:clamp(8px,1vw,14px);padding:0 clamp(8px,1vw,14px);font-family:'Share Tech Mono',monospace;}
-.vic-relics-total-label{font-family:'Press Start 2P',monospace;font-size:clamp(6px,.7vw,9px);color:var(--CY);letter-spacing:2px;text-shadow:0 0 6px var(--CY);white-space:nowrap;}
+.vic-relics-total-label{font-family:'Press Start 2P',monospace;font-size:clamp(7px,.75vw,10px);color:#ff00ff;letter-spacing:2px;text-shadow:0 0 6px rgba(255,0,255,.4);white-space:nowrap;}
 .vic-relics-total-items{display:flex;gap:clamp(4px,.5vw,8px);flex-wrap:wrap;}
-.vic-relics-total-item{font-size:clamp(14px,1.6vw,22px);filter:drop-shadow(0 0 4px rgba(255,225,0,.4));cursor:default;}
+.vic-relics-total-item{font-size:clamp(14px,1.6vw,22px);filter:drop-shadow(0 0 4px rgba(255,0,255,.4));cursor:default;}
 
-.vic-bottom{flex-shrink:0;background:linear-gradient(180deg,rgba(6,0,18,.98),rgba(4,0,14,.97));border-top:2px solid rgba(255,225,0,.2);padding:clamp(8px,1vh,14px) clamp(16px,2vw,28px);position:relative;z-index:10;}
-.vic-bottom::before{content:'';position:absolute;top:-2px;left:0;right:0;height:6px;background:linear-gradient(0deg,rgba(255,225,0,.06),transparent);pointer-events:none;}
-.vic-upg-hdr{font-family:'Press Start 2P',monospace;font-size:clamp(7px,.8vw,11px);color:var(--CY);letter-spacing:3px;text-align:center;text-shadow:0 0 10px var(--CY);margin-bottom:clamp(8px,1vh,12px);}
-.vic-upg-row{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(8px,1vw,14px);margin-bottom:clamp(8px,1vh,12px);}
-.vic-upg-card{background:rgba(10,0,20,.9);border:2px solid rgba(255,225,0,.15);padding:clamp(10px,1.2vh,16px) clamp(8px,1vw,12px);cursor:pointer;transition:all .15s;text-align:center;clip-path:polygon(0% 0%,calc(100% - 8px) 0%,100% 8px,100% 100%,8px 100%,0% calc(100% - 8px));}
-.vic-upg-card:hover{border-color:var(--CY);box-shadow:0 0 14px rgba(255,225,0,.2);transform:translateY(-2px);}
-.vic-upg-card.selected{border-color:var(--CY);box-shadow:0 0 22px rgba(255,225,0,.4),inset 0 0 15px rgba(255,225,0,.05);background:rgba(20,10,0,.9);}
-.vic-upg-icon{font-size:clamp(16px,1.8vw,24px);margin-bottom:6px;}
-.vic-upg-name{font-family:'Share Tech Mono',monospace;font-size:clamp(7px,.75vw,11px);color:var(--CY);margin-bottom:4px;letter-spacing:2px;text-shadow:0 0 6px var(--CY);}
-.vic-upg-desc{font-family:'Share Tech Mono',monospace;font-size:clamp(6px,.65vw,9px);color:#99aabb;line-height:1.8;}
-.vic-foot{display:flex;justify-content:space-between;align-items:center;padding-top:clamp(4px,.5vh,8px);}
-.vic-upg-hint{font-family:'Share Tech Mono',monospace;font-size:clamp(6px,.65vw,9px);color:rgba(255,225,0,.3);letter-spacing:2px;}
-#vicContinueBtn{font-family:'Press Start 2P',monospace;font-size:clamp(10px,1.1vw,15px);padding:clamp(10px,1.2vh,16px) clamp(24px,2.8vw,44px);cursor:not-allowed;letter-spacing:4px;transition:all .25s;
-  background:rgba(10,10,30,.6);border:2px solid rgba(255,225,0,.1);color:rgba(255,225,0,.15);text-shadow:none;
+.vic-bottom{flex-shrink:0;background:linear-gradient(180deg,rgba(6,0,18,.98),rgba(4,0,14,.97));border-top:2px solid rgba(136,0,255,.3);padding:clamp(10px,1.2vh,16px) clamp(16px,2vw,28px);position:relative;z-index:10;}
+.vic-bottom::before{content:'';position:absolute;top:-2px;left:0;right:0;height:8px;background:linear-gradient(0deg,rgba(136,0,255,.05),transparent);pointer-events:none;}
+.vic-upg-hdr{font-family:'Press Start 2P',monospace;font-size:clamp(8px,.9vw,12px);color:#8800ff;letter-spacing:3px;text-align:center;text-shadow:0 0 10px rgba(136,0,255,.5);margin-bottom:clamp(10px,1.2vh,14px);}
+.vic-upg-row{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(10px,1.2vw,16px);margin-bottom:clamp(10px,1.2vh,14px);}
+.vic-upg-card{background:rgba(10,0,24,.92);border:2px solid rgba(136,0,255,.2);padding:clamp(12px,1.4vh,18px) clamp(10px,1.2vw,14px);cursor:pointer;transition:all .15s;text-align:center;clip-path:polygon(0% 0%,calc(100% - 8px) 0%,100% 8px,100% 100%,8px 100%,0% calc(100% - 8px));}
+.vic-upg-card:hover{border-color:#8800ff;box-shadow:0 0 14px rgba(136,0,255,.25);transform:translateY(-2px);}
+.vic-upg-card.selected{border-color:#ff00ff;box-shadow:0 0 22px rgba(255,0,255,.35),inset 0 0 15px rgba(136,0,255,.08);background:rgba(24,0,40,.92);}
+.vic-upg-icon{font-size:clamp(18px,2vw,26px);margin-bottom:6px;}
+.vic-upg-name{font-family:'Share Tech Mono',monospace;font-size:clamp(8px,.85vw,12px);color:#ff00ff;margin-bottom:4px;letter-spacing:2px;text-shadow:0 0 6px rgba(255,0,255,.4);}
+.vic-upg-desc{font-family:'Share Tech Mono',monospace;font-size:clamp(7px,.7vw,10px);color:#aabbcc;line-height:1.8;}
+.vic-foot{display:flex;justify-content:space-between;align-items:center;padding-top:clamp(6px,.7vh,10px);}
+.vic-upg-hint{font-family:'Share Tech Mono',monospace;font-size:clamp(7px,.7vw,10px);color:rgba(136,0,255,.4);letter-spacing:2px;}
+#vicContinueBtn{font-family:'Press Start 2P',monospace;font-size:clamp(11px,1.2vw,16px);padding:clamp(12px,1.4vh,18px) clamp(28px,3.2vw,50px);cursor:not-allowed;letter-spacing:4px;transition:all .25s;
+  background:rgba(10,10,30,.6);border:2px solid rgba(0,255,255,.1);color:rgba(0,255,255,.12);text-shadow:none;
   clip-path:polygon(0% 0%,calc(100% - 14px) 0%,100% 14px,100% 100%,14px 100%,0% calc(100% - 14px));position:relative;}
 #vicContinueBtn.active{
-  background:linear-gradient(135deg,rgba(255,225,0,.08),rgba(136,0,255,.2),rgba(255,225,0,.08));
-  border-color:var(--CY);color:var(--CY);
-  text-shadow:0 0 10px var(--CY),0 0 20px rgba(255,225,0,.25);
-  box-shadow:0 0 25px rgba(255,225,0,.15),inset 0 0 12px rgba(136,0,255,.06);cursor:pointer;
+  background:linear-gradient(135deg,rgba(0,255,65,.06),rgba(0,255,255,.1),rgba(0,255,65,.06));
+  border-color:#00ffff;color:#00ffff;
+  text-shadow:0 0 10px #00ffff,0 0 22px rgba(0,255,255,.3);
+  box-shadow:0 0 25px rgba(0,255,255,.15),inset 0 0 12px rgba(0,255,65,.04);cursor:pointer;
   animation:btnPulse 2.5s ease infinite;}
-@keyframes btnPulse{0%,100%{box-shadow:0 0 18px rgba(255,225,0,.1),inset 0 0 8px rgba(136,0,255,.04);}50%{box-shadow:0 0 35px rgba(255,225,0,.3),inset 0 0 18px rgba(136,0,255,.1);}}
-#vicContinueBtn.active:hover{background:var(--CY);color:#020210;box-shadow:0 0 50px rgba(255,225,0,.5);text-shadow:none;animation:none;}
+@keyframes btnPulse{0%,100%{box-shadow:0 0 18px rgba(0,255,255,.1),inset 0 0 8px rgba(0,255,65,.03);}50%{box-shadow:0 0 38px rgba(0,255,255,.25),inset 0 0 18px rgba(0,255,65,.08);}}
+#vicContinueBtn.active:hover{background:#00ffff;color:#020210;box-shadow:0 0 50px rgba(0,255,255,.5);text-shadow:none;animation:none;}
 
 /* ══ SPEECH BUBBLES ══ */
 @keyframes sbIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
@@ -1327,11 +1329,11 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
         <div class="vic-loot-scroll" id="vicLootItems" style="flex:1;min-height:0;"></div>
         <!-- RELICS ACQUIRED — same treatment as loot -->
         <div class="vic-relics-section">
-          <div class="vic-loot-hdr" style="border-top:1px solid rgba(255,225,0,.12);border-bottom:none;">
-            <div class="vic-loot-title" style="font-size:clamp(9px,.95vw,13px);">◆ RELICS ACQUIRED ◆</div>
+          <div class="vic-loot-hdr" style="border-top:1px solid rgba(255,0,255,.1);border-bottom:none;background:linear-gradient(180deg,rgba(255,0,255,.03),transparent);">
+            <div class="vic-loot-title" style="font-size:clamp(9px,.95vw,13px);color:#ff00ff;text-shadow:0 0 10px rgba(255,0,255,.4);">◆ RELICS ACQUIRED ◆</div>
           </div>
           <div id="vicRelicItems" class="vic-loot-scroll" style="flex:none;max-height:clamp(80px,14vh,160px);min-height:clamp(40px,6vh,70px);">
-            <div class="vic-no-loot" style="padding:clamp(14px,2vh,30px) 0;">— NO RELICS THIS ROOM —</div>
+            <div class="vic-no-loot" style="padding:clamp(14px,2vh,30px) 0;color:rgba(255,0,255,.15);">— NO RELICS THIS ROOM —</div>
           </div>
         </div>
       </div>
@@ -8127,7 +8129,7 @@ const VictoryScreen = {
       const midX = aw / 2, midY = ah / 2;
       // Hex glow ring around sprite
       cx.save();
-      cx.strokeStyle = 'rgba(255,225,0,0.12)';cx.lineWidth = 1;
+      cx.strokeStyle = 'rgba(136,0,255,0.15)';cx.lineWidth = 1;
       for (let r = 0; r < 3; r++) {
         const rad = 50 + r * 25;
         cx.globalAlpha = 0.15 - r * 0.04;
@@ -8166,7 +8168,7 @@ const VictoryScreen = {
       });
       // Subtle radial pulse from center
       const grad = cx.createRadialGradient(midX, midY, 0, midX, midY, 60);
-      grad.addColorStop(0, 'rgba(255,225,0,0.06)');
+      grad.addColorStop(0, 'rgba(136,0,255,0.06)');
       grad.addColorStop(1, 'transparent');
       cx.globalAlpha = 1; cx.fillStyle = grad;
       cx.fillRect(0, 0, aw, ah);
@@ -8282,12 +8284,12 @@ const VictoryScreen = {
         <div style="flex:1;max-width:500px;font-family:'Share Tech Mono',monospace;">
           <div style="display:flex;justify-content:space-between;font-size:clamp(8px,0.9vw,12px);color:#99a;margin-bottom:4px;">
             <span>LEVEL ${p?.level||1}</span><span>${p?.xp||0} / ${p?.xpToNext||50} XP</span></div>
-          <div style="background:#0a0a14;border:1px solid rgba(255,225,0,.2);height:clamp(12px,1.5vh,18px);overflow:hidden;">
-            <div style="height:100%;width:${xpPct}%;background:linear-gradient(90deg,${PU},#ffe100);transition:width .4s;"></div></div>
+          <div style="background:#0a0a14;border:1px solid rgba(0,255,255,.15);height:clamp(14px,1.8vh,20px);overflow:hidden;">
+            <div style="height:100%;width:${xpPct}%;background:linear-gradient(90deg,#8800ff,#00ffff);transition:width .4s;"></div></div>
         </div>
         <div class="vic-relics-total" style="flex:0 0 auto;">
           <span class="vic-relics-total-label">◆ RELICS</span>
-          <div class="vic-relics-total-items">${relics.length?relicIcons:'<span style="font-family:Share Tech Mono,monospace;font-size:clamp(7px,.8vw,10px);color:rgba(255,225,0,.25);">NONE</span>'}</div>
+          <div class="vic-relics-total-items">${relics.length?relicIcons:'<span style="font-family:Share Tech Mono,monospace;font-size:clamp(7px,.8vw,10px);color:rgba(255,0,255,.2);">NONE</span>'}</div>
         </div>
       </div>`;
       this._selectedUpgrade = {name:'SKIP',apply(){}};
