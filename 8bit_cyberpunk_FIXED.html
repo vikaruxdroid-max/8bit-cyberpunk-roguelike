@@ -1439,11 +1439,36 @@ const _ssImg = new Image();
 _ssImg.src = 'sprites.png';
 let _ssReady = false;
 _ssImg.onload = () => { _ssReady = true; _ssCropAll(); };
-// Also keep hero.png as fallback for warrior
-const _heroImg = new Image();
-_heroImg.src = 'hero.png';
-let _heroReady = false;
-_heroImg.onload = () => { _heroReady = true; };
+
+// ── Individual hero images (higher-detail character art) ──
+const _heroImages = {};
+const _HERO_IMG_MAP = {
+  heroMan:    'hero_man.png',
+  heroWoman:  'hero_woman.png',
+  heroSage:   'hero_sage.png',
+  heroRobot:  'hero_robot.png',
+  heroShadow: 'hero_shadow.png'
+};
+Object.entries(_HERO_IMG_MAP).forEach(([name, src]) => {
+  const img = new Image();
+  img.src = src;
+  img.onload = () => {
+    // Create offscreen canvas with background removed
+    const ocv = document.createElement('canvas');
+    ocv.width = img.naturalWidth; ocv.height = img.naturalHeight;
+    const octx = ocv.getContext('2d');
+    octx.drawImage(img, 0, 0);
+    // Remove near-white background pixels
+    const id = octx.getImageData(0, 0, ocv.width, ocv.height);
+    const d = id.data;
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i] > 220 && d[i+1] > 220 && d[i+2] > 220) d[i+3] = 0;
+    }
+    octx.putImageData(id, 0, 0);
+    _ssCanvases[name] = ocv;
+    _heroImages[name] = true;
+  };
+});
 
 // Each cell in the 4x3 grid — we'll auto-detect cell size on load
 const _ssCells = {}; // spriteName -> {sx,sy,sw,sh} source rect
@@ -1545,22 +1570,42 @@ function glow(ctx, x, y, w, h, col, str=8) {
 // ═══════════════════════════════════════════════════════════════
 const SPR = {
 
-  // All sprites now loaded from sprites.png spritesheet
-  // Fallback: hero.png for warrior, colored rect for others
+  // Hero sprites — individual high-detail PNGs with spritesheet fallback
   warrior(ctx, ox, oy, flip, t=0) {
-    const w=14*P, h=22*P;
-    if(!_drawSS('warrior',ctx,ox,oy,w,h,flip)){
-      if(_heroReady){ctx.save();if(flip){ctx.translate(ox+w,oy);ctx.scale(-1,1);ctx.drawImage(_heroImg,0,0,w,h);}else{ctx.drawImage(_heroImg,ox,oy,w,h);}ctx.restore();}
-      else{ctx.fillStyle='#445577';ctx.fillRect(ox,oy,w,h);}
+    const w=14*P, h=26*P;
+    if(!_drawSS('heroMan',ctx,ox,oy,w,h,flip)){
+      _drawSS('warrior',ctx,ox,oy,w,22*P,flip)||_fbrect(ctx,ox,oy,w,h,'#445577');
+    }
+  },
+  rogue(ctx, ox, oy, flip, t=0) {
+    const w=16*P, h=26*P;
+    if(!_drawSS('heroWoman',ctx,ox,oy,w,h,flip)){
+      _drawSS('rogue',ctx,ox,oy,14*P,20*P,flip)||_fbrect(ctx,ox,oy,w,h,'#cc4444');
+    }
+  },
+  sage(ctx, ox, oy, flip, t=0) {
+    const w=17*P, h=26*P;
+    if(!_drawSS('heroSage',ctx,ox,oy,w,h,flip)){
+      _drawSS('druid',ctx,ox,oy,14*P,22*P,flip)||_fbrect(ctx,ox,oy,w,h,'#4488cc');
+    }
+  },
+  shadow(ctx, ox, oy, flip, t=0) {
+    const w=19*P, h=26*P;
+    if(!_drawSS('heroShadow',ctx,ox,oy,w,h,flip)){
+      _drawSS('netrunner',ctx,ox,oy,14*P,20*P,flip)||_fbrect(ctx,ox,oy,w,h,'#334455');
+    }
+  },
+  druid(ctx, ox, oy, flip, t=0) {
+    const w=21*P, h=26*P;
+    if(!_drawSS('heroRobot',ctx,ox,oy,w,h,flip)){
+      _drawSS('druid',ctx,ox,oy,14*P,22*P,flip)||_fbrect(ctx,ox,oy,w,h,'#44aa88');
     }
   },
 
-  // All remaining sprites: spritesheet-based with fallback
+  // Non-hero sprites: spritesheet-based with fallback
   ranger(ctx, ox, oy, flip, t=0) { _drawSS('rogue',ctx,ox,oy,14*P,20*P,flip)||_fbrect(ctx,ox,oy,14*P,20*P,'#228844'); },
-  rogue(ctx, ox, oy, flip, t=0) { _drawSS('rogue',ctx,ox,oy,14*P,20*P,flip)||_fbrect(ctx,ox,oy,14*P,20*P,'#cc4444'); },
   cleric(ctx, ox, oy, flip, t=0) { _drawSS('circuitLich',ctx,ox,oy,14*P,22*P,flip)||_fbrect(ctx,ox,oy,14*P,22*P,'#4488cc'); },
   warlock(ctx, ox, oy, flip, t=0) { _drawSS('voidSpecter',ctx,ox,oy,14*P,22*P,flip)||_fbrect(ctx,ox,oy,14*P,22*P,'#8844cc'); },
-  druid(ctx, ox, oy, flip, t=0) { _drawSS('druid',ctx,ox,oy,14*P,22*P,flip)||_fbrect(ctx,ox,oy,14*P,22*P,'#44aa88'); },
   glitchDrone(ctx, ox, oy, flip, t=0) { _drawSS('glitchDrone',ctx,ox,oy,12*P,12*P,flip)||_fbrect(ctx,ox,oy,12*P,12*P,'#00cccc'); },
   neonGolem(ctx, ox, oy, flip, t=0) { _drawSS('neonGolem',ctx,ox,oy,14*P,22*P,flip)||_fbrect(ctx,ox,oy,14*P,22*P,'#8800ff'); },
   voidSpecter(ctx, ox, oy, flip, t=0) { _drawSS('voidSpecter',ctx,ox,oy,12*P,17*P,flip)||_fbrect(ctx,ox,oy,12*P,17*P,'#aa44ff'); },
@@ -1575,562 +1620,12 @@ const SPR = {
 };
 function _fbrect(ctx,x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(x,y,w,h);}
 
-// DEAD CODE — original procedural sprites replaced by spritesheet above
-// (kept as comment block for reference)
-/*
-  ranger(ctx, ox, oy, flip, t=0) {
-    const lv='#1e5200',lv2='#2d7a00',lv3='#3a9900',eyeC=GR;
-    pg(ctx, ox, oy, [
-      [_,_,lv,lv2,lv3,lv3,lv3,lv3,lv3,lv3,lv2,lv,_,_],
-      [_,lv,lv2,lv3,SK,SK,SK,SK,SK,SK,lv3,lv2,lv,_],
-      [lv,lv2,lv3,SK,sk,sk,sk,sk,sk,sk,SK,lv3,lv2,lv],
-      [lv,lv2,lv3,SK,BK,eyeC,'#aaffaa',eyeC,BK,SK,lv3,lv2,lv,_],
-      [lv,lv2,lv3,SK,sk,sk,sk,sk,sk,sk,SK,lv3,lv2,lv],
-      [_,lv,lv2,lv3,lv3,lv3,lv3,lv3,lv3,lv3,lv3,lv2,lv,_],
-      [_,lv,lv2,lv3,lv3,lv3,lv3,lv3,lv3,lv3,lv3,lv2,lv,_],
-      [lv,lv2,lv3,lv2,lv3,GR,GR,GR,GR,lv3,lv2,lv3,lv2,lv],
-      [lv,lv2,lv3,GR,lv2,lv3,lv3,lv3,lv3,lv2,GR,lv3,lv2,lv],
-      [lv,lv2,lv3,GR,lv3,lv2,lv3,lv3,lv2,lv3,GR,lv3,lv2,lv],
-      [lv,lv2,lv3,lv2,lv3,lv3,lv3,lv3,lv3,lv3,lv2,lv3,lv2,lv],
-      [_,lv,GR,GR,GR,GR,GR,GR,GR,GR,GR,GR,GR,_],
-      [_,lv,lv2,lv3,lv2,_,_,_,_,lv2,lv3,lv2,lv,_],
-      [_,lv,lv2,lv3,lv2,_,_,_,_,lv2,lv3,lv2,lv,_],
-      [_,_,lv,lv3,lv2,_,_,_,_,lv2,lv3,lv,_,_],
-      [_,_,GR,lv2,lv3,_,_,_,_,lv3,lv2,GR,_,_],
-      [_,_,lv,lv3,lv2,_,_,_,_,lv2,lv3,lv,_,_],
-      [_,_,lv,lv3,lv2,_,_,_,_,lv2,lv3,lv,_,_],
-      [_,_,lv,lv3,BK,_,_,_,_,BK,lv3,lv,_,_],
-      [_,lv,lv,lv,BK,_,_,_,_,BK,lv,lv,lv,_],
-    ], flip);
-    // Bow
-    const bx = flip ? ox + P*13 : ox - P*2;
-    ctx.save();
-    // Draw bow arc: simple arc on the side facing away from player
-    const bowCX = flip ? bx - P*5 : bx + P*5;
-    ctx.strokeStyle='#8b5a10'; ctx.lineWidth=P*.7;
-    ctx.beginPath();
-    ctx.arc(bowCX, oy+P*10, P*6, -Math.PI*.55, Math.PI*.55);
-    ctx.stroke();
-    // Bowstring
-    const bowTop = {x: bowCX + Math.cos(-Math.PI*.55)*P*6, y: oy+P*10 + Math.sin(-Math.PI*.55)*P*6};
-    const bowBot = {x: bowCX + Math.cos( Math.PI*.55)*P*6, y: oy+P*10 + Math.sin( Math.PI*.55)*P*6};
-    ctx.strokeStyle=GR; ctx.lineWidth=1; ctx.shadowColor=GR; ctx.shadowBlur=5;
-    ctx.beginPath(); ctx.moveTo(bowTop.x, bowTop.y); ctx.lineTo(bowBot.x, bowBot.y); ctx.stroke();
-    ctx.restore();
-  },
-
-  // ROGUE – shadow assassin, magenta twin blades
-  rogue(ctx, ox, oy, flip, t=0) {
-    const d1='#0d0020',d2='#1a0038',d3='#280055';
-    const eg=`rgba(255,${80+Math.floor(Math.sin(t*.1)*40)},255,.95)`;
-    pg(ctx, ox, oy, [
-      [_,_,d1,d2,d2,d2,d2,d2,d2,d2,d2,d1,_,_],
-      [_,d1,d2,d3,d3,d3,d3,d3,d3,d3,d3,d2,d1,_],
-      [d1,d2,d3,SK,SK,sk,sk,sk,sk,SK,SK,d3,d2,d1],
-      [d1,d2,d3,BK,BK,BK,MG,MG,BK,BK,BK,d3,d2,d1],
-      [d1,d2,d3,BK,MG,eg,eg,eg,eg,MG,BK,d3,d2,d1],
-      [d1,d2,d3,BK,BK,BK,BK,BK,BK,BK,BK,d3,d2,d1],
-      [_,d2,d2,d3,d3,d3,d3,d3,d3,d3,d3,d2,d2,_],
-      [_,d1,d2,d3,MG,MG,d3,d3,MG,MG,d3,d2,d1,_],
-      [d1,d2,d3,MG,d2,d3,d3,d3,d3,d2,MG,d3,d2,d1],
-      [d1,d2,d3,d3,d3,MG,MG,MG,MG,d3,d3,d3,d2,d1],
-      [d1,d2,d3,d3,MG,d2,d3,d3,d2,MG,d3,d3,d2,d1],
-      [_,d2,d3,d3,d3,d3,d3,d3,d3,d3,d3,d3,d2,_],
-      [_,MG,MG,MG,MG,MG,MG,MG,MG,MG,MG,MG,MG,_],
-      [_,d1,d2,d3,d2,_,_,_,_,d2,d3,d2,d1,_],
-      [_,d1,d2,d3,d2,_,_,_,_,d2,d3,d2,d1,_],
-      [_,_,d2,d3,d1,_,_,_,_,d1,d3,d2,_,_],
-      [_,_,MG,d2,d1,_,_,_,_,d1,d2,MG,_,_],
-      [_,_,d2,d3,d1,_,_,_,_,d1,d3,d2,_,_],
-      [_,_,d1,d2,d1,_,_,_,_,d1,d2,d1,_,_],
-      [_,d1,d1,d1,BK,_,_,_,_,BK,d1,d1,d1,_],
-    ], flip);
-    // Dual daggers
-    const dx = flip ? ox + P*13 : ox - P*2;
-    const dx2 = flip ? ox + P*11 : ox - P*4;
-    for(let i=0;i<10;i++){ctx.fillStyle=i<2?'#aa2266':W1;ctx.fillRect(dx,oy+P*(3+i),P,P);}
-    for(let i=0;i<8;i++){ctx.fillStyle=i<2?'#aa2266':W2;ctx.fillRect(dx2,oy+P*(5+i),P,P);}
-    glow(ctx,dx,oy+P*3,P,P*8,MG,5);
-    glow(ctx,dx2,oy+P*5,P,P*6,MG,4);
-  },
-
-  // CLERIC – holy healer, gold cross + divine staff
-  cleric(ctx, ox, oy, flip, t=0) {
-    const w1='#eeeefc',w2='#ccccee',w3='#aaaacc';
-    const hglow=`rgba(255,${220+Math.floor(Math.sin(t*.07)*30)},80,.9)`;
-    pg(ctx, ox, oy, [
-      [_,_,w3,GD,GD,GD,GD,GD,GD,GD,GD,w3,_,_],
-      [_,w3,GD,'#fff8aa',GD,GD,GD,GD,'#fff8aa',GD,w3,_,_,_],
-      [_,w3,w2,SK,SK,SK,SK,SK,SK,SK,SK,w2,w3,_],
-      [_,w3,w2,SK,sk,sk,sk,sk,sk,sk,SK,w2,w3,_],
-      [_,w3,w2,SK,BK,hglow,hglow,hglow,hglow,BK,SK,w2,w3,_],
-      [_,w3,w2,SK,sk,sk,sk,sk,sk,sk,SK,w2,w3,_],
-      [_,_,w2,w2,w2,w2,w2,w2,w2,w2,w2,w2,_,_],
-      [_,w3,w1,w1,w1,w1,w1,w1,w1,w1,w1,w1,w3,_],
-      [w3,w1,w1,GD,GD,GD,GD,GD,GD,GD,GD,w1,w1,w3],
-      [w3,w1,GD,w2,w2,w2,w2,w2,w2,w2,w2,GD,w1,w3],
-      [w3,w1,GD,w2,w1,GD,GD,GD,GD,w1,w2,GD,w1,w3],
-      [w3,w1,GD,w2,GD,w1,w1,w1,w1,GD,w2,GD,w1,w3],
-      [w3,w1,GD,w2,GD,w1,w2,w2,w1,GD,w2,GD,w1,w3],
-      [w3,w1,GD,w2,w2,w2,w2,w2,w2,w2,w2,GD,w1,w3],
-      [_,GD,GD,GD,GD,GD,GD,GD,GD,GD,GD,GD,GD,_],
-      [_,w3,w2,w1,w2,_,_,_,_,w2,w1,w2,w3,_],
-      [_,w3,w1,w2,w3,_,_,_,_,w3,w2,w1,w3,_],
-      [_,_,w3,w2,w3,_,_,_,_,w3,w2,w3,_,_],
-      [_,_,GD,w2,w3,_,_,_,_,w3,w2,GD,_,_],
-      [_,_,w3,w2,w3,_,_,_,_,w3,w2,w3,_,_],
-      [_,_,w3,w3,BK,_,_,_,_,BK,w3,w3,_,_],
-      [_,w3,w3,w3,BK,_,_,_,_,BK,w3,w3,w3,_],
-    ], flip);
-    // Holy staff
-    const sx = flip ? ox - P*3 : ox + P*14;
-    for(let i=1;i<20;i++){ctx.fillStyle=i%2?'#aa8822':'#ccaa44';ctx.fillRect(sx,oy+P*i,P,P);}
-    const gr=ctx.createRadialGradient(sx+P/2,oy,0,sx+P/2,oy,P*4);
-    gr.addColorStop(0,'rgba(255,250,150,.95)');gr.addColorStop(.5,GD);gr.addColorStop(1,'transparent');
-    ctx.fillStyle=gr;ctx.beginPath();ctx.arc(sx+P/2,oy,P*4,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='#fff';ctx.fillRect(sx,oy-P*2,P,P*3);ctx.fillRect(sx-P,oy-P,P*3,P);
-  },
-
-  // WARLOCK – void mage, purple arcane staff
-  warlock(ctx, ox, oy, flip, t=0) {
-    const v1='#0a001e',v2='#160035',v3='#220055';
-    const pe=`rgba(${160+Math.floor(Math.sin(t*.09)*50)},60,255,.95)`;
-    pg(ctx, ox, oy, [
-      [_,_,v2,PU,PU,PU,PU,PU,PU,PU,PU,v2,_,_],
-      [_,v2,PU,v3,v3,v3,v3,v3,v3,v3,v3,PU,v2,_],
-      [v2,PU,v3,v3,SK,SK,SK,SK,SK,SK,v3,v3,PU,v2],
-      [v2,PU,v3,SK,sk,sk,sk,sk,sk,sk,SK,v3,PU,v2],
-      [v2,PU,v3,SK,BK,pe,pe,pe,pe,BK,SK,v3,PU,v2],
-      [v2,PU,v3,SK,sk,sk,sk,sk,sk,sk,SK,v3,PU,v2],
-      [v2,PU,v3,v3,v3,v3,v3,v3,v3,v3,v3,v3,PU,v2],
-      [_,PU,PU,v3,PU,PU,v3,v3,PU,PU,v3,PU,PU,_],
-      [v2,v3,v3,PU,v1,v3,v3,v3,v3,v1,PU,v3,v3,v2],
-      [v2,v3,PU,v1,v3,v3,PU,PU,v3,v3,v1,PU,v3,v2],
-      [v2,v3,PU,v1,v3,PU,v1,v1,PU,v3,v1,PU,v3,v2],
-      [v2,v3,v3,PU,v3,v3,v3,v3,v3,v3,PU,v3,v3,v2],
-      [_,v2,v3,v3,v3,v3,v3,v3,v3,v3,v3,v3,v2,_],
-      [_,PU,PU,PU,PU,PU,PU,PU,PU,PU,PU,PU,PU,_],
-      [_,v2,v3,v3,v2,_,_,_,_,v2,v3,v3,v2,_],
-      [_,v2,v3,v3,v2,_,_,_,_,v2,v3,v3,v2,_],
-      [_,_,v3,v2,v1,_,_,_,_,v1,v2,v3,_,_],
-      [_,_,PU,v2,v1,_,_,_,_,v1,v2,PU,_,_],
-      [_,_,v3,v2,v1,_,_,_,_,v1,v2,v3,_,_],
-      [_,_,v2,v1,v1,_,_,_,_,v1,v1,v2,_,_],
-      [_,v2,v2,v1,BK,_,_,_,_,BK,v1,v2,v2,_],
-      [_,v2,v1,v1,BK,_,_,_,_,BK,v1,v1,v2,_],
-    ], flip);
-    // Void staff
-    const sx = flip ? ox - P*3 : ox + P*14;
-    for(let i=2;i<20;i++){ctx.fillStyle=i%3===0?PU:v2;ctx.fillRect(sx,oy+P*i,P,P);}
-    const b=.55+Math.sin(t*.08)*.3;
-    const vr=ctx.createRadialGradient(sx+P/2,oy+P,0,sx+P/2,oy+P,P*5);
-    vr.addColorStop(0,`rgba(220,120,255,${b})`);vr.addColorStop(.4,`rgba(136,0,255,${b*.7})`);vr.addColorStop(1,'transparent');
-    ctx.fillStyle=vr;ctx.beginPath();ctx.arc(sx+P/2,oy+P,P*5,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='#cc55ff';ctx.beginPath();ctx.arc(sx+P/2,oy+P,P*1.5,0,Math.PI*2);ctx.fill();
-  },
-
-  // DRUID – cyber-organic, cyan nature staff
-  druid(ctx, ox, oy, flip, t=0) {
-    const t1='#003030',t2='#004444',t3='#006666';
-    pg(ctx, ox, oy, [
-      [_,_,t2,t2,CY,CY,CY,CY,CY,CY,t2,t2,_,_],
-      [_,t2,t3,CY,t3,t3,t3,t3,t3,t3,CY,t3,t2,_],
-      [t2,t3,t2,SK,SK,SK,SK,SK,SK,SK,SK,t2,t3,t2],
-      [t2,t3,t2,SK,sk,sk,sk,sk,sk,sk,SK,t2,t3,t2],
-      [t2,t3,t2,SK,BK,CY,'#aaffff',CY,BK,SK,t2,t3,t2,_],
-      [t2,t3,t2,t2,sk,sk,sk,sk,sk,sk,t2,t2,t3,t2],
-      [_,t2,t3,t2,t2,t2,t2,t2,t2,t2,t2,t2,t2,_],
-      [_,t2,t3,t3,CY,CY,CY,CY,CY,CY,t3,t3,t2,_],
-      [t2,t3,t2,t1,GR,t3,t3,t3,t3,GR,t1,t2,t3,t2],
-      [t2,t3,t2,GR,t3,t3,CY,CY,t3,t3,GR,t2,t3,t2],
-      [t2,t3,t2,GR,t3,CY,t2,t2,CY,t3,GR,t2,t3,t2],
-      [t2,t3,t2,t2,t3,t3,t3,t3,t3,t3,t2,t2,t3,t2],
-      [_,t2,t3,t3,t3,t3,t3,t3,t3,t3,t3,t3,t2,_],
-      [_,CY,CY,CY,CY,CY,CY,CY,CY,CY,CY,CY,CY,_],
-      [_,t2,t3,t2,t3,_,_,_,_,t3,t2,t3,t2,_],
-      [_,t2,t3,t2,t3,_,_,_,_,t3,t2,t3,t2,_],
-      [_,_,t3,t2,t3,_,_,_,_,t3,t2,t3,_,_],
-      [_,_,GR,t2,t1,_,_,_,_,t1,t2,GR,_,_],
-      [_,_,t3,t2,t1,_,_,_,_,t1,t2,t3,_,_],
-      [_,_,t2,t1,t1,_,_,_,_,t1,t1,t2,_,_],
-      [_,t2,t1,t1,BK,_,_,_,_,BK,t1,t1,t2,_],
-      [_,t1,t1,t1,BK,_,_,_,_,BK,t1,t1,t1,_],
-    ], flip);
-    // Nature staff
-    const sx = flip ? ox - P*3 : ox + P*14;
-    for(let i=0;i<20;i++){ctx.fillStyle=i%2?'#336610':'#558822';ctx.fillRect(sx,oy+P*i,P,P);}
-    for(let i=0;i<7;i+=2){ctx.fillStyle=GR;ctx.fillRect(sx+P,oy+P*(3+i),P,P/2);}
-    const br=.6+Math.sin(t*.07)*.3;
-    const gr=ctx.createRadialGradient(sx+P/2,oy-P,0,sx+P/2,oy-P,P*4);
-    gr.addColorStop(0,`rgba(180,255,200,${br})`);gr.addColorStop(.4,`rgba(0,255,200,${br*.6})`);gr.addColorStop(1,'transparent');
-    ctx.fillStyle=gr;ctx.beginPath();ctx.arc(sx+P/2,oy-P,P*4,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle=CY;ctx.beginPath();ctx.arc(sx+P/2,oy-P,P*1.3,0,Math.PI*2);ctx.fill();
-  },
-
-  // GLITCH DRONE – floating cyber orb
-  glitchDrone(ctx, ox, oy, flip, t=0) {
-    const bob = Math.sin(t*.1)*P;
-    const c1='#003344',c2='#004455',c3='#005566';
-    pg(ctx, ox, oy+bob, [
-      [_,_,c2,CY,CY,CY,CY,CY,CY,c2,_,_],
-      [_,c2,CY,c3,c3,c3,c3,c3,c3,CY,c2,_],
-      [c2,CY,c3,BK,BK,BK,BK,BK,BK,c3,CY,c2],
-      [CY,c3,BK,MG,MG,MG,MG,MG,MG,BK,c3,CY],
-      [CY,c3,BK,MG,'#ff88ff','#ffffff','#ffffff','#ff88ff',MG,BK,c3,CY],
-      [CY,c3,BK,MG,MG,MG,MG,MG,MG,BK,c3,CY],
-      [c2,CY,c3,BK,BK,BK,BK,BK,BK,c3,CY,c2],
-      [_,c2,CY,CY,c3,c3,c3,c3,CY,CY,c2,_],
-      [_,_,c2,c2,CY,CY,CY,CY,c2,c2,_,_],
-      [_,_,_,CY,c2,_,_,c2,CY,_,_,_],
-      [_,_,_,CY,_,_,_,_,CY,_,_,_],
-      [_,_,CY,BK,_,_,_,_,BK,CY,_,_],
-    ], false);
-    // Engine glow
-    const eg=ctx.createRadialGradient(ox+P*6,oy+P*9+bob,0,ox+P*6,oy+P*9+bob,P*6);
-    eg.addColorStop(0,`rgba(0,255,255,${.25+Math.sin(t*.12)*.12})`);eg.addColorStop(1,'transparent');
-    ctx.fillStyle=eg;ctx.beginPath();ctx.arc(ox+P*6,oy+P*9+bob,P*6,0,Math.PI*2);ctx.fill();
-  },
-
-  // NEON GOLEM – stone giant with circuit veins
-  neonGolem(ctx, ox, oy, flip, t=0) {
-    const s1='#2e2e44',s2='#222235',s3='#181828',s4='#3a3a55';
-    pg(ctx, ox, oy, [
-      [_,_,s3,s3,s3,s3,s3,s3,s3,s3,s3,s3,_,_],
-      [_,s3,s2,s1,s1,s1,s1,s1,s1,s1,s1,s2,s3,_],
-      [s3,s2,s1,s4,s4,s4,s4,s4,s4,s4,s4,s1,s2,s3],
-      [s3,s2,s4,PU,PU,PU,PU,PU,PU,PU,PU,s4,s2,s3],
-      [s3,s2,PU,'#aa44ff','#cc88ff','#ffffff','#ffffff','#cc88ff','#aa44ff',PU,s2,s3,_,_],
-      [s3,s2,s4,PU,PU,PU,PU,PU,PU,PU,PU,s4,s2,s3],
-      [s3,s2,s1,s4,s4,s4,s4,s4,s4,s4,s4,s1,s2,s3],
-      [_,PU,PU,PU,PU,PU,PU,PU,PU,PU,PU,PU,PU,_],
-      [s3,s2,s1,s1,s1,s1,s1,s1,s1,s1,s1,s1,s2,s3],
-      [s2,s1,s4,PU,s2,s4,s4,s4,s4,s2,PU,s4,s1,s2],
-      [s2,s1,PU,s2,s4,PU,s2,s2,PU,s4,s2,PU,s1,s2],
-      [s2,s1,PU,s2,PU,s2,s1,s1,s2,PU,s2,PU,s1,s2],
-      [s2,s1,s4,PU,s4,s4,s4,s4,s4,s4,PU,s4,s1,s2],
-      [PU,PU,PU,PU,PU,PU,PU,PU,PU,PU,PU,PU,PU,PU],
-      [s3,s2,s1,s4,s4,_,_,_,_,s4,s4,s1,s2,s3],
-      [s3,s2,s1,s4,s3,_,_,_,_,s3,s4,s1,s2,s3],
-      [s2,s1,s4,s3,s3,_,_,_,_,s3,s3,s4,s1,s2],
-      [s2,PU,s4,s3,s2,_,_,_,_,s2,s3,s4,PU,s2],
-      [s2,s1,s4,s3,s2,_,_,_,_,s2,s3,s4,s1,s2],
-      [s3,s3,s3,s2,BK,_,_,_,_,BK,s2,s3,s3,s3],
-      [s3,s3,PU,s2,BK,_,_,_,_,BK,s2,PU,s3,s3],
-      [s3,s2,s2,s2,BK,_,_,_,_,BK,s2,s2,s2,s3],
-    ], flip);
-    // Arms
-    const aL=flip?ox+P*12:ox-P*4,aR=flip?ox-P*4:ox+P*12;
-    [aL,aR].forEach(ax=>{
-      ctx.fillStyle=s2;ctx.fillRect(ax,oy+P*6,P*4,P*11);
-      ctx.fillStyle=PU;ctx.fillRect(ax,oy+P*10,P*4,P);
-      ctx.fillStyle=s1;ctx.fillRect(ax+P/2,oy+P*7,P*3,P*9);
-    });
-  },
-
-  // VOID SPECTER – translucent wraith
-  voidSpecter(ctx, ox, oy, flip, t=0) {
-    const bob=Math.sin(t*.07)*P*1.5;
-    const a=.75+Math.sin(t*.06)*.15;
-    ctx.save(); ctx.globalAlpha=a;
-    const v1='#150040',v2='#220060',v3='#300085';
-    pg(ctx, ox, oy+bob, [
-      [_,_,_,v2,v2,v2,v2,v2,v2,v2,_,_],
-      [_,_,v2,v3,v3,v3,v3,v3,v3,v3,v2,_],
-      [_,v2,v3,v2,v2,v2,v2,v2,v2,v2,v3,v2],
-      [v2,v3,v2,PU,PU,PU,PU,PU,PU,PU,v2,v3],
-      [v2,v3,PU,'#cc88ff','#eeccff','#ffffff','#ffffff','#eeccff','#cc88ff',PU,v3,v2],
-      [v2,v3,v2,PU,PU,PU,PU,PU,PU,PU,v2,v3],
-      [v2,v3,v2,v2,v2,v2,v2,v2,v2,v2,v3,v2],
-      [_,v2,v3,v3,v3,v3,v3,v3,v3,v3,v2,_],
-      [_,v2,v2,v3,v3,v3,v3,v3,v3,v2,v2,_],
-      [v2,v3,v3,v3,PU,v3,v3,v3,PU,v3,v3,v2],
-      [v2,v3,v3,PU,v2,PU,v3,PU,v2,PU,v3,v2],
-      [_,v2,v3,v3,PU,PU,v3,PU,PU,v3,v2,_],
-      [_,v2,v2,v3,v3,v3,v3,v3,v3,v2,v2,_],
-      [_,_,v2,v2,v3,v3,v3,v3,v2,v2,_,_],
-      [_,_,_,v2,v2,v2,v2,v2,v2,_,_,_],
-      [_,_,v2,v2,_,v2,v2,v2,_,v2,v2,_],
-      [_,_,v1,_,_,_,v2,_,_,_,v1,_],
-    ], false);
-    ctx.restore();
-    // Particle motes
-    for(let i=0;i<4;i++){
-      const ang=t*.05+i*1.57;
-      ctx.save();ctx.globalAlpha=.4+Math.sin(ang)*.25;
-      ctx.fillStyle=PU;ctx.beginPath();
-      ctx.arc(ox+P*6+Math.cos(ang)*P*(3+i),oy+P*9+bob+Math.sin(ang)*P*2.5,P*.6,0,Math.PI*2);
-      ctx.fill();ctx.restore();
-    }
-  },
-
-  // CYBER OGRE – massive armored brute
-  cyberOgre(ctx, ox, oy, flip, t=0) {
-    const a1='#3a4455',a2='#4a5566',a3='#5a6677';
-    pg(ctx, ox, oy, [
-      [_,_,a2,a2,a2,a2,a2,a2,a2,a2,a2,a2,_,_],
-      [_,a2,a3,a3,a3,a3,a3,a3,a3,a3,a3,a3,a2,_],
-      [a2,a3,a2,a3,a3,a3,a3,a3,a3,a3,a3,a2,a3,a2],
-      [a2,a3,a2,OR,OR,OR,OR,OR,OR,OR,OR,a2,a3,a2],
-      [a2,a3,OR,'#ff8800','#ffcc44','#ffffff','#ffffff','#ffcc44','#ff8800',OR,a3,a2,_,_],
-      [a2,a3,a2,OR,OR,OR,OR,OR,OR,OR,OR,a2,a3,a2],
-      [a2,a3,a2,a3,a2,a2,a2,a2,a2,a2,a3,a2,a3,a2],
-      [_,OR,OR,OR,OR,OR,OR,OR,OR,OR,OR,OR,OR,_],
-      [a2,a3,a2,a2,a2,a2,a2,a2,a2,a2,a2,a2,a3,a2],
-      [a2,a3,OR,a2,a3,a3,OR,OR,a3,a3,a2,OR,a3,a2],
-      [a2,a3,OR,a2,OR,a2,a3,a3,a2,OR,a2,OR,a3,a2],
-      [a2,a3,OR,a2,a3,a3,OR,OR,a3,a3,a2,OR,a3,a2],
-      [a2,a3,a2,a2,a2,a2,a2,a2,a2,a2,a2,a2,a3,a2],
-      [OR,OR,OR,OR,OR,OR,OR,OR,OR,OR,OR,OR,OR,OR],
-      [a2,a3,a2,a3,a2,_,_,_,_,a2,a3,a2,a3,a2],
-      [a2,a3,a2,a2,a3,_,_,_,_,a3,a2,a2,a3,a2],
-      [a2,a2,a3,a2,a2,_,_,_,_,a2,a2,a3,a2,a2],
-      [a2,OR,a2,a3,a2,_,_,_,_,a2,a3,a2,OR,a2],
-      [a2,a2,a3,a2,a2,_,_,_,_,a2,a2,a3,a2,a2],
-      [a2,a3,a2,a2,a3,_,_,_,_,a3,a2,a2,a3,a2],
-      [a2,a2,a2,a2,BK,_,_,_,_,BK,a2,a2,a2,a2],
-      [a2,a2,OR,a2,BK,_,_,_,_,BK,a2,OR,a2,a2],
-    ], flip);
-    const aL=flip?ox+P*12:ox-P*5,aR=flip?ox-P*5:ox+P*12;
-    [aL,aR].forEach(ax=>{
-      ctx.fillStyle=a2;ctx.fillRect(ax,oy+P*5,P*5,P*13);
-      ctx.fillStyle=OR;ctx.fillRect(ax,oy+P*9,P*5,P);
-      ctx.fillStyle=a3;ctx.fillRect(ax+P,oy+P*6,P*3,P*11);
-      ctx.fillStyle=a2;ctx.fillRect(ax-P,oy+P*15,P*7,P*4);
-      ctx.fillStyle=OR;ctx.fillRect(ax-P,oy+P*15,P*7,P);
-    });
-  },
-
-  // DATA WRAITH – digital ghost
-  dataWraith(ctx, ox, oy, flip, t=0) {
-    const bob=Math.sin(t*.08)*P;
-    ctx.save();ctx.globalAlpha=.8+Math.sin(t*.07)*.14;
-    const c1='#001a22',c2='#002233',c3='#003344';
-    pg(ctx, ox, oy+bob, [
-      [_,_,c2,c2,CY,CY,CY,CY,CY,c2,c2,_],
-      [_,c2,c3,c3,c3,c3,c3,c3,c3,c3,c2,_],
-      [c2,c3,c2,c3,SK,SK,SK,SK,c3,c2,c3,c2],
-      [c2,c3,CY,BK,BK,CY,CY,BK,BK,CY,c3,c2],
-      [c2,c3,CY,'#aaffff','#88ffff','#aaffff','#aaffff','#88ffff','#aaffff',CY,c3,c2],
-      [c2,c3,CY,BK,BK,CY,CY,BK,BK,CY,c3,c2],
-      [c2,c3,c2,c3,c3,c3,c3,c3,c3,c2,c3,c2],
-      [_,c2,c3,CY,CY,CY,CY,CY,CY,c3,c2,_],
-      [_,c2,CY,c2,c3,c3,c3,c3,c2,CY,c2,_],
-      [c2,CY,c2,c3,CY,c2,c2,CY,c3,c2,CY,c2],
-      [c2,CY,c2,CY,c2,CY,CY,c2,CY,c2,CY,c2],
-      [_,c2,CY,c2,CY,c2,c2,CY,c2,CY,c2,_],
-      [_,c2,c2,c3,c3,c3,c3,c3,c3,c2,c2,_],
-      [_,_,c2,c2,c3,c3,c3,c3,c2,c2,_,_],
-      [_,_,_,c2,c2,c2,c2,c2,c2,_,_,_],
-      [_,_,c2,c3,c2,c2,c2,c2,c3,c2,_,_],
-      [_,_,c2,_,_,c2,c2,_,_,c2,_,_],
-      [_,_,_,_,_,c1,c1,_,_,_,_,_],
-    ], false);
-    ctx.restore();
-  },
-
-  // PULSE HOUND – cybernetic predator
-  pulseHound(ctx, ox, oy, flip, t=0) {
-    const h1='#440010',h2='#660018',h3='#880022';
-    pg(ctx, ox, oy, [
-      [_,_,_,_,_,_,h2,h3,h3,h3,h2,_,_,_],
-      [_,_,_,_,h1,h2,h3,h3,h3,h3,h3,h2,_,_],
-      [_,_,_,h1,h2,h3,RD,RD,RD,RD,h3,h2,h1,_],
-      [_,_,h1,h2,h3,RD,'#ff6688','#ff6688',RD,h3,h2,h1,_,_],
-      [_,h1,h2,h3,h2,h2,h2,h2,h2,h2,h3,h2,h1,_],
-      [h1,h2,h3,h2,h3,h3,h3,h3,h3,h3,h2,h3,h2,h1],
-      [h1,h2,h3,h2,h3,h3,h3,h3,h3,h3,h2,h3,h2,h1],
-      [h1,h2,h2,RD,h2,h2,h2,h2,h2,h2,RD,h2,h2,h1],
-      [_,RD,RD,RD,RD,RD,RD,RD,RD,RD,RD,RD,RD,_],
-      [_,h1,h2,h3,h3,h3,h3,h3,h3,h3,h3,h2,h1,_],
-      [_,h1,h2,h2,h2,h3,h3,h3,h3,h2,h2,h2,h1,_],
-      [h1,h2,_,h2,h3,h2,_,_,h2,h3,h2,_,h2,h1],
-      [h2,h3,_,h1,h2,h3,_,_,h3,h2,h1,_,h3,h2],
-      [h2,h3,_,h1,h2,h3,_,_,h3,h2,h1,_,h3,h2],
-      [RD,RD,_,h2,RD,RD,_,_,RD,RD,h2,_,RD,RD],
-      [h2,h3,_,h2,h3,h2,_,_,h2,h3,h2,_,h3,h2],
-      [BK,BK,_,h2,BK,BK,_,_,BK,BK,h2,_,BK,BK],
-    ], flip);
-    // Tail
-    const tx=flip?ox-P*2:ox+P*14,dir=flip?-1:1;
-    const tc=Math.sin(t*.1)*0.4;
-    ctx.save();ctx.strokeStyle=h2;ctx.lineWidth=P*.9;
-    ctx.beginPath();ctx.moveTo(tx,oy+P*7);
-    ctx.quadraticCurveTo(tx+dir*P*5,oy+P*3+tc*P*4,tx+dir*P*8,oy+P*1+tc*P*3);ctx.stroke();
-    ctx.strokeStyle=RD;ctx.lineWidth=P*.3;
-    ctx.beginPath();ctx.moveTo(tx,oy+P*7);
-    ctx.quadraticCurveTo(tx+dir*P*5,oy+P*3+tc*P*4,tx+dir*P*8,oy+P*1+tc*P*3);ctx.stroke();
-    ctx.restore();
-  },
-
-  // CIRCUIT LICH – undead cyber sorcerer
-  circuitLich(ctx, ox, oy, flip, t=0) {
-    const b1='#e8e8d8',b2='#ccccbb',b3='#aaaaaa';
-    const r1='#081400',r2='#0d1f00',r3='#122800';
-    const eg=`rgba(${80+Math.floor(Math.sin(t*.1)*40)},255,80,.9)`;
-    pg(ctx, ox, oy, [
-      [_,_,r2,GR,GR,GR,GR,GR,GR,GR,GR,r2,_,_],
-      [_,r2,b2,b1,b1,b1,b1,b1,b1,b1,b1,b2,r2,_],
-      [r2,b2,b1,b2,b3,b3,b3,b3,b3,b3,b2,b1,b2,r2],
-      [r2,b2,b1,BK,GR,GR,GR,GR,GR,GR,BK,b1,b2,r2],
-      [r2,b2,b1,BK,eg,'#ccffcc',eg,eg,'#ccffcc',eg,BK,b1,b2,r2],
-      [r2,b2,b1,BK,GR,GR,GR,GR,GR,GR,BK,b1,b2,r2],
-      [r2,b2,b1,b2,b3,b3,b3,b3,b3,b3,b2,b1,b2,r2],
-      [_,r2,b3,b2,b1,b1,b1,b1,b1,b1,b2,b3,r2,_],
-      [_,r2,r2,GR,GR,GR,GR,GR,GR,GR,GR,r2,r2,_],
-      [r2,r1,r2,r3,r3,r3,r3,r3,r3,r3,r3,r2,r1,r2],
-      [r2,r1,r3,GR,r2,r3,r3,r3,r3,r2,GR,r3,r1,r2],
-      [r2,r1,GR,r2,r3,GR,r2,r2,GR,r3,r2,GR,r1,r2],
-      [r2,r1,GR,r2,GR,r2,r1,r1,r2,GR,r2,GR,r1,r2],
-      [r2,r1,r3,GR,r3,r3,r3,r3,r3,r3,GR,r3,r1,r2],
-      [_,GR,GR,GR,GR,GR,GR,GR,GR,GR,GR,GR,GR,_],
-      [_,r1,r2,r3,r2,_,_,_,_,r2,r3,r2,r1,_],
-      [_,r1,r2,r3,r2,_,_,_,_,r2,r3,r2,r1,_],
-      [_,_,r2,r3,r1,_,_,_,_,r1,r3,r2,_,_],
-      [_,_,GR,r2,r1,_,_,_,_,r1,r2,GR,_,_],
-      [_,_,r2,r3,r1,_,_,_,_,r1,r3,r2,_,_],
-      [_,_,b3,b2,BK,_,_,_,_,BK,b2,b3,_,_],
-      [_,r2,b2,b3,BK,_,_,_,_,BK,b3,b2,r2,_],
-    ], flip);
-    // Bone staff
-    const sx=flip?ox-P*3:ox+P*14;
-    for(let i=0;i<18;i++){ctx.fillStyle=i%4===0?GR:(i%2?b2:b3);ctx.fillRect(sx,oy+P*i,P,P);}
-    // Skull top
-    ctx.fillStyle=b1;ctx.fillRect(sx-P,oy-P*3,P*3,P*3);
-    ctx.fillStyle=BK;ctx.fillRect(sx-P/2,oy-P*2.5,P/2,P/2);ctx.fillRect(sx+P/2,oy-P*2.5,P/2,P/2);
-    const gr2=ctx.createRadialGradient(sx+P/2,oy-P*2,0,sx+P/2,oy-P*2,P*5);
-    const gb=.4+Math.sin(t*.1)*.3;
-    gr2.addColorStop(0,`rgba(100,255,80,${gb})`);gr2.addColorStop(.5,`rgba(0,180,0,${gb*.5})`);gr2.addColorStop(1,'transparent');
-    ctx.fillStyle=gr2;ctx.beginPath();ctx.arc(sx+P/2,oy-P*2,P*5,0,Math.PI*2);ctx.fill();
-  },
-
-  // QUANTUM BOSS – ultimate entity, tri-phase
-  quantumBoss(ctx, ox, oy, flip, t=0) {
-    const q1='#0a0025',q2='#150040',q3='#200060';
-    const ep=`rgba(255,${100+Math.floor(Math.sin(t*.1)*70)},255,1)`;
-    const pulse=.55+Math.sin(t*.07)*.3;
-    pg(ctx, ox, oy, [
-      [_,q2,PU,PU,MG,MG,MG,MG,MG,MG,PU,PU,q2,_],
-      [q2,PU,q3,q3,q3,q3,q3,q3,q3,q3,q3,q3,PU,q2],
-      [PU,q3,q2,q3,q3,q3,q3,q3,q3,q3,q3,q2,q3,PU],
-      [PU,q3,q2,BK,BK,BK,MG,MG,BK,BK,BK,q2,q3,PU],
-      [PU,q3,BK,MG,ep,ep,ep,ep,ep,ep,MG,BK,q3,PU],
-      [PU,q3,q2,BK,BK,MG,MG,MG,MG,BK,BK,q2,q3,PU],
-      [PU,q3,q2,q3,q3,q3,q3,q3,q3,q3,q3,q2,q3,PU],
-      [_,MG,MG,MG,MG,MG,MG,MG,MG,MG,MG,MG,MG,_],
-      [q2,q3,q2,q3,q3,q3,q3,q3,q3,q3,q3,q2,q3,q2],
-      [q2,q3,MG,q2,q3,MG,q2,q2,MG,q3,q2,MG,q3,q2],
-      [q2,MG,q3,q2,MG,q3,q2,q2,q3,MG,q2,q3,MG,q2],
-      [q2,q3,MG,q2,q3,MG,q2,q2,MG,q3,q2,MG,q3,q2],
-      [q2,q3,q2,q3,q3,q3,q3,q3,q3,q3,q3,q2,q3,q2],
-      [MG,MG,MG,MG,MG,MG,MG,MG,MG,MG,MG,MG,MG,MG],
-      [q2,q3,q2,q3,q2,_,_,_,_,q2,q3,q2,q3,q2],
-      [q2,q3,q2,q3,q2,_,_,_,_,q2,q3,q2,q3,q2],
-      [q2,MG,q2,q3,q1,_,_,_,_,q1,q3,q2,MG,q2],
-      [q2,q3,q2,q3,q1,_,_,_,_,q1,q3,q2,q3,q2],
-      [MG,q3,q2,q1,q1,_,_,_,_,q1,q1,q2,q3,MG],
-      [q2,q3,q2,q1,q1,_,_,_,_,q1,q1,q2,q3,q2],
-      [q2,q2,q1,q1,BK,_,_,_,_,BK,q1,q1,q2,q2],
-      [q2,MG,q1,q1,BK,_,_,_,_,BK,q1,q1,MG,q2],
-    ], flip);
-    // Arms + claws
-    const aL=flip?ox+P*12:ox-P*6,aR=flip?ox-P*6:ox+P*12;
-    [aL,aR].forEach((ax,si)=>{
-      ctx.fillStyle=q2;ctx.fillRect(ax,oy+P*6,P*6,P*14);
-      ctx.fillStyle=MG;ctx.fillRect(ax,oy+P*10,P*6,P);
-      ctx.fillStyle=q3;ctx.fillRect(ax+P,oy+P*7,P*4,P*11);
-      // Energy claws
-      for(let c=0;c<3;c++){
-        const coff=si?P*(5-c):P*c;
-        ctx.fillStyle=MG;ctx.fillRect(ax+coff,oy+P*19,P,P*(2+c));
-        glow(ctx,ax+coff,oy+P*19,P,P*(2+c),MG,5);
-      }
-    });
-    // Phase aura
-    ctx.save();
-    for(let r=1;r<=3;r++){
-      ctx.globalAlpha=.07*pulse*(4-r);
-      ctx.strokeStyle=r===1?MG:r===2?PU:CY;
-      ctx.lineWidth=2;ctx.shadowColor=ctx.strokeStyle;ctx.shadowBlur=12;
-      ctx.beginPath();ctx.arc(ox+P*7,oy+P*11,r*P*9,0,Math.PI*2);ctx.stroke();
-    }
-    ctx.restore();
-  },
-
-  // NETRUNNER – hooded cyber-hacker with glowing terminal face
-  netrunner(ctx, ox, oy, flip, t=0) {
-    const h1='#001a2e',h2='#002a44',h3='#004466';
-    const sc=`rgba(0,${180+Math.floor(Math.sin(t*.13)*60)},255,.95)`;
-    pg(ctx, ox, oy, [
-      [_,_,h2,h3,h3,h3,h3,h3,h3,h3,h3,h2,_,_],
-      [_,h2,h3,h3,h3,h3,h3,h3,h3,h3,h3,h3,h2,_],
-      [h2,h3,h3,h3,BK,BK,BK,BK,BK,BK,h3,h3,h3,h2],
-      [h2,h3,h3,BK,sc,sc,sc,sc,sc,sc,BK,h3,h3,h2],
-      [h2,h3,h3,BK,GR,sc,sc,sc,GR,sc,BK,h3,h3,h2],
-      [h2,h3,h3,BK,sc,GR,GR,GR,sc,sc,BK,h3,h3,h2],
-      [h2,h3,h3,BK,sc,sc,sc,GR,sc,GR,BK,h3,h3,h2],
-      [_,h2,h3,h3,BK,BK,BK,BK,BK,BK,h3,h2,_,_],
-      [_,h1,h3,CY,h2,h3,h3,h3,h3,h2,CY,h3,h1,_],
-      [h1,h2,CY,h3,h2,h3,h3,h3,h3,h2,h3,CY,h2,h1],
-      [h1,h2,h3,h3,h3,CY,h3,h3,CY,h3,h3,h3,h2,h1],
-      [h1,h2,h3,GR,GR,GR,GR,GR,GR,GR,GR,h3,h2,_],
-      [_,h2,h3,h3,GR,h3,GR,h3,GR,h3,h3,h2,_,_],
-      [_,h1,h2,h3,h3,h3,h3,h3,h3,h3,h2,h1,_,_],
-      [_,_,h2,h3,h2,_,_,_,_,h2,h3,h2,_,_],
-      [_,_,h2,h3,h2,_,_,_,_,h2,h3,h2,_,_],
-      [_,_,h3,CY,h3,_,_,_,_,h3,CY,h3,_,_],
-      [_,_,h2,h3,h3,_,_,_,_,h3,h3,h2,_,_],
-      [_,_,h2,h3,BK,_,_,_,_,BK,h3,h2,_,_],
-      [_,h1,h1,BK,BK,_,_,_,_,BK,BK,h1,h1,_],
-    ], flip);
-    // Holographic terminal display (floating to the side)
-    const hx = flip ? ox + P*1 : ox + P*9;
-    const hy = oy + P*1;
-    ctx.save();
-    ctx.globalAlpha = 0.55 + Math.sin(t * 0.17) * 0.3;
-    ctx.strokeStyle = CY; ctx.lineWidth = 1; ctx.shadowColor = CY; ctx.shadowBlur = 5;
-    ctx.strokeRect(hx, hy, P*4, P*3);
-    ctx.fillStyle = 'rgba(0,255,255,0.06)'; ctx.fillRect(hx+1, hy+1, P*4-2, P*3-2);
-    ctx.fillStyle = GR; ctx.fillRect(hx+2, hy+3, P*3, 1);
-    ctx.fillStyle = CY; ctx.fillRect(hx+2, hy+6, P*2, 1);
-    ctx.fillStyle = GR; ctx.fillRect(hx+2, hy+9, P*3, 1);
-    ctx.restore();
-  },
-
-  // DUNGEON MASTER
-  dm(ctx, ox, oy) {
-    const r1='#200045',r2='#300065',r3='#440088';
-    pg(ctx, ox, oy, [
-      [_,_,r2,r2,r2,r2,r2,r2,r2,r2,_,_],
-      [_,r2,r3,r3,r3,r3,r3,r3,r3,r3,r2,_],
-      [r2,r3,r3,SK,SK,SK,SK,SK,SK,r3,r3,r2],
-      [r2,r3,SK,SK,sk,sk,sk,sk,SK,SK,r3,r2],
-      [r2,r3,SK,'#665522','#665522',sk,sk,'#665522','#665522',SK,r3,r2],
-      [r2,r3,SK,'#443311',GD,sk,sk,GD,'#443311',SK,r3,r2],
-      [r2,r3,SK,sk,sk,sk,sk,sk,sk,SK,r3,r2],
-      [r2,r3,SK,'#bb8844','#bb8844','#bb8844','#bb8844','#bb8844',SK,r3,r2,_],
-      [_,r2,r3,'#ccaa77','#ccaa77','#ccaa77','#ccaa77','#ccaa77',r3,r2,_,_],
-      [_,r2,r2,r3,r3,r3,r3,r3,r3,r3,r2,r2],
-      [r2,r3,r3,GD,GD,GD,GD,GD,GD,GD,r3,r2,_,_],
-      [r2,r3,GD,r2,r3,r3,r3,r3,r2,GD,r3,r2,_,_],
-      [r2,r3,r2,r3,GD,r2,r2,GD,r3,r2,r3,r2,_,_],
-      [r2,r3,r2,r3,r3,r3,r3,r3,r3,r2,r3,r2,_,_],
-    ], false);
-    // Book
-    const bx=ox-P,by=oy+P*13;
-    ctx.fillStyle='#1a0040';ctx.fillRect(bx,by,P*14,P*4);
-    ctx.fillStyle=GD;ctx.fillRect(bx,by,P*14,P);
-    ctx.fillStyle=PU;ctx.fillRect(bx+P*2,by+P,P*10,P);
-    ctx.fillStyle=GD;ctx.fillRect(bx,by,P*2,P*4);
-    ctx.fillStyle='#cc88ff';
-    for(let i=0;i<4;i++)ctx.fillRect(bx+P*(2+i*2),by+P*2,P,P*.5);
-  }
-};
-*/ // end dead code comment
 
 // Actual pixel dimensions per sprite (cols * P, rows * P)
 const SPRITE_SIZE = {
-  warrior:{w:56,h:88}, ranger:{w:56,h:80}, rogue:{w:56,h:80},
-  cleric:{w:56,h:88}, warlock:{w:56,h:88}, druid:{w:56,h:88},
+  warrior:{w:56,h:104}, ranger:{w:56,h:80}, rogue:{w:64,h:104},
+  sage:{w:68,h:104}, shadow:{w:76,h:104}, druid:{w:84,h:104},
+  cleric:{w:56,h:88}, warlock:{w:56,h:88},
   glitchDrone:{w:48,h:48}, neonGolem:{w:56,h:88},
   voidSpecter:{w:48,h:68}, cyberOgre:{w:56,h:88},
   dataWraith:{w:48,h:72}, pulseHound:{w:56,h:68},
@@ -3931,9 +3426,11 @@ const Arena = {
 // CHARACTER CREATION SYSTEM
 // ═══════════════════════════════════════════════════════════════
 const GENDERS = {
-  man:   { name:'MAN',   sprite:'warrior', lore:'Chrome-plated enforcer. Built to break things.' },
-  woman: { name:'WOMAN', sprite:'rogue',   lore:'Ghost in the wires. Strikes before you blink.' },
-  cyber: { name:'CYBER', sprite:'druid',   lore:'Post-human construct. More machine than meat.' }
+  man:    { name:'MAN',    sprite:'warrior', lore:'Chrome-plated enforcer. Built to break things.' },
+  woman:  { name:'WOMAN',  sprite:'rogue',   lore:'Ghost in the wires. Strikes before you blink.' },
+  sage:   { name:'SAGE',   sprite:'sage',    lore:'Grizzled techno-mystic. Bends light and code alike.' },
+  cyber:  { name:'CYBER',  sprite:'druid',   lore:'Post-human construct. More machine than meat.' },
+  shadow: { name:'SHADOW', sprite:'shadow',  lore:'Black-ops phantom. Leaves nothing but static.' }
 };
 
 // ── PORTRAIT SYSTEM ──
@@ -4300,6 +3797,129 @@ const PORTRAITS = {
       // Shoulder pads
       for(let i=4;i<20;i++)for(let j=20;j<24;j++)p(i,j,'#2a2a3e');
       for(let i=5;i<19;i++)p(i,20,accent);
+    }}
+  ],
+  sage: [
+    { id:'s1', name:'War Sage', draw(ctx,x,y,s,accent){
+      const p=(px,py,c)=>{ctx.fillStyle=c;ctx.fillRect(x+px*s,y+py*s,s,s);};
+      const hair='#ccccdd',skin='#c8a882',armor='#556677';
+      // White hair
+      for(let i=6;i<18;i++)p(i,0,hair);for(let i=5;i<19;i++)p(i,1,hair);
+      for(let i=5;i<19;i++)p(i,2,hair);
+      // Face
+      for(let i=7;i<17;i++)for(let j=3;j<10;j++)p(i,j,skin);
+      // Beard
+      for(let i=7;i<17;i++)for(let j=10;j<14;j++)p(i,j,'#aaaabb');
+      // Eyes
+      p(9,5,'#111');p(10,5,accent);p(14,5,accent);p(13,5,'#111');
+      // Armored body
+      for(let i=5;i<19;i++)for(let j=14;j<22;j++)p(i,j,armor);
+      for(let i=7;i<17;i++)p(i,14,accent);
+      // Staff (right side)
+      for(let j=0;j<24;j++)p(19,j,'#887755');
+      p(19,0,accent);p(18,0,accent);p(20,0,accent);p(19,1,'#ffd700');
+    }},
+    { id:'s2', name:'Circuit Elder', draw(ctx,x,y,s,accent){
+      const p=(px,py,c)=>{ctx.fillStyle=c;ctx.fillRect(x+px*s,y+py*s,s,s);};
+      const hair='#bbbbcc',skin='#b89878',armor='#445566';
+      for(let i=6;i<18;i++)p(i,0,hair);for(let i=5;i<19;i++)p(i,1,hair);
+      for(let i=7;i<17;i++)for(let j=2;j<9;j++)p(i,j,skin);
+      for(let i=8;i<16;i++)for(let j=9;j<13;j++)p(i,j,'#999aaa');
+      p(9,4,'#111');p(10,4,accent);p(13,4,accent);p(14,4,'#111');
+      for(let i=5;i<19;i++)for(let j=13;j<22;j++)p(i,j,armor);
+      for(let i=6;i<18;i++)p(i,13,accent);
+      for(let j=0;j<24;j++)p(20,j,'#776644');
+      p(20,0,accent);p(20,1,'#ffd700');
+    }},
+    { id:'s3', name:'Data Hermit', draw(ctx,x,y,s,accent){
+      const p=(px,py,c)=>{ctx.fillStyle=c;ctx.fillRect(x+px*s,y+py*s,s,s);};
+      const skin='#c0a080',hood='#3a3a4e';
+      for(let i=5;i<19;i++)for(let j=0;j<4;j++)p(i,j,hood);
+      for(let i=7;i<17;i++)for(let j=4;j<10;j++)p(i,j,skin);
+      for(let i=8;i<16;i++)for(let j=10;j<14;j++)p(i,j,'#999999');
+      p(9,6,accent);p(14,6,accent);
+      for(let i=5;i<19;i++)for(let j=14;j<22;j++)p(i,j,hood);
+      for(let i=7;i<17;i++)p(i,15,accent);
+    }},
+    { id:'s4', name:'Neon Wizard', draw(ctx,x,y,s,accent){
+      const p=(px,py,c)=>{ctx.fillStyle=c;ctx.fillRect(x+px*s,y+py*s,s,s);};
+      const skin='#d4a878',hat='#2a2a3e';
+      for(let i=7;i<17;i++)p(i,0,hat);for(let i=6;i<18;i++)p(i,1,hat);
+      for(let i=5;i<19;i++)for(let j=2;j<4;j++)p(i,j,hat);
+      for(let i=7;i<17;i++)for(let j=4;j<10;j++)p(i,j,skin);
+      p(9,6,accent);p(14,6,accent);
+      for(let i=8;i<16;i++)for(let j=10;j<14;j++)p(i,j,'#aabbcc');
+      for(let i=5;i<19;i++)for(let j=14;j<22;j++)p(i,j,'#334455');
+      p(12,1,accent);p(11,0,'#ffd700');
+    }},
+    { id:'s5', name:'Iron Priest', draw(ctx,x,y,s,accent){
+      const p=(px,py,c)=>{ctx.fillStyle=c;ctx.fillRect(x+px*s,y+py*s,s,s);};
+      const skin='#c8a882',armor='#667788';
+      for(let i=7;i<17;i++)for(let j=0;j<3;j++)p(i,j,'#ddddee');
+      for(let i=7;i<17;i++)for(let j=3;j<10;j++)p(i,j,skin);
+      for(let i=8;i<16;i++)for(let j=10;j<13;j++)p(i,j,'#bbbbcc');
+      p(9,5,'#111');p(10,5,accent);p(13,5,accent);p(14,5,'#111');
+      for(let i=5;i<19;i++)for(let j=13;j<22;j++)p(i,j,armor);
+      for(let i=6;i<18;i++)p(i,14,accent);
+      for(let j=0;j<24;j++)p(20,j,'#887755');
+      p(20,0,'#ffd700');p(19,0,accent);
+    }}
+  ],
+  shadow: [
+    { id:'sh1', name:'Null Agent', draw(ctx,x,y,s,accent){
+      const p=(px,py,c)=>{ctx.fillStyle=c;ctx.fillRect(x+px*s,y+py*s,s,s);};
+      const armor='#1a1a2e',trim='#2a2a3e';
+      // Helmet
+      for(let i=6;i<18;i++)for(let j=0;j<10;j++)p(i,j,armor);
+      for(let i=7;i<17;i++)p(i,1,trim);
+      // Single red visor
+      for(let i=8;i<16;i++)p(i,5,'#ff1111');
+      p(8,5,accent);p(15,5,accent);
+      // Body armor
+      for(let i=5;i<19;i++)for(let j=10;j<22;j++)p(i,j,armor);
+      for(let i=6;i<18;i++)p(i,12,accent);p(12,14,accent);p(11,14,accent);
+      // Arm blades
+      p(3,16,accent);p(4,17,accent);p(20,16,accent);p(19,17,accent);
+    }},
+    { id:'sh2', name:'Ghost Wire', draw(ctx,x,y,s,accent){
+      const p=(px,py,c)=>{ctx.fillStyle=c;ctx.fillRect(x+px*s,y+py*s,s,s);};
+      const armor='#222233';
+      for(let i=6;i<18;i++)for(let j=0;j<10;j++)p(i,j,armor);
+      for(let i=9;i<15;i++)p(i,5,'#ff0000');
+      p(9,5,accent);p(14,5,accent);
+      for(let i=5;i<19;i++)for(let j=10;j<22;j++)p(i,j,armor);
+      for(let i=7;i<17;i++)p(i,11,accent);
+      p(4,16,accent);p(3,15,accent);p(19,16,accent);p(20,15,accent);
+    }},
+    { id:'sh3', name:'Phantom Zero', draw(ctx,x,y,s,accent){
+      const p=(px,py,c)=>{ctx.fillStyle=c;ctx.fillRect(x+px*s,y+py*s,s,s);};
+      const armor='#181828';
+      for(let i=6;i<18;i++)for(let j=0;j<9;j++)p(i,j,armor);
+      for(let i=8;i<16;i++)p(i,4,'#cc0000');
+      p(8,4,accent);p(15,4,accent);
+      for(let i=5;i<19;i++)for(let j=9;j<22;j++)p(i,j,armor);
+      for(let i=8;i<16;i++)p(i,10,accent);
+      p(12,13,'#ff0000');p(11,13,'#ff0000');
+    }},
+    { id:'sh4', name:'Void Runner', draw(ctx,x,y,s,accent){
+      const p=(px,py,c)=>{ctx.fillStyle=c;ctx.fillRect(x+px*s,y+py*s,s,s);};
+      const armor='#1e1e30';
+      for(let i=7;i<17;i++)for(let j=0;j<9;j++)p(i,j,armor);
+      for(let i=9;i<15;i++)p(i,4,accent);
+      p(10,4,'#ff1111');p(13,4,'#ff1111');
+      for(let i=5;i<19;i++)for(let j=9;j<22;j++)p(i,j,armor);
+      for(let i=6;i<18;i++)p(i,10,accent);
+      p(3,14,accent);p(20,14,accent);
+    }},
+    { id:'sh5', name:'Silent Protocol', draw(ctx,x,y,s,accent){
+      const p=(px,py,c)=>{ctx.fillStyle=c;ctx.fillRect(x+px*s,y+py*s,s,s);};
+      const armor='#151525',trim='#252535';
+      for(let i=6;i<18;i++)for(let j=0;j<10;j++)p(i,j,armor);
+      for(let i=7;i<17;i++)p(i,2,trim);
+      for(let i=9;i<15;i++)p(i,5,'#ee0000');
+      p(12,13,accent);p(11,13,accent);
+      for(let i=5;i<19;i++)for(let j=10;j<22;j++)p(i,j,armor);
+      for(let i=7;i<17;i++)p(i,11,accent);
     }}
   ]
 };
@@ -6787,7 +6407,10 @@ const Game={
       card.dataset.gkey=key;
       card.style.cssText='flex:1;padding:clamp(6px,0.8vh,10px) clamp(4px,0.5vw,8px);';
       const sz=SPRITE_SIZE[g.sprite]||{w:56,h:88};
-      const cv=document.createElement('canvas');cv.width=sz.w+8;cv.height=sz.h+8;
+      const cardScale=sz.h>90?0.8:1;
+      const cvW=Math.round((sz.w+8)*cardScale), cvH=Math.round((sz.h+8)*cardScale);
+      const cv=document.createElement('canvas');cv.width=cvW;cv.height=cvH;
+      cv.style.cssText='image-rendering:pixelated;';
       card.appendChild(cv);
       const nm=document.createElement('div');nm.className='cn';nm.style.cssText=F+'font-size:clamp(9px,1vw,14px);';nm.textContent=g.name;
       card.appendChild(nm);
@@ -6800,7 +6423,7 @@ const Game={
         this._updatePreview();
       });
       genderRow.appendChild(card);
-      setTimeout(()=>{const cx=cv.getContext('2d');cx.clearRect(0,0,cv.width,cv.height);if(SPR[g.sprite])SPR[g.sprite](cx,4,4,false,0);},60);
+      setTimeout(()=>{const cx=cv.getContext('2d');cx.clearRect(0,0,cv.width,cv.height);if(cardScale<1){cx.save();cx.scale(cardScale,cardScale);}if(SPR[g.sprite])SPR[g.sprite](cx,4,4,false,0);if(cardScale<1)cx.restore();},60);
     });
     genderBox.appendChild(genderRow);
     // Portrait row
