@@ -1320,20 +1320,23 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
     </div>
     <!-- MAIN: 2-column — loot left, character right -->
     <div class="vic-main" style="grid-template-columns:1fr minmax(260px,1fr);">
-      <!-- LEFT: LOOT + RELICS -->
-      <div class="vic-loot" style="display:flex;flex-direction:column;">
-        <div class="vic-loot-hdr">
-          <div class="vic-loot-title" id="vicLootTitle">◆ LOOT ACQUIRED ◆</div>
-          <div class="vic-loot-gold" id="vicGold">⚡ 0 CREDITS EARNED</div>
-        </div>
-        <div class="vic-loot-scroll" id="vicLootItems" style="flex:1;min-height:0;"></div>
-        <!-- RELICS ACQUIRED — same treatment as loot -->
-        <div class="vic-relics-section">
-          <div class="vic-loot-hdr" style="border-top:1px solid rgba(255,0,255,.1);border-bottom:none;background:linear-gradient(180deg,rgba(255,0,255,.03),transparent);">
-            <div class="vic-loot-title" style="font-size:clamp(9px,.95vw,13px);color:#ff00ff;text-shadow:0 0 10px rgba(255,0,255,.4);">◆ RELICS ACQUIRED ◆</div>
+      <!-- LEFT: LOOT + RELICS — equal halves -->
+      <div style="display:flex;flex-direction:column;margin:clamp(6px,.8vh,10px) 4px clamp(6px,.8vh,10px) clamp(6px,.8vw,10px);gap:clamp(6px,.8vh,10px);min-height:0;">
+        <!-- LOOT: top half -->
+        <div class="vic-loot" style="display:flex;flex-direction:column;flex:1;min-height:0;margin:0;">
+          <div class="vic-loot-hdr">
+            <div class="vic-loot-title" id="vicLootTitle">◆ LOOT ACQUIRED ◆</div>
+            <div class="vic-loot-gold" id="vicGold">⚡ 0 CREDITS EARNED</div>
           </div>
-          <div id="vicRelicItems" class="vic-loot-scroll" style="flex:none;max-height:clamp(80px,14vh,160px);min-height:clamp(40px,6vh,70px);">
-            <div class="vic-no-loot" style="padding:clamp(14px,2vh,30px) 0;color:rgba(255,0,255,.15);">— NO RELICS THIS ROOM —</div>
+          <div class="vic-loot-scroll" id="vicLootItems" style="flex:1;min-height:0;"></div>
+        </div>
+        <!-- RELICS: bottom half -->
+        <div class="vic-loot vic-relics-section" style="display:flex;flex-direction:column;flex:1;min-height:0;margin:0;border-color:rgba(255,0,255,.15);">
+          <div class="vic-loot-hdr" style="border-bottom:1px solid rgba(255,0,255,.1);background:linear-gradient(180deg,rgba(255,0,255,.03),transparent);">
+            <div class="vic-loot-title" style="color:#ff00ff;text-shadow:0 0 10px rgba(255,0,255,.4);">◆ RELICS ACQUIRED ◆</div>
+          </div>
+          <div id="vicRelicItems" class="vic-loot-scroll" style="flex:1;min-height:0;">
+            <div class="vic-no-loot" style="color:rgba(255,0,255,.15);">— NO RELICS THIS ROOM —</div>
           </div>
         </div>
       </div>
