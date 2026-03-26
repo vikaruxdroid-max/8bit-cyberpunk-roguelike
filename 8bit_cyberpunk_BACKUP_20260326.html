@@ -2258,8 +2258,8 @@ const Arena = {
     // Minimap overlay
     if (GameState.currentScreen === 'sCM') this.drawMinimap(ctx, W, H);
 
-    // VFX
-    for(let i=this.vfx.length-1;i>=0;i--){if(this.vfx[i].t>=this.vfx[i].maxT)this.vfx.splice(i,1);}
+    // VFX — swap-delete expired entries
+    let vi=this.vfx.length;while(vi--){if(this.vfx[vi].t>=this.vfx[vi].maxT){this.vfx[vi]=this.vfx[this.vfx.length-1];this.vfx.pop();}}
     this.vfx.forEach(v => {
       const prog = v.t / v.maxT;
       ctx.save();
@@ -2306,8 +2306,9 @@ const Arena = {
       ctx.restore(); v.t++;
     });
 
-    // Particle system — cyberpunk vaporwave glitch shards
-    for(let i=this.particles.length-1;i>=0;i--){if(this.particles[i].alpha<=0.02)this.particles.splice(i,1);}
+    // Particle system — cyberpunk vaporwave glitch shards (swap-delete + cap at 200)
+    if(this.particles.length>200)this.particles.length=200;
+    let pi=this.particles.length;while(pi--){if(this.particles[pi].alpha<=0.02){this.particles[pi]=this.particles[this.particles.length-1];this.particles.pop();}}
     this.particles.forEach(pt => {
       pt.vy += pt.gravity||0.08; pt.x+=pt.vx; pt.y+=pt.vy;
       pt.alpha = Math.max(0, pt.alpha - (pt.fade||0.018));
@@ -2332,8 +2333,8 @@ const Arena = {
       ctx.restore();
     });
 
-    // Floating combat text (CRIT, DEFEATED, MISS, etc.)
-    for(let i=this.floatTexts.length-1;i>=0;i--){if(this.floatTexts[i].life>=this.floatTexts[i].maxLife)this.floatTexts.splice(i,1);}
+    // Floating combat text — swap-delete expired
+    let fi=this.floatTexts.length;while(fi--){if(this.floatTexts[fi].life>=this.floatTexts[fi].maxLife){this.floatTexts[fi]=this.floatTexts[this.floatTexts.length-1];this.floatTexts.pop();}}
     this.floatTexts.forEach(ft => {
       ft.life++; ft.y += ft.vy; ft.vy *= 0.94;
       const prog = ft.life / ft.maxLife;
@@ -3327,32 +3328,40 @@ const Arena = {
     return {x: this.W*.14+sz.w/2, y: flY-sz.h/2};
   },
 
+  _mmCache:null,_mmKey:'',
   drawMinimap(ctx, W, H) {
     const p = GameState.player;
     const mw=114, mh=92, mx=W-mw-6, my=6;
-    ctx.save();
-    ctx.fillStyle='rgba(2,2,20,0.92)';
-    ctx.strokeStyle='rgba(0,255,255,0.22)';
-    ctx.lineWidth=1;
-    ctx.fillRect(mx,my,mw,mh);
-    ctx.strokeRect(mx,my,mw,mh);
+    // Cache key: room index + cleared count + blink state
+    const floorData=GameState.currentFloor;
+    const blink=Math.floor(this.time/18)%2===0;
+    const cKey=GameState.currentRoomIdx+','+(floorData?floorData.rooms.filter(r=>r.cleared).length:0)+','+blink+','+(p?p.xp:0);
+    if(this._mmCache&&this._mmKey===cKey){ctx.drawImage(this._mmCache,mx,my);return;}
+    if(!this._mmCache){this._mmCache=document.createElement('canvas');this._mmCache.width=mw;this._mmCache.height=mh;}
+    this._mmKey=cKey;
+    const mctx=this._mmCache.getContext('2d');
+    mctx.clearRect(0,0,mw,mh);
+    // Remap coordinates: draw to offscreen at 0,0 offset
+    const _mx=0,_my=0;
+    mctx.fillStyle='rgba(2,2,20,0.92)';
+    mctx.strokeStyle='rgba(0,255,255,0.22)';
+    mctx.lineWidth=1;
+    mctx.fillRect(_mx,_my,mw,mh);
+    mctx.strokeRect(_mx,_my,mw,mh);
     const zone=ZONES[GameState.currentZoneId];
-    ctx.fillStyle=zone?zone.color:MG;
-    if(zone){ctx.shadowColor=zone.color;ctx.shadowBlur=6;}
-    ctx.font=`${P-1}px 'Press Start 2P',monospace`;ctx.textAlign='center';
+    mctx.fillStyle=zone?zone.color:MG;
+    if(zone){mctx.shadowColor=zone.color;mctx.shadowBlur=6;}
+    mctx.font=`${P-1}px 'Press Start 2P',monospace`;mctx.textAlign='center';
     const zoneLabel=zone?zone.name.slice(0,10):`FL${GameState.floor} MAP`;
-    ctx.fillText(zoneLabel,mx+mw/2,my+8);
-    ctx.shadowBlur=0;
+    mctx.fillText(zoneLabel,_mx+mw/2,_my+8);
+    mctx.shadowBlur=0;
 
-    const floorData = GameState.currentFloor;
-    if (!floorData) { ctx.textAlign='left';ctx.shadowBlur=0;ctx.restore();return; }
+    if (!floorData) { ctx.drawImage(this._mmCache,mx,my);return; }
 
     const rooms = floorData.rooms;
     const conns = floorData.connections;
     const cur   = GameState.currentRoomIdx;
-    const blink = Math.floor(this.time/18)%2===0;
 
-    // Map room grid positions → minimap canvas coords
     const xs=rooms.map(r=>r.position.x), ys=rooms.map(r=>r.position.y);
     const minX=Math.min(...xs),maxX=Math.max(...xs);
     const minY=Math.min(...ys),maxY=Math.max(...ys);
@@ -3360,76 +3369,70 @@ const Arena = {
     const pad=11, titleH=12, xpH=14;
     const areaW=mw-pad*2, areaH=mh-titleH-xpH;
     const toC = pos=>({
-      x: rangeX===0 ? mx+mw/2 : mx+pad + (pos.x-minX)/rangeX*areaW,
-      y: rangeY===0 ? mx+titleH+areaH/2 : my+titleH + (pos.y-minY)/rangeY*areaH,
+      x: rangeX===0 ? _mx+mw/2 : _mx+pad + (pos.x-minX)/rangeX*areaW,
+      y: rangeY===0 ? _my+titleH+areaH/2 : _my+titleH + (pos.y-minY)/rangeY*areaH,
     });
 
     const TYPE_COL={combat:'#ff2244',loot:'#FFD700',rest:'#39FF14',merchant:'#00FFFF',boss:'#FF00FF'};
 
-    // Draw connections
     rooms.forEach(room=>{
       const a=toC(room.position);
       (conns[room.id]||[]).forEach(tid=>{
         if(tid<=room.id)return;
         const b=toC(rooms[tid].position);
         const lit=room.visited&&rooms[tid].visited;
-        ctx.strokeStyle=lit?'rgba(0,255,255,0.35)':'rgba(20,20,60,0.7)';
-        ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+        mctx.strokeStyle=lit?'rgba(0,255,255,0.35)':'rgba(20,20,60,0.7)';
+        mctx.lineWidth=1;mctx.beginPath();mctx.moveTo(a.x,a.y);mctx.lineTo(b.x,b.y);mctx.stroke();
       });
     });
 
-    // Draw room nodes
     rooms.forEach(room=>{
       const pos=toC(room.position);
       const isCur=room.id===cur;
       const col=TYPE_COL[room.type]||'#fff';
       const r=room.type==='boss'?5.5:4;
-      ctx.shadowBlur=0;
+      mctx.shadowBlur=0;
       if(!room.visited){
-        ctx.fillStyle='#06060e';ctx.strokeStyle='#1a1a30';
+        mctx.fillStyle='#06060e';mctx.strokeStyle='#1a1a30';
       } else if(room.cleared){
-        ctx.fillStyle=col+'33';ctx.strokeStyle=col+'88';
+        mctx.fillStyle=col+'33';mctx.strokeStyle=col+'88';
       } else {
-        ctx.fillStyle=col+'66';ctx.strokeStyle=col;
+        mctx.fillStyle=col+'66';mctx.strokeStyle=col;
       }
-      if(isCur&&blink){ctx.shadowColor=col;ctx.shadowBlur=10;}
-      ctx.lineWidth=isCur?2:1;
-      ctx.beginPath();ctx.arc(pos.x,pos.y,r,0,Math.PI*2);ctx.fill();ctx.stroke();
-      // Pulsing white ring on current room
+      if(isCur&&blink){mctx.shadowColor=col;mctx.shadowBlur=10;}
+      mctx.lineWidth=isCur?2:1;
+      mctx.beginPath();mctx.arc(pos.x,pos.y,r,0,Math.PI*2);mctx.fill();mctx.stroke();
       if(isCur){
-        ctx.shadowBlur=0;ctx.strokeStyle='rgba(255,255,255,'+(blink?.9:.5)+')';
-        ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(pos.x,pos.y,r+2.5,0,Math.PI*2);ctx.stroke();
+        mctx.shadowBlur=0;mctx.strokeStyle='rgba(255,255,255,'+(blink?.9:.5)+')';
+        mctx.lineWidth=1.5;mctx.beginPath();mctx.arc(pos.x,pos.y,r+2.5,0,Math.PI*2);mctx.stroke();
       }
-      ctx.shadowBlur=0;
+      mctx.shadowBlur=0;
     });
 
-    // Player dot on current room
     if(cur>=0&&cur<rooms.length){
       const pos=toC(rooms[cur].position);
-      ctx.fillStyle='#fff';ctx.shadowColor='#fff';ctx.shadowBlur=7;
-      ctx.beginPath();ctx.arc(pos.x,pos.y,2,0,Math.PI*2);ctx.fill();
-      ctx.shadowBlur=0;
+      mctx.fillStyle='#fff';mctx.shadowColor='#fff';mctx.shadowBlur=7;
+      mctx.beginPath();mctx.arc(pos.x,pos.y,2,0,Math.PI*2);mctx.fill();
+      mctx.shadowBlur=0;
     }
 
-    // Zone room progress label
     const cleared2=rooms.filter(r=>r.cleared).length;
-    ctx.fillStyle=zone?zone.color+'aa':'rgba(0,255,255,0.5)';
-    ctx.font=`${P-2}px 'Press Start 2P',monospace`;ctx.textAlign='center';
-    ctx.fillText(`ROOM ${cleared2}/${rooms.length}`,mx+mw/2,my+mh-14);
+    mctx.fillStyle=zone?zone.color+'aa':'rgba(0,255,255,0.5)';
+    mctx.font=`${P-2}px 'Press Start 2P',monospace`;mctx.textAlign='center';
+    mctx.fillText(`ROOM ${cleared2}/${rooms.length}`,_mx+mw/2,_my+mh-14);
 
-    // XP bar
     if(p&&p.xpToNext){
-      const bx=mx+4,by=my+mh-9,bw=mw-8;
-      ctx.fillStyle='rgba(0,0,0,0.7)';ctx.fillRect(bx,by,bw,4);
-      ctx.strokeStyle='rgba(0,255,255,0.18)';ctx.lineWidth=0.5;ctx.strokeRect(bx,by,bw,4);
+      const bx=_mx+4,by=_my+mh-9,bw=mw-8;
+      mctx.fillStyle='rgba(0,0,0,0.7)';mctx.fillRect(bx,by,bw,4);
+      mctx.strokeStyle='rgba(0,255,255,0.18)';mctx.lineWidth=0.5;mctx.strokeRect(bx,by,bw,4);
       const xpPct=Math.min(1,p.xp/p.xpToNext);
-      const xpG=ctx.createLinearGradient(bx,by,bx+bw,by);
+      const xpG=mctx.createLinearGradient(bx,by,bx+bw,by);
       xpG.addColorStop(0,PU);xpG.addColorStop(1,CY);
-      ctx.fillStyle=xpG;ctx.fillRect(bx,by,bw*xpPct,4);
-      ctx.fillStyle=CY;ctx.font=`${P-2}px 'Press Start 2P',monospace`;ctx.textAlign='center';
-      ctx.fillText(`LV${p.level}`,mx+mw/2,my+mh-2);
+      mctx.fillStyle=xpG;mctx.fillRect(bx,by,bw*xpPct,4);
+      mctx.fillStyle=CY;mctx.font=`${P-2}px 'Press Start 2P',monospace`;mctx.textAlign='center';
+      mctx.fillText(`LV${p.level}`,_mx+mw/2,_my+mh-2);
     }
-    ctx.textAlign='left';ctx.shadowBlur=0;ctx.restore();
+    ctx.drawImage(this._mmCache,mx,my);
   }
 };
 
@@ -3964,6 +3967,19 @@ const PASSIVE_SKILLS = [
   {id:'overclock', name:'Overclock',   icon:'⚙',  desc:'-1 all spell cooldowns', apply(p){ p.spells.forEach(s=>s.maxCd=Math.max(1,s.maxCd-1)); }}
 ];
 
+const DEFENSIVE_SKILLS = [
+  {id:'shieldWall',name:'Shield Wall',icon:'🛡',desc:'Block next 2 hits',mp:18,cd:0,maxCd:3,
+   effect(p){p.addBuff('dodge',{dodges:2,turns:3});const pp=Arena.getPlayerPos();Arena.spawnVFX('explode',pp.x,pp.y,'#4488ff');DM.say('SHIELD WALL — fortified!');}},
+  {id:'nanoBarrier',name:'Nano Barrier',icon:'🔰',desc:'+50% DEF for 3 turns',mp:20,cd:0,maxCd:4,
+   effect(p){p.addBuff('defUp',{def:Math.floor(p.baseDef*0.5),turns:3});const pp=Arena.getPlayerPos();Arena.spawnVFX('spark',pp.x,pp.y,'#44aaff');DM.say('NANO BARRIER — defense online!');}},
+  {id:'firewall',name:'Firewall',icon:'🔥',desc:'Reflect 30% damage 3 turns',mp:22,cd:0,maxCd:4,
+   effect(p){p.addBuff('reflect',{reflect:0.3,turns:3});const pp=Arena.getPlayerPos();Arena.spawnVFX('explode',pp.x,pp.y,OR);DM.say('FIREWALL — damage reflected!');}},
+  {id:'repairProto',name:'Repair Protocol',icon:'🔧',desc:'Regen 10% HP for 3 turns',mp:20,cd:0,maxCd:3,
+   effect(p){p.addBuff('regen',{regen:Math.floor(p.maxHp*0.1),turns:3});const pp=Arena.getPlayerPos();Arena.spawnVFX('spark',pp.x,pp.y,GR);DM.say('REPAIR PROTOCOL — nanobots deployed!');}},
+  {id:'empPulse',name:'EMP Pulse',icon:'⚡',desc:'Stun all enemies 1 turn',mp:25,cd:0,maxCd:5,
+   effect(p,en){en.forEach(e=>{if(e.hp>0)e.stunTurns=(e.stunTurns||0)+1;const pos=Arena.getEnemyPos(GameState.enemies.indexOf(e));Arena.spawnVFX('spark',pos.x,pos.y,CY);});DM.say('EMP PULSE — systems jammed!');}}
+];
+
 // Keep CLASSES as a lookup for legacy references (Arena accent, etc.)
 const CLASSES = {};
 
@@ -4102,10 +4118,11 @@ const SaveSystem = {
       localStorage.setItem(this._key,JSON.stringify({
         selectedGender:GameState.selectedGender||'man',
         selectedAccent:GameState.selectedAccent||CY,
-        activeSkillId:GameState.player?.spells?.[0]?.id||'plasmaStrike',
-        passiveId:GameState.player?.passiveId||null,
+        activeSkillIds:(GameState.player?.spells||[]).filter(s=>ACTIVE_SKILLS.some(a=>a.id===s.id)).map(s=>s.id),
+        defenseSkillIds:(GameState.player?.spells||[]).filter(s=>DEFENSIVE_SKILLS.some(d=>d.id===s.id)).map(s=>s.id),
+        passiveIds:GameState.player?.passiveIds||[],
         statAlloc:GameState.ccState?.statAlloc||{hp:0,atk:0,def:0,spd:0,mp:0},
-        selectedEquipId:GameState.selectedEquip?.id,
+        gearItemIds:(GameState.player?.gearItems||[]).map(g=>g.id),
         hp:p.hp,maxHp:p.maxHp,mp:p.mp,maxMp:p.maxMp,
         baseAtk:p.baseAtk,atk:p.atk,baseDef:p.baseDef,def:p.def,
         baseSpd:p.baseSpd,spd:p.spd,level:p.level||1,
@@ -4128,13 +4145,16 @@ const SaveSystem = {
       const d=JSON.parse(raw);
       GameState.selectedGender=d.selectedGender||'man';
       GameState.selectedAccent=d.selectedAccent||CY;
-      const eq=EQUIP_POOL.find(e=>e.id===d.selectedEquipId)||EQUIP_POOL[0];
-      GameState.selectedEquip=eq;
-      const activeSkill=ACTIVE_SKILLS.find(s=>s.id===d.activeSkillId)||ACTIVE_SKILLS[0];
-      const passiveSkill=PASSIVE_SKILLS.find(s=>s.id===d.passiveId)||null;
-      const cfg={gender:d.selectedGender||'man',accent:d.selectedAccent||CY,statAlloc:d.statAlloc||{hp:0,atk:0,def:0,spd:0,mp:0},activeSkill,passiveSkill};
-      GameState.ccState={gender:cfg.gender,accent:Object.entries(ACCENT_COLORS).find(([,v])=>v===cfg.accent)?.[0]||'cyan',statAlloc:cfg.statAlloc,pointsLeft:STAT_POINTS_TOTAL-Object.values(cfg.statAlloc).reduce((a,b)=>a+b,0),activeIdx:ACTIVE_SKILLS.indexOf(activeSkill),passiveIdx:passiveSkill?PASSIVE_SKILLS.indexOf(passiveSkill):0};
-      const p=new Player(cfg,eq);
+      const gearItems=(d.gearItemIds||[d.selectedEquipId]).map(id=>EQUIP_POOL.find(e=>e.id===id)).filter(Boolean);
+      if(!gearItems.length)gearItems.push(EQUIP_POOL[0]);
+      const activeSkills=(d.activeSkillIds||[d.activeSkillId||'plasmaStrike']).map(id=>ACTIVE_SKILLS.find(s=>s.id===id)).filter(Boolean);
+      if(!activeSkills.length)activeSkills.push(ACTIVE_SKILLS[0]);
+      const defenseSkills=(d.defenseSkillIds||[]).map(id=>DEFENSIVE_SKILLS.find(s=>s.id===id)).filter(Boolean);
+      const passiveSkills=(d.passiveIds||[d.passiveId]).filter(Boolean).map(id=>PASSIVE_SKILLS.find(s=>s.id===id)).filter(Boolean);
+      const cfg={gender:d.selectedGender||'man',accent:d.selectedAccent||CY,statAlloc:d.statAlloc||{hp:0,atk:0,def:0,spd:0,mp:0},activeSkills,defenseSkills,passiveSkills,gearItems};
+      const alloc=cfg.statAlloc;
+      GameState.ccState={gender:cfg.gender,accent:Object.entries(ACCENT_COLORS).find(([,v])=>v===cfg.accent)?.[0]||'cyan',statAlloc:alloc,pointsLeft:STAT_POINTS_TOTAL-Object.values(alloc).reduce((a,b)=>a+b,0),randActive:activeSkills,randPassive:passiveSkills,randDefense:defenseSkills,randGear:gearItems};
+      const p=new Player(cfg);
       p.hp=d.hp;p.maxHp=d.maxHp;p.mp=d.mp;p.maxMp=d.maxMp;
       p.baseAtk=d.baseAtk;p.atk=d.atk;p.baseDef=d.baseDef;p.def=d.def;
       p.baseSpd=d.baseSpd;p.spd=d.spd;p.level=d.level||1;
@@ -4560,38 +4580,44 @@ const GameState = {
 };
 
 class Player {
-  // New constructor: takes character creation config instead of class
-  constructor(cfg, eq) {
+  // Constructor: takes character creation config with random skill/gear arrays
+  constructor(cfg) {
     const gender = GENDERS[cfg.gender] || GENDERS.man;
     this.className = gender.name;
     this.accent = cfg.accent || CY;
     this.sprite = gender.sprite;
     this.gender = cfg.gender;
-    // Stats from base + allocation + equipment
+    // Combine bonuses from all gear items
+    const gearItems = cfg.gearItems || [];
+    const gearBonus = {hp:0,atk:0,def:0,spd:0,mp:0,cdReduce:0,lifesteal:0,dodge:0,stunChance:0};
+    gearItems.forEach(eq=>{if(eq.bonus)Object.keys(eq.bonus).forEach(k=>gearBonus[k]=(gearBonus[k]||0)+(eq.bonus[k]||0));});
+    // Stats from base + allocation + combined gear
     const alloc = cfg.statAlloc || {hp:0,atk:0,def:0,spd:0,mp:0};
-    this.baseHp = BASE_STATS.hp + alloc.hp*STAT_PER_POINT.hp + (eq.bonus.hp||0);
+    this.baseHp = BASE_STATS.hp + alloc.hp*STAT_PER_POINT.hp + gearBonus.hp;
     this.maxHp = this.baseHp; this.hp = this.maxHp;
-    this.maxMp = BASE_STATS.mp + alloc.mp*STAT_PER_POINT.mp + (eq.bonus.mp||0);
+    this.maxMp = BASE_STATS.mp + alloc.mp*STAT_PER_POINT.mp + gearBonus.mp;
     this.mp = this.maxMp;
-    this.baseAtk = BASE_STATS.atk + alloc.atk*STAT_PER_POINT.atk + (eq.bonus.atk||0);
+    this.baseAtk = BASE_STATS.atk + alloc.atk*STAT_PER_POINT.atk + gearBonus.atk;
     this.atk = this.baseAtk;
-    this.baseDef = BASE_STATS.def + alloc.def*STAT_PER_POINT.def + (eq.bonus.def||0);
+    this.baseDef = BASE_STATS.def + alloc.def*STAT_PER_POINT.def + gearBonus.def;
     this.def = this.baseDef;
-    this.baseSpd = BASE_STATS.spd + alloc.spd*STAT_PER_POINT.spd + (eq.bonus.spd||0);
+    this.baseSpd = BASE_STATS.spd + alloc.spd*STAT_PER_POINT.spd + gearBonus.spd;
     this.spd = this.baseSpd;
     this.actionCounter=0; this.buffs=[]; this.debuffs=[];
-    this.equip=eq; this.animState='idle.base'; this.animTimer=0;
-    // Active skill (single spell in array for combat system compatibility)
-    const activeSkill = cfg.activeSkill || ACTIVE_SKILLS[0];
-    this.spells=[{...activeSkill, effect:activeSkill.effect, cd:0, hackedTurns:0}];
-    if(eq.bonus.cdReduce) this.spells.forEach(s=>s.maxCd=Math.max(1,s.maxCd-eq.bonus.cdReduce));
+    this.equip=gearItems[0]||null; this.gearItems=gearItems; this.animState='idle.base'; this.animTimer=0;
+    // Active skills (2) + Defensive skills (2) = 4 spells
+    const actives = cfg.activeSkills || [ACTIVE_SKILLS[0]];
+    const defensives = cfg.defenseSkills || [];
+    this.spells=[...actives,...defensives].map(sk=>({...sk, effect:sk.effect, cd:0, hackedTurns:0}));
+    if(gearBonus.cdReduce) this.spells.forEach(s=>s.maxCd=Math.max(1,s.maxCd-gearBonus.cdReduce));
     this.spellsCast=new Set(); this.healedThisFloor=false;
     this.level=1; this.xp=0; this.xpToNext=50; this.critBonus=0;
-    // Passive skill
-    this.lifesteal=0; this.dodgeChance=0; this.blockDR=0.5;
-    const passive = cfg.passiveSkill;
-    if(passive && passive.apply) passive.apply(this);
-    this.passiveId = passive?.id || null;
+    // Passive skills (apply all)
+    this.lifesteal=gearBonus.lifesteal?gearBonus.lifesteal/100:0; this.dodgeChance=gearBonus.dodge?gearBonus.dodge/100:0; this.blockDR=0.5;
+    this.passiveIds=[];
+    const passives = cfg.passiveSkills || [];
+    passives.forEach(p=>{if(p&&p.apply){p.apply(this);this.passiveIds.push(p.id);}});
+    if(gearBonus.stunChance) this.stunChance=gearBonus.stunChance/100;
   }
   addBuff(id,p){this.buffs=this.buffs.filter(b=>b.id!==id);this.buffs.push({id,...p});this.recalc();}
   addDebuff(id,p){this.debuffs=this.debuffs.filter(d=>d.id!==id);this.debuffs.push({id,...p});}
@@ -4660,13 +4686,13 @@ const Combat = {
   _trackDPS(dmg){
     const now=Date.now();
     this._dpsWindow.push({t:now,d:dmg});
-    // Keep last 5 seconds
-    this._dpsWindow=this._dpsWindow.filter(e=>now-e.t<5000);
+    // Keep last 5 seconds — trim from front
+    while(this._dpsWindow.length&&now-this._dpsWindow[0].t>=5000)this._dpsWindow.shift();
     const totalDmg=this._dpsWindow.reduce((s,e)=>s+e.d,0);
     const elapsed=Math.max(1,(now-(this._dpsWindow[0]?.t||now))/1000);
     this._dpsVal=elapsed>0.5?Math.round(totalDmg/elapsed):0;
-    const el=document.getElementById('dpsBadge');
-    if(el){el.textContent='DPS:'+this._dpsVal;el.style.display='';}
+    if(!this._dpsEl)this._dpsEl=document.getElementById('dpsBadge');
+    if(this._dpsEl){this._dpsEl.textContent='DPS:'+this._dpsVal;this._dpsEl.style.display='';}
   },
   lowestHp(en){return en.filter(e=>e.hp>0).sort((a,b)=>a.hp-b.hp)[0]||null;},
   deal(enemy,amount,isCrit=false){
@@ -5081,6 +5107,7 @@ const Combat = {
     AIDialog.init();
     UI.updateCombo();UI.updateBlock();UI.updateTurnOrder();
     Arena.resize(); // ensure canvas is properly sized before first render
+    if(GameState.combatInterval)clearInterval(GameState.combatInterval);
     GameState.combatInterval=setInterval(()=>Combat.tick(),Game._combatSpeed||1200);
   }
 };
@@ -5565,6 +5592,7 @@ const UI={
           const alive=GameState.enemies.filter(e=>e.hp>0);
           if(alive.length>0&&p.hp>0){
             GameState.combatRunning=true;
+            if(GameState.combatInterval)clearInterval(GameState.combatInterval);
             GameState.combatInterval=setInterval(()=>Combat.tick(),Game._combatSpeed||1200);
           } else {
             Combat.endCombat(p.hp>0);
@@ -6259,7 +6287,7 @@ const Game={
             pm.classList.toggle('show',!open);
             if(!open&&GameState.combatRunning){clearInterval(GameState.combatInterval);GameState.combatInterval=null;GameState.combatRunning=false;}
             else if(open&&!GameState.combatRunning&&GameState.enemies.filter(e=>e.hp>0).length){
-              GameState.combatRunning=true;GameState.combatInterval=setInterval(()=>Combat.tick(),Game._combatSpeed||1200);
+              GameState.combatRunning=true;if(GameState.combatInterval)clearInterval(GameState.combatInterval);GameState.combatInterval=setInterval(()=>Combat.tick(),Game._combatSpeed||1200);
             }
           }
         }
@@ -6396,12 +6424,18 @@ const Game={
   },
 
   buildClassSelect(){
-    if(!GameState.ccState) GameState.ccState={
-      gender:'man', accent:'cyan',
-      statAlloc:{hp:0,atk:0,def:0,spd:0,mp:0}, pointsLeft:STAT_POINTS_TOTAL,
-      activeIdx:0, passiveIdx:0, portraitIdx:0,
-      runnerName:'', difficulty:'normal'
-    };
+    if(!GameState.ccState){
+      const shuffle=a=>[...a].sort(()=>Math.random()-.5);
+      GameState.ccState={
+        gender:'man', accent:'cyan',
+        statAlloc:{hp:0,atk:0,def:0,spd:0,mp:0}, pointsLeft:STAT_POINTS_TOTAL,
+        portraitIdx:0, runnerName:'', difficulty:'normal',
+        randActive:shuffle(ACTIVE_SKILLS).slice(0,2),
+        randPassive:shuffle(PASSIVE_SKILLS).slice(0,2),
+        randDefense:shuffle(DEFENSIVE_SKILLS).slice(0,2),
+        randGear:shuffle(EQUIP_POOL).slice(0,2)
+      };
+    }
     const cc=GameState.ccState;
     const grid=document.getElementById('cgrid');grid.innerHTML='';
     const F='font-family:\"Share Tech Mono\",monospace;';
@@ -6514,52 +6548,30 @@ const Game={
     topRow.appendChild(rightCol);
     grid.appendChild(topRow);
 
-    // ── ROW 2: SKILLS + EQUIPMENT — three columns ──
+    // ── ROW 2: SKILLS + EQUIPMENT — four columns, 2 random each ──
     const midRow=document.createElement('div');
     midRow.style.cssText='display:flex;gap:clamp(8px,1.2vw,16px);flex:1;min-height:0;';
 
-    // Active skills
-    const actBox=document.createElement('div');actBox.className='cc-panel';actBox.style.cssText='flex:1;display:flex;flex-direction:column;overflow-y:auto;';
-    actBox.innerHTML=`<div class="slbl">◆ ACTIVE SKILL</div>`;
-    const actRow=document.createElement('div');
-    actRow.style.cssText='display:flex;flex-direction:column;gap:clamp(4px,0.5vh,6px);';
-    ACTIVE_SKILLS.forEach((sk,i)=>{
-      const c=document.createElement('div');c.className='spc'+(cc.activeIdx===i?' sel':'');
-      c.style.cssText='cursor:pointer;padding:clamp(8px,1vh,12px) clamp(8px,1vw,14px);display:flex;align-items:center;gap:clamp(8px,1vw,14px);';
-      c.innerHTML=`<div style="${F}font-size:clamp(18px,2.2vw,28px);flex-shrink:0;width:clamp(28px,3vw,40px);text-align:center;">${sk.icon}</div><div style="flex:1;min-width:0;"><div style="${F}font-size:clamp(9px,1vw,13px);color:#ffe100;margin-bottom:3px;">${sk.name}</div><div style="${F}font-size:clamp(7px,0.75vw,10px);color:#99a;line-height:1.5;">${sk.desc}</div></div><div style="${F}font-size:clamp(7px,0.7vw,9px);color:#776;text-align:right;flex-shrink:0;line-height:1.6;">MP:${sk.mp}<br>CD:${sk.maxCd}</div>`;
-      c.addEventListener('click',()=>{cc.activeIdx=i;actRow.querySelectorAll('.spc').forEach(x=>x.classList.remove('sel'));c.classList.add('sel');});
-      actRow.appendChild(c);
-    });
-    actBox.appendChild(actRow);
-    midRow.appendChild(actBox);
+    const buildPanel=(label,items,showMp)=>{
+      const box=document.createElement('div');box.className='cc-panel';box.style.cssText='flex:1;display:flex;flex-direction:column;overflow-y:auto;';
+      box.innerHTML=`<div class="slbl">${label}</div>`;
+      const col=document.createElement('div');col.style.cssText='display:flex;flex-direction:column;gap:clamp(4px,0.5vh,6px);';
+      items.forEach(sk=>{
+        const c=document.createElement('div');c.className='spc sel';
+        c.style.cssText='padding:clamp(8px,1vh,12px) clamp(8px,1vw,14px);display:flex;align-items:center;gap:clamp(8px,1vw,14px);';
+        const mpInfo=showMp&&sk.mp!=null?`<div style="${F}font-size:clamp(7px,0.7vw,9px);color:#776;text-align:right;flex-shrink:0;line-height:1.6;">MP:${sk.mp}<br>CD:${sk.maxCd}</div>`:'';
+        c.innerHTML=`<div style="${F}font-size:clamp(18px,2.2vw,28px);flex-shrink:0;width:clamp(28px,3vw,40px);text-align:center;">${sk.icon}</div><div style="flex:1;min-width:0;"><div style="${F}font-size:clamp(9px,1vw,13px);color:#ffe100;margin-bottom:3px;">${sk.name}</div><div style="${F}font-size:clamp(7px,0.75vw,10px);color:#99a;line-height:1.5;">${sk.desc}</div></div>${mpInfo}`;
+        col.appendChild(c);
+      });
+      box.appendChild(col);return box;
+    };
 
-    // Passive skills
-    const pasBox=document.createElement('div');pasBox.className='cc-panel';pasBox.style.cssText='flex:1;display:flex;flex-direction:column;overflow-y:auto;';
-    pasBox.innerHTML=`<div class="slbl">◆ PASSIVE SKILL</div>`;
-    const pasRow=document.createElement('div');
-    pasRow.style.cssText='display:flex;flex-direction:column;gap:clamp(4px,0.5vh,6px);';
-    PASSIVE_SKILLS.forEach((sk,i)=>{
-      const c=document.createElement('div');c.className='spc'+(cc.passiveIdx===i?' sel':'');
-      c.style.cssText='cursor:pointer;padding:clamp(8px,1vh,12px) clamp(8px,1vw,14px);display:flex;align-items:center;gap:clamp(8px,1vw,14px);';
-      c.innerHTML=`<div style="${F}font-size:clamp(18px,2.2vw,28px);flex-shrink:0;width:clamp(28px,3vw,40px);text-align:center;">${sk.icon}</div><div style="flex:1;min-width:0;"><div style="${F}font-size:clamp(9px,1vw,13px);color:#ffe100;margin-bottom:3px;">${sk.name}</div><div style="${F}font-size:clamp(7px,0.75vw,10px);color:#99a;line-height:1.5;">${sk.desc}</div></div>`;
-      c.addEventListener('click',()=>{cc.passiveIdx=i;pasRow.querySelectorAll('.spc').forEach(x=>x.classList.remove('sel'));c.classList.add('sel');});
-      pasRow.appendChild(c);
-    });
-    pasBox.appendChild(pasRow);
-    midRow.appendChild(pasBox);
-
-    // Starting Gear (vertical in third column)
-    const equipBox=document.createElement('div');equipBox.className='cc-panel';
-    equipBox.style.cssText='flex:1;display:flex;flex-direction:column;overflow-y:auto;';
-    equipBox.innerHTML=`<div class="slbl">◆ STARTING GEAR</div>`;
-    const equipRow=document.createElement('div');equipRow.id='egrid';
-    equipRow.style.cssText='display:flex;flex-direction:column;gap:clamp(4px,0.5vh,6px);';
-    equipBox.appendChild(equipRow);
-    midRow.appendChild(equipBox);
+    midRow.appendChild(buildPanel('◆ ACTIVE SKILLS',cc.randActive,true));
+    midRow.appendChild(buildPanel('◆ PASSIVE SKILLS',cc.randPassive,false));
+    midRow.appendChild(buildPanel('◆ DEFENSIVE SKILLS',cc.randDefense,true));
+    midRow.appendChild(buildPanel('◆ STARTING GEAR',cc.randGear,false));
 
     grid.appendChild(midRow);
-
-    this.renderEquip();
     setTimeout(()=>this._updatePreview(),100);
   },
 
@@ -6659,36 +6671,26 @@ const Game={
     }
   },
 
-  renderEquip(){
-    const pool=[...EQUIP_POOL].sort(()=>Math.random()-.5).slice(0,3);
-    GameState.selectedEquip=pool[0];
-    const grid=document.getElementById('egrid');if(!grid)return;grid.innerHTML='';
-    const F='font-family:"Share Tech Mono",monospace;';
-    pool.forEach((eq,i)=>{
-      const c=document.createElement('div');c.className='spc'+(i===0?' sel':'');
-      c.style.cssText='cursor:pointer;padding:clamp(8px,1vh,12px) clamp(8px,1vw,14px);display:flex;align-items:center;gap:clamp(8px,1vw,14px);';
-      c.innerHTML=`<div style="${F}font-size:clamp(18px,2.2vw,28px);flex-shrink:0;width:clamp(28px,3vw,40px);text-align:center;">${eq.icon}</div><div style="flex:1;min-width:0;"><div style="${F}font-size:clamp(9px,1vw,13px);color:#ffe100;margin-bottom:3px;">${eq.name}</div><div style="${F}font-size:clamp(7px,0.75vw,10px);color:#99a;line-height:1.5;">${eq.desc}</div></div>`;
-      c.addEventListener('click',()=>{GameState.selectedEquip=eq;grid.querySelectorAll('.spc').forEach(e=>e.classList.remove('sel'));c.classList.add('sel');});
-      grid.appendChild(c);
-    });
-  },
+  renderEquip(){/* no-op — gear now rendered inline */},
 
   enterDungeon(){
     const cc=GameState.ccState;
-    if(!cc||!GameState.selectedEquip)return;
+    if(!cc)return;
     const cfg={
       gender: cc.gender,
       accent: ACCENT_COLORS[cc.accent]||CY,
       statAlloc: cc.statAlloc,
-      activeSkill: ACTIVE_SKILLS[cc.activeIdx||0],
-      passiveSkill: PASSIVE_SKILLS[cc.passiveIdx||0]
+      activeSkills: cc.randActive||[ACTIVE_SKILLS[0]],
+      passiveSkills: cc.randPassive||[PASSIVE_SKILLS[0]],
+      defenseSkills: cc.randDefense||[DEFENSIVE_SKILLS[0]],
+      gearItems: cc.randGear||[EQUIP_POOL[0]]
     };
     GameState.selectedGender=cc.gender;
     GameState.selectedPortrait=cc.portraitIdx||0;
     GameState.selectedAccent=ACCENT_COLORS[cc.accent]||CY;
     GameState.runnerName=cc.runnerName||GENDERS[cc.gender].name;
     GameState.difficulty=cc.difficulty||'normal';
-    GameState.player=new Player(cfg,GameState.selectedEquip);
+    GameState.player=new Player(cfg);
     // Apply difficulty modifiers
     if(GameState.difficulty==='hard'){GameState._diffMult={hp:1.3,atk:1.3,loot:0.8};}
     else if(GameState.difficulty==='nightmare'){GameState._diffMult={hp:2,atk:1.5,loot:0.6};}
@@ -6703,6 +6705,7 @@ const Game={
     GameState.currentZoneId=null;
     GameState.runRelics=[];
     QM.init();Inventory.init();LootScreen.reset();
+    GameState.ccState=null; // reset so next creation gets fresh randoms
     SaveSystem.save();
     MangaIntro.show();
   },
@@ -6726,11 +6729,13 @@ const Game={
     document.getElementById('pnm').style.color=p.accent;
     // Show passive skill icon
     const passEl=document.getElementById('passiveIcon');
-    if(passEl&&p.passiveId){
-      const ps=PASSIVE_SKILLS.find(s=>s.id===p.passiveId);
-      if(ps){passEl.textContent=ps.icon+' '+ps.name;passEl.title=ps.desc;passEl.style.color=p.accent;}
+    if(passEl&&p.passiveIds&&p.passiveIds.length){
+      const names=p.passiveIds.map(id=>{const ps=PASSIVE_SKILLS.find(s=>s.id===id);return ps?ps.icon+' '+ps.name:'';}).filter(Boolean);
+      passEl.textContent=names.join(' | ');passEl.title=p.passiveIds.map(id=>{const ps=PASSIVE_SKILLS.find(s=>s.id===id);return ps?ps.desc:'';}).filter(Boolean).join(', ');passEl.style.color=p.accent;
     }
-    document.getElementById('eqbadge').textContent=p.equip.icon+' '+p.equip.name;
+    const eqBadge=document.getElementById('eqbadge');
+    if(eqBadge&&p.gearItems&&p.gearItems.length){eqBadge.textContent=p.gearItems.map(g=>g.icon+' '+g.name).join(' | ');}
+    else if(eqBadge&&p.equip){eqBadge.textContent=p.equip.icon+' '+p.equip.name;}
     const dmc=document.getElementById('dmcv');
     const dmctx=dmc.getContext('2d');
     dmctx.clearRect(0,0,dmc.width,dmc.height);

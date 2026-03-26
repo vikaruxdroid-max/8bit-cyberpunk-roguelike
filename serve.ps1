@@ -1,7 +1,8 @@
+$port = if($env:PORT) { $env:PORT } else { 9777 }
 $listener = [System.Net.HttpListener]::new()
-$listener.Prefixes.Add("http://localhost:8888/")
+$listener.Prefixes.Add("http://localhost:$port/")
 $listener.Start()
-Write-Host "Server running on http://localhost:8888/"
+Write-Host "Server running on http://localhost:$port/"
 while($listener.IsListening) {
     $ctx = $listener.GetContext()
     $path = $ctx.Request.Url.LocalPath

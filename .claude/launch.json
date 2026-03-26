@@ -5,7 +5,8 @@
       "name": "game",
       "runtimeExecutable": "powershell.exe",
       "runtimeArgs": ["-ExecutionPolicy", "Bypass", "-File", "C:\\Users\\carlo\\OneDrive\\game\\serve.ps1"],
-      "port": 8888
+      "port": 9777,
+      "autoPort": false
     }
   ]
 }
