@@ -1434,11 +1434,74 @@ const SPLAT = ['#ff00ff','#00ffff','#ffe100','#8800ff','#ff0066','#ffaa00','#00f
 const P = 4; // one "pixel" = 4x4 real pixels
 const _ = null;
 
-// Preload hero sprite image
+// ── Spritesheet system: load sprites.png (4x3 grid), crop per character ──
+const _ssImg = new Image();
+_ssImg.src = 'sprites.png';
+let _ssReady = false;
+_ssImg.onload = () => { _ssReady = true; _ssCropAll(); };
+// Also keep hero.png as fallback for warrior
 const _heroImg = new Image();
 _heroImg.src = 'hero.png';
 let _heroReady = false;
 _heroImg.onload = () => { _heroReady = true; };
+
+// Each cell in the 4x3 grid — we'll auto-detect cell size on load
+const _ssCells = {}; // spriteName -> {sx,sy,sw,sh} source rect
+const _ssCanvases = {}; // spriteName -> offscreen canvas (bg removed)
+const _SS_MAP = [
+  // row 0: [col0, col1, col2, col3]
+  ['rogue',      'warrior',    'druid',       'netrunner'],
+  // row 1:
+  ['voidSpecter','dataWraith', 'pulseHound',  'glitchDrone'],
+  // row 2:
+  ['cyberOgre',  'circuitLich','quantumBoss', 'neonGolem'],
+];
+
+function _ssCropAll() {
+  if (!_ssReady) return;
+  const iw = _ssImg.naturalWidth, ih = _ssImg.naturalHeight;
+  const cols = 4, rows = 3;
+  const cw = Math.floor(iw / cols), ch = Math.floor(ih / rows);
+  // Create offscreen canvas for each sprite with background removed
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const name = _SS_MAP[r][c];
+      if (!name) continue;
+      _ssCells[name] = { sx: c * cw, sy: r * ch, sw: cw, sh: ch };
+      // Render to offscreen canvas and remove near-white background
+      const ocv = document.createElement('canvas');
+      ocv.width = cw; ocv.height = ch;
+      const octx = ocv.getContext('2d');
+      octx.drawImage(_ssImg, c * cw, r * ch, cw, ch, 0, 0, cw, ch);
+      // Remove background: make near-white pixels transparent
+      const id = octx.getImageData(0, 0, cw, ch);
+      const d = id.data;
+      for (let i = 0; i < d.length; i += 4) {
+        // If pixel is very light (near white/light gray), make transparent
+        if (d[i] > 210 && d[i+1] > 210 && d[i+2] > 210) {
+          d[i+3] = 0;
+        }
+      }
+      octx.putImageData(id, 0, 0);
+      _ssCanvases[name] = ocv;
+    }
+  }
+}
+
+function _drawSS(name, ctx, ox, oy, w, h, flip) {
+  const ocv = _ssCanvases[name];
+  if (!ocv) return false;
+  ctx.save();
+  if (flip) {
+    ctx.translate(ox + w, oy);
+    ctx.scale(-1, 1);
+    ctx.drawImage(ocv, 0, 0, ocv.width, ocv.height, 0, 0, w, h);
+  } else {
+    ctx.drawImage(ocv, 0, 0, ocv.width, ocv.height, ox, oy, w, h);
+  }
+  ctx.restore();
+  return true;
+}
 
 // Color shortcuts
 const CY='#00FFFF',MG='#FF00FF',PU='#8800FF',GR='#39FF14',
@@ -1482,27 +1545,39 @@ function glow(ctx, x, y, w, h, col, str=8) {
 // ═══════════════════════════════════════════════════════════════
 const SPR = {
 
-  // WARRIOR – custom hero sprite from hero.png
+  // All sprites now loaded from sprites.png spritesheet
+  // Fallback: hero.png for warrior, colored rect for others
   warrior(ctx, ox, oy, flip, t=0) {
-    const w = 14 * P, h = 22 * P; // 56x88
-    if (_heroReady) {
-      ctx.save();
-      if (flip) {
-        ctx.translate(ox + w, oy);
-        ctx.scale(-1, 1);
-        ctx.drawImage(_heroImg, 0, 0, w, h);
-      } else {
-        ctx.drawImage(_heroImg, ox, oy, w, h);
-      }
-      ctx.restore();
-    } else {
-      // Fallback rectangle while loading
-      ctx.fillStyle = '#445577';
-      ctx.fillRect(ox, oy, w, h);
+    const w=14*P, h=22*P;
+    if(!_drawSS('warrior',ctx,ox,oy,w,h,flip)){
+      if(_heroReady){ctx.save();if(flip){ctx.translate(ox+w,oy);ctx.scale(-1,1);ctx.drawImage(_heroImg,0,0,w,h);}else{ctx.drawImage(_heroImg,ox,oy,w,h);}ctx.restore();}
+      else{ctx.fillStyle='#445577';ctx.fillRect(ox,oy,w,h);}
     }
   },
 
-  // RANGER – cyber-leather hunter, green neon bow
+  // All remaining sprites: spritesheet-based with fallback
+  ranger(ctx, ox, oy, flip, t=0) { _drawSS('rogue',ctx,ox,oy,14*P,20*P,flip)||_fbrect(ctx,ox,oy,14*P,20*P,'#228844'); },
+  rogue(ctx, ox, oy, flip, t=0) { _drawSS('rogue',ctx,ox,oy,14*P,20*P,flip)||_fbrect(ctx,ox,oy,14*P,20*P,'#cc4444'); },
+  cleric(ctx, ox, oy, flip, t=0) { _drawSS('circuitLich',ctx,ox,oy,14*P,22*P,flip)||_fbrect(ctx,ox,oy,14*P,22*P,'#4488cc'); },
+  warlock(ctx, ox, oy, flip, t=0) { _drawSS('voidSpecter',ctx,ox,oy,14*P,22*P,flip)||_fbrect(ctx,ox,oy,14*P,22*P,'#8844cc'); },
+  druid(ctx, ox, oy, flip, t=0) { _drawSS('druid',ctx,ox,oy,14*P,22*P,flip)||_fbrect(ctx,ox,oy,14*P,22*P,'#44aa88'); },
+  glitchDrone(ctx, ox, oy, flip, t=0) { _drawSS('glitchDrone',ctx,ox,oy,12*P,12*P,flip)||_fbrect(ctx,ox,oy,12*P,12*P,'#00cccc'); },
+  neonGolem(ctx, ox, oy, flip, t=0) { _drawSS('neonGolem',ctx,ox,oy,14*P,22*P,flip)||_fbrect(ctx,ox,oy,14*P,22*P,'#8800ff'); },
+  voidSpecter(ctx, ox, oy, flip, t=0) { _drawSS('voidSpecter',ctx,ox,oy,12*P,17*P,flip)||_fbrect(ctx,ox,oy,12*P,17*P,'#aa44ff'); },
+  cyberOgre(ctx, ox, oy, flip, t=0) { _drawSS('cyberOgre',ctx,ox,oy,14*P,22*P,flip)||_fbrect(ctx,ox,oy,14*P,22*P,'#ff6600'); },
+  dataWraith(ctx, ox, oy, flip, t=0) { _drawSS('dataWraith',ctx,ox,oy,12*P,18*P,flip)||_fbrect(ctx,ox,oy,12*P,18*P,'#00ffff'); },
+  pulseHound(ctx, ox, oy, flip, t=0) { _drawSS('pulseHound',ctx,ox,oy,14*P,17*P,flip)||_fbrect(ctx,ox,oy,14*P,17*P,'#ff2244'); },
+  circuitLich(ctx, ox, oy, flip, t=0) { _drawSS('circuitLich',ctx,ox,oy,14*P,22*P,flip)||_fbrect(ctx,ox,oy,14*P,22*P,'#39ff14'); },
+  quantumBoss(ctx, ox, oy, flip, t=0) { _drawSS('quantumBoss',ctx,ox,oy,14*P,22*P,flip)||_fbrect(ctx,ox,oy,14*P,22*P,'#ff00ff'); },
+  netrunner(ctx, ox, oy, flip, t=0) { _drawSS('netrunner',ctx,ox,oy,14*P,20*P,flip)||_fbrect(ctx,ox,oy,14*P,20*P,'#00ffff'); },
+  // DM sprite (not in spritesheet — keep simple)
+  dm(ctx,ox,oy,flip,t=0) { _fbrect(ctx,ox,oy,12*P,14*P,'#8888aa'); }
+};
+function _fbrect(ctx,x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(x,y,w,h);}
+
+// DEAD CODE — original procedural sprites replaced by spritesheet above
+// (kept as comment block for reference)
+/*
   ranger(ctx, ox, oy, flip, t=0) {
     const lv='#1e5200',lv2='#2d7a00',lv3='#3a9900',eyeC=GR;
     pg(ctx, ox, oy, [
@@ -2050,6 +2125,7 @@ const SPR = {
     for(let i=0;i<4;i++)ctx.fillRect(bx+P*(2+i*2),by+P*2,P,P*.5);
   }
 };
+*/ // end dead code comment
 
 // Actual pixel dimensions per sprite (cols * P, rows * P)
 const SPRITE_SIZE = {
