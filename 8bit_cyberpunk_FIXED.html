@@ -1434,6 +1434,12 @@ const SPLAT = ['#ff00ff','#00ffff','#ffe100','#8800ff','#ff0066','#ffaa00','#00f
 const P = 4; // one "pixel" = 4x4 real pixels
 const _ = null;
 
+// Preload hero sprite image
+const _heroImg = new Image();
+_heroImg.src = 'hero.png';
+let _heroReady = false;
+_heroImg.onload = () => { _heroReady = true; };
+
 // Color shortcuts
 const CY='#00FFFF',MG='#FF00FF',PU='#8800FF',GR='#39FF14',
       OR='#FF4500',GD='#FFD700',RD='#FF2244',BK='#080814';
@@ -1476,44 +1482,24 @@ function glow(ctx, x, y, w, h, col, str=8) {
 // ═══════════════════════════════════════════════════════════════
 const SPR = {
 
-  // WARRIOR – cyberpunk knight with neon visor, detailed armor, energy blade
+  // WARRIOR – custom hero sprite from hero.png
   warrior(ctx, ox, oy, flip, t=0) {
-    const vc = `rgba(255,${130+Math.floor(Math.sin(t*.09)*40)},0,.95)`;
-    const vc2 = `rgba(255,${160+Math.floor(Math.sin(t*.12)*30)},40,.9)`;
-    const ar='#445577',ar2='#556688',ar3='#667799'; // armor shading
-    pg(ctx, ox, oy, [
-      [_,_,_,sd,ar,ar2,ar2,ar2,ar2,ar2,ar2,ar,sd,_],
-      [_,_,sd,ar,ar2,ar3,ar3,ar3,ar3,ar3,ar2,ar,sd,_],
-      [_,sd,ar,ar2,BK,BK,BK,BK,BK,BK,BK,ar2,ar,sd],
-      [_,sd,ar,BK,OR,vc,vc,vc,vc,vc,OR,BK,ar,sd],
-      [_,sd,ar,BK,vc,vc2,vc2,vc2,vc2,vc,BK,ar,sd,_],
-      [_,sd,ar,BK,BK,BK,OR,OR,BK,BK,BK,ar,sd,_],
-      [_,_,sd,ar,SK,SK,SK,SK,SK,SK,ar,sd,_,_],
-      [_,_,sd,sd,ar,OR,_,_,OR,ar,sd,sd,_,_],
-      [_,OR,ar,ar2,ar3,ar3,ar3,ar3,ar3,ar3,ar2,ar,OR,_],
-      [OR,ar,ar2,ar3,OR,vc,'#ff4400',OR,ar3,ar2,ar,OR,_,_],
-      [OR,ar,ar2,ar3,vc,OR,OR,OR,vc,ar3,ar2,ar,OR,_],
-      [OR,ar,ar2,ar3,ar3,CY,CY,CY,ar3,ar3,ar2,ar,OR,_],
-      [_,OR,ar,ar2,ar3,ar3,ar3,ar3,ar3,ar2,ar,OR,_,_],
-      [_,OR,ar,GD,GD,GD,GD,GD,GD,GD,GD,ar,OR,_],
-      [_,_,ar,ar2,ar3,ar3,_,_,ar3,ar3,ar2,ar,_,_],
-      [_,_,ar,ar2,ar3,ar3,_,_,ar3,ar3,ar2,ar,_,_],
-      [_,_,sd,ar,ar2,ar3,_,_,ar3,ar2,ar,sd,_,_],
-      [_,_,OR,ar,ar2,ar3,_,_,ar3,ar2,ar,OR,_,_],
-      [_,_,sd,ar,ar2,ar2,_,_,ar2,ar2,ar,sd,_,_],
-      [_,_,sd,ar,ar2,ar2,_,_,ar2,ar2,ar,sd,_,_],
-      [_,_,BK,sd,ar,ar,_,_,ar,ar,sd,BK,_,_],
-      [_,sd,BK,sd,ar,BK,_,_,BK,ar,sd,BK,sd,_],
-    ], flip);
-    // Energy blade — glowing cyan
-    const sx = flip ? ox - P*3 : ox + P*14;
-    const bladeGlow=`rgba(0,255,255,${0.6+Math.sin(t*0.15)*0.3})`;
-    for(let i=0;i<14;i++){
-      ctx.fillStyle=i<2?'#ffffff':bladeGlow;
-      ctx.fillRect(sx,oy+i*P,P,P);
-      if(i>1){ctx.fillStyle=`rgba(0,255,255,${0.2+Math.sin(t*0.1+i*0.3)*0.15})`;ctx.fillRect(sx+P,oy+i*P,P/2,P);}
+    const w = 14 * P, h = 22 * P; // 56x88
+    if (_heroReady) {
+      ctx.save();
+      if (flip) {
+        ctx.translate(ox + w, oy);
+        ctx.scale(-1, 1);
+        ctx.drawImage(_heroImg, 0, 0, w, h);
+      } else {
+        ctx.drawImage(_heroImg, ox, oy, w, h);
+      }
+      ctx.restore();
+    } else {
+      // Fallback rectangle while loading
+      ctx.fillStyle = '#445577';
+      ctx.fillRect(ox, oy, w, h);
     }
-    ctx.fillStyle=GD;ctx.fillRect(sx-P,oy+P*4,P*3,P);// guard
   },
 
   // RANGER – cyber-leather hunter, green neon bow
