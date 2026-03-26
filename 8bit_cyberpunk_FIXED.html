@@ -348,7 +348,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#060618;font-family:
 .fc-btn:hover{background:var(--M);color:#000;box-shadow:0 0 32px rgba(255,0,255,.6);}
 
 /* ══ LOOT SCREEN ══ */
-#sLT{background:rgba(2,2,18,.98);overflow:hidden;}
+#sLT{background:linear-gradient(rgba(0,0,10,.7),rgba(0,0,10,.8)),url('citybg.png') center/cover no-repeat #020218;overflow:hidden;}
 .lt-hd{flex-shrink:0;text-align:center;padding:clamp(14px,1.8vh,24px) 0 clamp(6px,0.8vh,10px);}
 .lt-title{font-size:clamp(14px,2vw,28px);color:var(--GD);text-shadow:0 0 16px var(--GD),0 0 32px rgba(255,215,0,.4);animation:ltglow 1.6s ease infinite alternate;}
 @keyframes ltglow{from{text-shadow:0 0 16px var(--GD),0 0 32px rgba(255,215,0,.4)}to{text-shadow:0 0 26px var(--GD),0 0 52px rgba(255,215,0,.7),0 0 80px rgba(255,180,0,.3)}}
@@ -421,7 +421,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#060618;font-family:
   font-family:'Share Tech Mono',monospace;font-size:11px;color:#dde;pointer-events:none;
   box-shadow:0 0 12px rgba(0,255,255,.3);border-radius:3px;}
 .eqslot:hover .eq-tip{display:block;}
-#sVIC{background:#030312;overflow:hidden;position:relative;height:100%;}
+#sVIC{background:linear-gradient(rgba(0,0,10,.6),rgba(0,0,10,.7)),url('citybg.png') center/cover no-repeat #030312;overflow:hidden;position:relative;height:100%;}
 #sVIC.on{display:flex;flex-direction:column;height:100%;}
 #vicVaporBg{position:absolute;inset:0;z-index:0;pointer-events:none;}
 #sVIC>*:not(#vicVaporBg):not(.vic-scanlines){position:relative;z-index:1;}
@@ -840,36 +840,40 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
 }
 .wm-hdr{flex-shrink:0;display:flex;justify-content:space-between;align-items:center;
   padding:clamp(8px,1vh,14px) clamp(14px,1.5vw,24px);
-  background:linear-gradient(90deg,rgba(0,0,10,.98),rgba(4,0,20,.98));
-  border-bottom:2px solid rgba(0,255,255,.4);}
-.wm-title{font-size:clamp(12px,1.4vw,20px);color:var(--C);text-shadow:0 0 14px var(--C);letter-spacing:4px;}
-.wm-sub{font-size:clamp(7px,0.8vw,11px);color:rgba(0,255,255,.55);letter-spacing:2px;}
-.wm-body{flex:1;display:flex;min-height:0;overflow:hidden;gap:0;}
-#wmCanvas{flex:1;display:block;min-width:0;cursor:crosshair;}
-.wm-zone-info{width:clamp(200px,22vw,300px);flex-shrink:0;background:rgba(3,0,14,.97);
-  border-left:2px solid rgba(0,255,255,.2);display:flex;flex-direction:column;
-  gap:clamp(8px,1vh,14px);padding:clamp(14px,1.8vh,24px) clamp(12px,1.3vw,20px);overflow-y:auto;}
-.wm-zone-name{font-size:clamp(10px,1.1vw,15px);letter-spacing:2px;text-align:center;line-height:1.5;}
-.wm-zone-desc{font-size:clamp(7px,0.78vw,11px);color:#aabbd0;text-align:center;line-height:1.9;}
-.wm-zone-meta{font-size:clamp(6px,0.68vw,9px);color:rgba(0,255,255,.55);text-align:center;line-height:2.2;}
-.wm-prereq{font-size:clamp(6px,0.68vw,9px);color:var(--RD);text-align:center;background:rgba(40,0,0,.6);
-  border:1px solid rgba(255,34,68,.3);padding:5px 8px;line-height:1.9;}
-.wm-cleared{font-size:clamp(7px,0.8vw,11px);color:#00ff44;text-align:center;
-  text-shadow:0 0 8px #00ff44;letter-spacing:2px;}
-.wm-locked{font-size:clamp(8px,0.9vw,13px);color:rgba(255,255,255,.25);text-align:center;letter-spacing:2px;}
-.wm-hint{font-size:clamp(7px,0.78vw,11px);color:rgba(0,255,255,.3);text-align:center;
-  letter-spacing:1px;margin-top:30px;}
-.wm-enter-btn{font-family:'Press Start 2P',monospace;font-size:clamp(8px,0.9vw,13px);
-  padding:clamp(10px,1.2vh,16px) clamp(12px,1.3vw,20px);cursor:pointer;letter-spacing:2px;
-  background:linear-gradient(135deg,rgba(0,100,180,.92),rgba(0,20,100,.92));
-  border:3px solid var(--C);color:var(--C);text-shadow:0 0 8px var(--C);
-  transition:all .15s;width:100%;margin-top:4px;}
-.wm-enter-btn:hover{background:var(--C);color:#020210;box-shadow:0 0 24px rgba(0,255,255,.6);}
+  background:linear-gradient(90deg,rgba(0,0,10,.92),rgba(4,0,20,.92));
+  border-bottom:2px solid rgba(0,255,255,.3);z-index:10;position:relative;}
+.wm-title{font-family:'Press Start 2P',monospace;font-size:clamp(12px,1.4vw,20px);color:#00ffff;text-shadow:0 0 14px #00ffff;letter-spacing:5px;}
+.wm-sub{font-family:'Share Tech Mono',monospace;font-size:clamp(8px,0.9vw,12px);color:rgba(0,255,255,.55);letter-spacing:2px;}
+.wm-body{flex:1;position:relative;min-height:0;overflow:hidden;}
+#wmCanvas{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:crosshair;}
+.wm-zone-info-overlay{position:absolute;bottom:clamp(12px,2vh,24px);left:50%;transform:translateX(-50%);
+  width:clamp(280px,30vw,420px);background:rgba(3,0,14,.94);backdrop-filter:blur(8px);
+  border:2px solid rgba(0,255,255,.2);display:flex;flex-direction:column;
+  gap:clamp(6px,.8vh,10px);padding:clamp(12px,1.5vh,20px) clamp(14px,1.5vw,22px);
+  z-index:10;clip-path:polygon(0% 0%,calc(100% - 12px) 0%,100% 12px,100% 100%,12px 100%,0% calc(100% - 12px));
+  box-shadow:0 0 30px rgba(0,0,0,.6),0 0 15px rgba(0,255,255,.05);transition:opacity .2s;}
+.wm-zone-name{font-family:'Press Start 2P',monospace;font-size:clamp(10px,1.1vw,15px);letter-spacing:3px;text-align:center;line-height:1.5;}
+.wm-zone-desc{font-family:'Share Tech Mono',monospace;font-size:clamp(8px,0.85vw,12px);color:#aabbd0;text-align:center;line-height:1.9;}
+.wm-zone-meta{font-family:'Share Tech Mono',monospace;font-size:clamp(7px,0.75vw,10px);color:rgba(0,255,255,.55);text-align:center;line-height:2.2;}
+.wm-prereq{font-family:'Share Tech Mono',monospace;font-size:clamp(7px,0.75vw,10px);color:var(--RD);text-align:center;background:rgba(40,0,0,.6);
+  border:1px solid rgba(255,34,68,.3);padding:6px 10px;line-height:1.9;}
+.wm-cleared{font-family:'Press Start 2P',monospace;font-size:clamp(8px,0.9vw,12px);color:#00ff44;text-align:center;
+  text-shadow:0 0 8px #00ff44;letter-spacing:3px;}
+.wm-locked{font-family:'Press Start 2P',monospace;font-size:clamp(8px,0.9vw,13px);color:rgba(255,255,255,.25);text-align:center;letter-spacing:2px;}
+.wm-hint{font-family:'Share Tech Mono',monospace;font-size:clamp(8px,0.85vw,12px);color:rgba(0,255,255,.3);text-align:center;
+  letter-spacing:2px;margin-top:0;}
+.wm-enter-btn{font-family:'Press Start 2P',monospace;font-size:clamp(9px,1vw,14px);
+  padding:clamp(10px,1.2vh,16px) clamp(12px,1.3vw,20px);cursor:pointer;letter-spacing:3px;
+  background:linear-gradient(135deg,rgba(0,255,255,.08),rgba(136,0,255,.2));
+  border:2px solid #00ffff;color:#00ffff;text-shadow:0 0 8px #00ffff;
+  transition:all .15s;width:100%;margin-top:4px;
+  clip-path:polygon(0% 0%,calc(100% - 8px) 0%,100% 8px,100% 100%,8px 100%,0% calc(100% - 8px));}
+.wm-enter-btn:hover{background:#00ffff;color:#020210;box-shadow:0 0 24px rgba(0,255,255,.6);}
 .wm-skulls{font-size:10px;display:block;text-align:center;margin-top:2px;}
-.wm-back-btn{font-family:'Press Start 2P',monospace;font-size:clamp(6px,0.7vw,10px);
-  padding:6px 14px;cursor:pointer;background:rgba(4,4,28,.9);
-  border:1px solid rgba(0,255,255,.3);color:rgba(0,255,255,.6);letter-spacing:1px;transition:all .15s;}
-.wm-back-btn:hover{border-color:var(--C);color:var(--C);}
+.wm-back-btn{font-family:'Press Start 2P',monospace;font-size:clamp(7px,0.8vw,11px);
+  padding:clamp(6px,.7vh,10px) clamp(12px,1.4vw,20px);cursor:pointer;background:rgba(4,4,28,.9);
+  border:1px solid rgba(0,255,255,.3);color:rgba(0,255,255,.6);letter-spacing:2px;transition:all .15s;}
+.wm-back-btn:hover{border-color:#00ffff;color:#00ffff;box-shadow:0 0 10px rgba(0,255,255,.2);}
 
 /* ══ MAP BUTTON IN HUD ══ */
 #mapBtn{font-family:'Press Start 2P',monospace;font-size:clamp(6px,0.68vw,9px);
@@ -1379,7 +1383,7 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
     </div>
     <div class="wm-body">
       <canvas id="wmCanvas"></canvas>
-      <div id="wmZoneInfo" class="wm-zone-info">
+      <div id="wmZoneInfo" class="wm-zone-info wm-zone-info-overlay">
         <div class="wm-hint">— CLICK A ZONE TO SELECT —</div>
       </div>
     </div>
@@ -4709,21 +4713,37 @@ const WorldMap = {
       if(cleared){
         ctx.font='13px sans-serif';ctx.fillText('✓',x+r*0.7,y-r*0.7);
       }
-      // Name label — dark shadow backing for readability over photo bg
-      ctx.textBaseline='alphabetic';
-      ctx.font=`bold ${zone.id==='theCore'?10:9}px 'Press Start 2P',monospace`;
-      ctx.shadowColor='rgba(0,0,0,0.95)';ctx.shadowBlur=10;
-      ctx.fillStyle=unlocked?zone.color:'rgba(200,200,220,0.35)';
-      ctx.fillText(zone.name,x,y+r+17);
-      ctx.shadowColor=unlocked?zone.color:'transparent';ctx.shadowBlur=7;
-      ctx.fillText(zone.name,x,y+r+17);
-      ctx.shadowBlur=0;
-      // Difficulty dots
-      if(unlocked&&!cleared){
-        ctx.shadowColor='rgba(0,0,0,0.8)';ctx.shadowBlur=6;
-        ctx.fillStyle='rgba(255,200,0,0.7)';
-        ctx.font='9px sans-serif';
-        ctx.fillText('★'.repeat(zone.difficulty)+'☆'.repeat(5-zone.difficulty),x,y+r+30);
+      // ── Info panel above node ──
+      if(unlocked){
+        const infoY=y-r-8;
+        // Dark backing pill
+        const tw=Math.max(80,zone.name.length*8+20);
+        ctx.fillStyle='rgba(0,0,10,0.85)';
+        const pillH=cleared?22:34;const pillW=tw;
+        ctx.beginPath();ctx.rect(x-pillW/2,infoY-pillH,pillW,pillH);
+        ctx.fill();
+        ctx.strokeStyle=cleared?'rgba(0,255,68,0.3)':zone.color+'55';
+        ctx.lineWidth=1;ctx.stroke();
+        // Zone name
+        ctx.textBaseline='alphabetic';
+        ctx.font=`bold ${zone.id==='theCore'?10:9}px 'Press Start 2P',monospace`;
+        ctx.fillStyle=cleared?'#00ff44':zone.color;
+        ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=6;
+        ctx.fillText(cleared?'✓ '+zone.name:zone.name,x,infoY-pillH+14);
+        ctx.shadowBlur=0;
+        // Level + rooms info (not for cleared)
+        if(!cleared){
+          ctx.font="bold 8px 'Share Tech Mono',monospace";
+          ctx.fillStyle='rgba(0,255,255,0.5)';
+          ctx.fillText(`LV${zone.recLevel} · ${zone.rooms}RM · ${'★'.repeat(zone.difficulty)}`,x,infoY-pillH+26);
+        }
+      } else {
+        // Locked — just name below
+        ctx.textBaseline='alphabetic';
+        ctx.font=`bold 8px 'Press Start 2P',monospace`;
+        ctx.shadowColor='rgba(0,0,0,0.9)';ctx.shadowBlur=8;
+        ctx.fillStyle='rgba(200,200,220,0.25)';
+        ctx.fillText(zone.name,x,y+r+17);
         ctx.shadowBlur=0;
       }
       ctx.restore();
