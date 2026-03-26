@@ -6,7 +6,7 @@ while($listener.IsListening) {
     $ctx = $listener.GetContext()
     $path = $ctx.Request.Url.LocalPath
     if($path -eq "/") { $path = "/8bit_cyberpunk_FIXED.html" }
-    $file = Join-Path "C:\game" $path.TrimStart("/")
+    $file = Join-Path "C:\Users\carlo\OneDrive\game" $path.TrimStart("/")
     if(Test-Path $file) {
         $bytes = [IO.File]::ReadAllBytes($file)
         $ext = [IO.Path]::GetExtension($file).ToLower()
