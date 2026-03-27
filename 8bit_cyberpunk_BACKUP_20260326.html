@@ -2374,6 +2374,11 @@ const Arena = {
       ctx.restore();
     });
 
+    // Reaction combat overlay (Phase 1.4) — renders on top of everything
+    if (GameState._reactionPhase && GameState._reactionPhase.active) {
+      renderReactionPhase(ctx, GameState._reactionPhase);
+    }
+
     // Vignettes
     const pv = GameState.player;
     if(pv&&pv.hp>0&&pv.hp/pv.maxHp<0.25){
@@ -3978,73 +3983,73 @@ const _aoeVfx=(en,type,clr)=>{en.forEach(e=>{if(e.hp>0){const pos=Arena.getEnemy
 
 const ACTIVE_SKILLS = [
   // ── Single target heavy hitters ──
-  {id:'plasmaStrike',name:'Plasma Strike',icon:'⚡',desc:'2.5x ATK single target',mp:20,cd:0,maxCd:3,
+  {id:'plasmaStrike',tags:['attack'],name:'Plasma Strike',icon:'⚡',desc:'2.5x ATK single target',mp:20,cd:0,maxCd:3,
    effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*2.5));_vfx(t,'slash',OR);DM.say('PLASMA STRIKE! Devastating blow!');}},
-  {id:'dataSplice',name:'Data Splice',icon:'🗡',desc:'3x ATK guaranteed crit',mp:22,cd:0,maxCd:3,
+  {id:'dataSplice',tags:['attack'],name:'Data Splice',icon:'🗡',desc:'3x ATK guaranteed crit',mp:22,cd:0,maxCd:3,
    effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*3),true);_vfx(t,'slash',MG);DM.say('DATA SPLICE! Triple critical!');}},
-  {id:'railgunBurst',name:'Railgun Burst',icon:'🔫',desc:'3.5x ATK single target',mp:28,cd:0,maxCd:4,
+  {id:'railgunBurst',tags:['attack'],name:'Railgun Burst',icon:'🔫',desc:'3.5x ATK single target',mp:28,cd:0,maxCd:4,
    effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*3.5));_vfx(t,'explode',CY);DM.say('RAILGUN BURST! Armor pierced!');}},
-  {id:'neuralSpike',name:'Neural Spike',icon:'🧠',desc:'2x ATK ignores DEF',mp:18,cd:0,maxCd:3,
+  {id:'neuralSpike',tags:['attack'],name:'Neural Spike',icon:'🧠',desc:'2x ATK ignores DEF',mp:18,cd:0,maxCd:3,
    effect(p,en){const t=_tgt(en);if(!t)return;const dmg=Math.floor(p.atk*2);t.hp=Math.max(0,t.hp-dmg);_vfx(t,'slash',PU);UI.dmgNumAt(Arena.getEnemyPos(GameState.enemies.indexOf(t)).x,Arena.getEnemyPos(GameState.enemies.indexOf(t)).y,dmg);DM.say('NEURAL SPIKE! Defenses bypassed!');}},
-  {id:'photonLance',name:'Photon Lance',icon:'✴',desc:'2.8x ATK single target',mp:22,cd:0,maxCd:3,
+  {id:'photonLance',tags:['attack'],name:'Photon Lance',icon:'✴',desc:'2.8x ATK single target',mp:22,cd:0,maxCd:3,
    effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*2.8));_vfx(t,'slash',GD);DM.say('PHOTON LANCE! Beam locked!');}},
-  {id:'cryptoShiv',name:'Crypto Shiv',icon:'🔪',desc:'2x ATK + 2x ATK combo',mp:20,cd:0,maxCd:3,
+  {id:'cryptoShiv',tags:['attack'],name:'Crypto Shiv',icon:'🔪',desc:'2x ATK + 2x ATK combo',mp:20,cd:0,maxCd:3,
    effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*2));Combat.deal(t,Math.floor(p.atk*2));_vfx(t,'slash',RD);DM.say('CRYPTO SHIV! Double slash!');}},
-  {id:'overclockSlam',name:'Overclock Slam',icon:'💥',desc:'4x ATK heavy hit',mp:32,cd:0,maxCd:5,
+  {id:'overclockSlam',tags:['attack'],name:'Overclock Slam',icon:'💥',desc:'4x ATK heavy hit',mp:32,cd:0,maxCd:5,
    effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*4));_vfx(t,'explode',OR);DM.say('OVERCLOCK SLAM! Maximum force!');}},
-  {id:'virusInject',name:'Virus Inject',icon:'🦠',desc:'1.5x ATK + 1.5x ATK poison tick',mp:16,cd:0,maxCd:3,
+  {id:'virusInject',tags:['attack'],name:'Virus Inject',icon:'🦠',desc:'1.5x ATK + 1.5x ATK poison tick',mp:16,cd:0,maxCd:3,
    effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*1.5));t.poison=(t.poison||0)+Math.floor(p.atk*1.5);_vfx(t,'spark',GR);DM.say('VIRUS INJECT! Corruption spreading!');}},
-  {id:'magnetPull',name:'Magnet Pull',icon:'🧲',desc:'2x ATK pulls weakest enemy',mp:18,cd:0,maxCd:3,
+  {id:'magnetPull',tags:['attack'],name:'Magnet Pull',icon:'🧲',desc:'2x ATK pulls weakest enemy',mp:18,cd:0,maxCd:3,
    effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*2));_vfx(t,'spark',CY);DM.say('MAGNET PULL! Target locked!');}},
-  {id:'neonSlash',name:'Neon Slash',icon:'⚔',desc:'2.2x ATK single target',mp:18,cd:0,maxCd:2,
+  {id:'neonSlash',tags:['attack'],name:'Neon Slash',icon:'⚔',desc:'2.2x ATK single target',mp:18,cd:0,maxCd:2,
    effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*2.2));_vfx(t,'slash',MG);DM.say('NEON SLASH! Clean cut!');}},
 
   // ── AoE damage ──
-  {id:'shockwave',name:'Shockwave',icon:'💫',desc:'1.5x ATK hit all enemies',mp:24,cd:0,maxCd:4,
+  {id:'shockwave',tags:['attack'],name:'Shockwave',icon:'💫',desc:'1.5x ATK hit all enemies',mp:24,cd:0,maxCd:4,
    effect(p,en){en.forEach(e=>{if(e.hp>0)Combat.deal(e,Math.floor(p.atk*1.5));});_aoeVfx(en,'explode',CY);DM.say('SHOCKWAVE! All systems rattled!');}},
-  {id:'gridOverload',name:'Grid Overload',icon:'🔌',desc:'1.8x ATK hit all enemies',mp:28,cd:0,maxCd:4,
+  {id:'gridOverload',tags:['attack'],name:'Grid Overload',icon:'🔌',desc:'1.8x ATK hit all enemies',mp:28,cd:0,maxCd:4,
    effect(p,en){en.forEach(e=>{if(e.hp>0)Combat.deal(e,Math.floor(p.atk*1.8));});_aoeVfx(en,'spark',OR);DM.say('GRID OVERLOAD! Power surge!');}},
-  {id:'staticBomb',name:'Static Bomb',icon:'💣',desc:'2x ATK hit all enemies',mp:30,cd:0,maxCd:5,
+  {id:'staticBomb',tags:['attack'],name:'Static Bomb',icon:'💣',desc:'2x ATK hit all enemies',mp:30,cd:0,maxCd:5,
    effect(p,en){en.forEach(e=>{if(e.hp>0)Combat.deal(e,Math.floor(p.atk*2));});_aoeVfx(en,'explode',GD);DM.say('STATIC BOMB! Detonation!');}},
-  {id:'dataStorm',name:'Data Storm',icon:'🌀',desc:'1.2x ATK x3 random hits',mp:22,cd:0,maxCd:3,
+  {id:'dataStorm',tags:['attack'],name:'Data Storm',icon:'🌀',desc:'1.2x ATK x3 random hits',mp:22,cd:0,maxCd:3,
    effect(p,en){for(let i=0;i<3;i++){const alive=en.filter(e=>e.hp>0);if(!alive.length)break;const t=alive[Math.floor(Math.random()*alive.length)];Combat.deal(t,Math.floor(p.atk*1.2));_vfx(t,'spark',PU);}DM.say('DATA STORM! Chaos unleashed!');}},
-  {id:'pulseGrenade',name:'Pulse Grenade',icon:'🧨',desc:'1.6x ATK hit all enemies',mp:24,cd:0,maxCd:3,
+  {id:'pulseGrenade',tags:['attack'],name:'Pulse Grenade',icon:'🧨',desc:'1.6x ATK hit all enemies',mp:24,cd:0,maxCd:3,
    effect(p,en){en.forEach(e=>{if(e.hp>0)Combat.deal(e,Math.floor(p.atk*1.6));});_aoeVfx(en,'explode',RD);DM.say('PULSE GRENADE! Fragmentation!');}},
 
   // ── Execute / conditional damage ──
-  {id:'killSwitch',name:'Kill Switch',icon:'☠',desc:'5x ATK on targets below 30% HP',mp:20,cd:0,maxCd:4,
+  {id:'killSwitch',tags:['attack'],name:'Kill Switch',icon:'☠',desc:'5x ATK on targets below 30% HP',mp:20,cd:0,maxCd:4,
    effect(p,en){const t=_tgt(en);if(!t)return;const mult=t.hp/t.maxHp<0.3?5:1.5;Combat.deal(t,Math.floor(p.atk*mult));_vfx(t,'explode',RD);DM.say(mult>3?'KILL SWITCH! Executed!':'KILL SWITCH! Not yet...');}},
-  {id:'overdriveSlash',name:'Overdrive Slash',icon:'⚡',desc:'2x ATK + 1x per combo',mp:22,cd:0,maxCd:3,
+  {id:'overdriveSlash',tags:['attack'],name:'Overdrive Slash',icon:'⚡',desc:'2x ATK + 1x per combo',mp:22,cd:0,maxCd:3,
    effect(p,en){const t=_tgt(en);if(!t)return;const combo=GameState.combo||0;Combat.deal(t,Math.floor(p.atk*(2+combo*0.5)));_vfx(t,'slash',GD);DM.say('OVERDRIVE SLASH! Combo x'+combo+'!');}},
-  {id:'surgeBreaker',name:'Surge Breaker',icon:'🔱',desc:'3x ATK + bonus vs full HP',mp:24,cd:0,maxCd:4,
+  {id:'surgeBreaker',tags:['attack'],name:'Surge Breaker',icon:'🔱',desc:'3x ATK + bonus vs full HP',mp:24,cd:0,maxCd:4,
    effect(p,en){const t=_tgt(en);if(!t)return;const mult=t.hp===t.maxHp?4:3;Combat.deal(t,Math.floor(p.atk*mult));_vfx(t,'slash',CY);DM.say('SURGE BREAKER! First strike!');}},
 
   // ── Multi-hit / chain ──
-  {id:'burstFire',name:'Burst Fire',icon:'🔥',desc:'1x ATK x4 rapid hits',mp:22,cd:0,maxCd:3,
+  {id:'burstFire',tags:['attack'],name:'Burst Fire',icon:'🔥',desc:'1x ATK x4 rapid hits',mp:22,cd:0,maxCd:3,
    effect(p,en){const t=_tgt(en);if(!t)return;for(let i=0;i<4;i++)Combat.deal(t,Math.floor(p.atk));_vfx(t,'spark',OR);DM.say('BURST FIRE! Quad shot!');}},
-  {id:'chainLightning',name:'Chain Lightning',icon:'⛓',desc:'2x ATK chains to 2 more',mp:26,cd:0,maxCd:4,
+  {id:'chainLightning',tags:['attack'],name:'Chain Lightning',icon:'⛓',desc:'2x ATK chains to 2 more',mp:26,cd:0,maxCd:4,
    effect(p,en){const alive=en.filter(e=>e.hp>0);if(!alive.length)return;Combat.deal(alive[0],Math.floor(p.atk*2));_vfx(alive[0],'spark',CY);for(let i=1;i<Math.min(3,alive.length);i++){Combat.deal(alive[i],Math.floor(p.atk*1.2));_vfx(alive[i],'spark',CY);}DM.say('CHAIN LIGHTNING! Arcing!');}},
-  {id:'hackFlurry',name:'Hack Flurry',icon:'⌨',desc:'0.8x ATK x5 random hits',mp:20,cd:0,maxCd:3,
+  {id:'hackFlurry',tags:['attack'],name:'Hack Flurry',icon:'⌨',desc:'0.8x ATK x5 random hits',mp:20,cd:0,maxCd:3,
    effect(p,en){for(let i=0;i<5;i++){const alive=en.filter(e=>e.hp>0);if(!alive.length)break;const t=alive[Math.floor(Math.random()*alive.length)];Combat.deal(t,Math.floor(p.atk*0.8));_vfx(t,'slash',GR);}DM.say('HACK FLURRY! Rapid input!');}},
-  {id:'scatterShot',name:'Scatter Shot',icon:'💠',desc:'1x ATK hits each enemy twice',mp:26,cd:0,maxCd:4,
+  {id:'scatterShot',tags:['attack'],name:'Scatter Shot',icon:'💠',desc:'1x ATK hits each enemy twice',mp:26,cd:0,maxCd:4,
    effect(p,en){en.forEach(e=>{if(e.hp>0){Combat.deal(e,Math.floor(p.atk));Combat.deal(e,Math.floor(p.atk));}});_aoeVfx(en,'slash',MG);DM.say('SCATTER SHOT! Spread fire!');}},
 
   // ── Cyberpunk themed specials ──
-  {id:'blackIce',name:'Black Ice',icon:'🧊',desc:'2.5x ATK freezing strike',mp:22,cd:0,maxCd:3,
+  {id:'blackIce',tags:['attack'],name:'Black Ice',icon:'🧊',desc:'2.5x ATK freezing strike',mp:22,cd:0,maxCd:3,
    effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*2.5));t.stunTurns=(t.stunTurns||0)+1;_vfx(t,'explode','#44ddff');DM.say('BLACK ICE! Frozen solid!');}},
-  {id:'malwareBlast',name:'Malware Blast',icon:'☢',desc:'1.5x ATK + 50% poison',mp:18,cd:0,maxCd:3,
+  {id:'malwareBlast',tags:['attack'],name:'Malware Blast',icon:'☢',desc:'1.5x ATK + 50% poison',mp:18,cd:0,maxCd:3,
    effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*1.5));t.poison=(t.poison||0)+Math.floor(p.atk*0.5);_vfx(t,'spark',GR);DM.say('MALWARE BLAST! Systems infected!');}},
-  {id:'razorWire',name:'Razor Wire',icon:'🪡',desc:'1.8x ATK bleeds 3 ticks',mp:20,cd:0,maxCd:3,
+  {id:'razorWire',tags:['attack'],name:'Razor Wire',icon:'🪡',desc:'1.8x ATK bleeds 3 ticks',mp:20,cd:0,maxCd:3,
    effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*1.8));t.bleed=(t.bleed||0)+3;_vfx(t,'slash',RD);DM.say('RAZOR WIRE! Lacerated!');}},
-  {id:'thermalDet',name:'Thermal Det',icon:'🔴',desc:'2.5x ATK AoE explosion',mp:28,cd:0,maxCd:4,
+  {id:'thermalDet',tags:['attack'],name:'Thermal Det',icon:'🔴',desc:'2.5x ATK AoE explosion',mp:28,cd:0,maxCd:4,
    effect(p,en){en.forEach(e=>{if(e.hp>0)Combat.deal(e,Math.floor(p.atk*2.5));});_aoeVfx(en,'explode',OR);DM.say('THERMAL DET! Burn radius!');}},
-  {id:'quantumRend',name:'Quantum Rend',icon:'🌌',desc:'3x ATK tears through armor',mp:26,cd:0,maxCd:4,
+  {id:'quantumRend',tags:['attack'],name:'Quantum Rend',icon:'🌌',desc:'3x ATK tears through armor',mp:26,cd:0,maxCd:4,
    effect(p,en){const t=_tgt(en);if(!t)return;const dmg=Math.floor(p.atk*3);t.hp=Math.max(0,t.hp-dmg);_vfx(t,'explode',PU);UI.dmgNumAt(Arena.getEnemyPos(GameState.enemies.indexOf(t)).x,Arena.getEnemyPos(GameState.enemies.indexOf(t)).y,dmg);DM.say('QUANTUM REND! Reality torn!');}},
-  {id:'netRunner',name:'Net Runner',icon:'🕸',desc:'1.5x ATK hits all + stun 1',mp:30,cd:0,maxCd:5,
+  {id:'netRunner',tags:['attack'],name:'Net Runner',icon:'🕸',desc:'1.5x ATK hits all + stun 1',mp:30,cd:0,maxCd:5,
    effect(p,en){en.forEach(e=>{if(e.hp>0){Combat.deal(e,Math.floor(p.atk*1.5));e.stunTurns=(e.stunTurns||0)+1;}});_aoeVfx(en,'spark',CY);DM.say('NET RUNNER! All trapped!');}},
-  {id:'mercShot',name:'Merc Shot',icon:'🎯',desc:'2x ATK always crits',mp:20,cd:0,maxCd:3,
+  {id:'mercShot',tags:['attack'],name:'Merc Shot',icon:'🎯',desc:'2x ATK always crits',mp:20,cd:0,maxCd:3,
    effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*2),true);_vfx(t,'slash',GD);DM.say('MERC SHOT! Bullseye!');}},
-  {id:'plasmaRain',name:'Plasma Rain',icon:'☄',desc:'1x ATK x6 random hits',mp:28,cd:0,maxCd:4,
+  {id:'plasmaRain',tags:['attack'],name:'Plasma Rain',icon:'☄',desc:'1x ATK x6 random hits',mp:28,cd:0,maxCd:4,
    effect(p,en){for(let i=0;i<6;i++){const alive=en.filter(e=>e.hp>0);if(!alive.length)break;const t=alive[Math.floor(Math.random()*alive.length)];Combat.deal(t,Math.floor(p.atk));_vfx(t,'spark',MG);}DM.say('PLASMA RAIN! Incoming!');}},
 ];
 
@@ -4062,73 +4067,73 @@ const _pvfx=(type,clr)=>{const pp=_pp();Arena.spawnVFX(type,pp.x,pp.y,clr);};
 
 const DEFENSIVE_SKILLS = [
   // ── Shields & damage prevention ──
-  {id:'shieldWall',name:'Shield Wall',icon:'🛡',desc:'Block next 2 hits',mp:18,cd:0,maxCd:3,
+  {id:'shieldWall',tags:['shield','defense'],name:'Shield Wall',icon:'🛡',desc:'Block next 2 hits',mp:18,cd:0,maxCd:3,
    effect(p){p.addBuff('dodge',{dodges:2,turns:3});_pvfx('explode','#4488ff');DM.say('SHIELD WALL — fortified!');}},
-  {id:'nanoBarrier',name:'Nano Barrier',icon:'🔰',desc:'+50% DEF for 3 turns',mp:20,cd:0,maxCd:4,
+  {id:'nanoBarrier',tags:['shield','defense'],name:'Nano Barrier',icon:'🔰',desc:'+50% DEF for 3 turns',mp:20,cd:0,maxCd:4,
    effect(p){p.addBuff('defUp',{def:Math.floor(p.baseDef*0.5),turns:3});_pvfx('spark','#44aaff');DM.say('NANO BARRIER — defense online!');}},
-  {id:'hardLight',name:'Hard Light',icon:'💎',desc:'Block next 3 hits',mp:24,cd:0,maxCd:5,
+  {id:'hardLight',tags:['shield','defense'],name:'Hard Light',icon:'💎',desc:'Block next 3 hits',mp:24,cd:0,maxCd:5,
    effect(p){p.addBuff('dodge',{dodges:3,turns:4});_pvfx('explode',CY);DM.say('HARD LIGHT — prism shield!');}},
-  {id:'ironProtocol',name:'Iron Protocol',icon:'🔒',desc:'+80% DEF for 2 turns',mp:22,cd:0,maxCd:4,
+  {id:'ironProtocol',tags:['shield','defense'],name:'Iron Protocol',icon:'🔒',desc:'+80% DEF for 2 turns',mp:22,cd:0,maxCd:4,
    effect(p){p.addBuff('defUp',{def:Math.floor(p.baseDef*0.8),turns:2});_pvfx('spark','#8888ff');DM.say('IRON PROTOCOL — armor locked!');}},
-  {id:'phaseShield',name:'Phase Shield',icon:'🌀',desc:'50% dodge chance 3 turns',mp:20,cd:0,maxCd:4,
+  {id:'phaseShield',tags:['shield','defense'],name:'Phase Shield',icon:'🌀',desc:'50% dodge chance 3 turns',mp:20,cd:0,maxCd:4,
    effect(p){p.addBuff('phaseShield',{dodgeChance:0.5,turns:3});_pvfx('spark',PU);DM.say('PHASE SHIELD — phasing!');}},
-  {id:'ablativeArmor',name:'Ablative Armor',icon:'🪨',desc:'+100% DEF for 1 turn',mp:16,cd:0,maxCd:3,
+  {id:'ablativeArmor',tags:['shield','defense'],name:'Ablative Armor',icon:'🪨',desc:'+100% DEF for 1 turn',mp:16,cd:0,maxCd:3,
    effect(p){p.addBuff('defUp',{def:p.baseDef,turns:1});_pvfx('explode','#aaaacc');DM.say('ABLATIVE ARMOR — maximum plating!');}},
-  {id:'mirrorCoat',name:'Mirror Coat',icon:'🪞',desc:'Block 1 hit + reflect 50%',mp:18,cd:0,maxCd:3,
+  {id:'mirrorCoat',tags:['shield','reflect','defense'],name:'Mirror Coat',icon:'🪞',desc:'Block 1 hit + reflect 50%',mp:18,cd:0,maxCd:3,
    effect(p){p.addBuff('dodge',{dodges:1,turns:2});p.addBuff('reflect',{reflect:0.5,turns:2});_pvfx('spark',CY);DM.say('MIRROR COAT — send it back!');}},
-  {id:'quantumShell',name:'Quantum Shell',icon:'🔮',desc:'Block next 4 hits',mp:30,cd:0,maxCd:6,
+  {id:'quantumShell',tags:['shield','defense'],name:'Quantum Shell',icon:'🔮',desc:'Block next 4 hits',mp:30,cd:0,maxCd:6,
    effect(p){p.addBuff('dodge',{dodges:4,turns:5});_pvfx('explode',MG);DM.say('QUANTUM SHELL — untouchable!');}},
 
   // ── Healing & regeneration ──
-  {id:'repairProto',name:'Repair Protocol',icon:'🔧',desc:'Regen 10% HP for 3 turns',mp:20,cd:0,maxCd:3,
+  {id:'repairProto',tags:['defense'],name:'Repair Protocol',icon:'🔧',desc:'Regen 10% HP for 3 turns',mp:20,cd:0,maxCd:3,
    effect(p){p.addBuff('regen',{regen:Math.floor(p.maxHp*0.1),turns:3});_pvfx('spark',GR);DM.say('REPAIR PROTOCOL — nanobots deployed!');}},
-  {id:'bioSurge',name:'Bio Surge',icon:'💚',desc:'Heal 40% max HP instantly',mp:22,cd:0,maxCd:4,
+  {id:'bioSurge',tags:['defense'],name:'Bio Surge',icon:'💚',desc:'Heal 40% max HP instantly',mp:22,cd:0,maxCd:4,
    effect(p){const h=Math.floor(p.maxHp*0.4);p.hp=Math.min(p.maxHp,p.hp+h);_pvfx('explode','#00ff88');UI.dmgNumAt(_pp().x,_pp().y,h,'heal');DM.say('BIO SURGE — systems restored!');}},
-  {id:'nanoSwarm',name:'Nano Swarm',icon:'🐝',desc:'Regen 15% HP for 2 turns',mp:20,cd:0,maxCd:3,
+  {id:'nanoSwarm',tags:['defense'],name:'Nano Swarm',icon:'🐝',desc:'Regen 15% HP for 2 turns',mp:20,cd:0,maxCd:3,
    effect(p){p.addBuff('regen',{regen:Math.floor(p.maxHp*0.15),turns:2});_pvfx('spark','#88ff44');DM.say('NANO SWARM — repairing!');}},
-  {id:'synthBlood',name:'Synth Blood',icon:'🩸',desc:'Heal 25% HP + regen 5% x3',mp:24,cd:0,maxCd:4,
+  {id:'synthBlood',tags:['defense'],name:'Synth Blood',icon:'🩸',desc:'Heal 25% HP + regen 5% x3',mp:24,cd:0,maxCd:4,
    effect(p){const h=Math.floor(p.maxHp*0.25);p.hp=Math.min(p.maxHp,p.hp+h);p.addBuff('regen',{regen:Math.floor(p.maxHp*0.05),turns:3});_pvfx('explode',RD);UI.dmgNumAt(_pp().x,_pp().y,h,'heal');DM.say('SYNTH BLOOD — transfusion!');}},
-  {id:'emergencyPatch',name:'Emergency Patch',icon:'🩹',desc:'Heal 60% HP if below 30%',mp:18,cd:0,maxCd:5,
+  {id:'emergencyPatch',tags:['defense'],name:'Emergency Patch',icon:'🩹',desc:'Heal 60% HP if below 30%',mp:18,cd:0,maxCd:5,
    effect(p){const low=p.hp/p.maxHp<0.3;const h=Math.floor(p.maxHp*(low?0.6:0.15));p.hp=Math.min(p.maxHp,p.hp+h);_pvfx('explode',low?GR:'#668866');UI.dmgNumAt(_pp().x,_pp().y,h,'heal');DM.say(low?'EMERGENCY PATCH — critical save!':'EMERGENCY PATCH — minor fix.');}},
-  {id:'cellReboot',name:'Cell Reboot',icon:'♻',desc:'Heal 30% HP + cleanse debuffs',mp:22,cd:0,maxCd:4,
+  {id:'cellReboot',tags:['defense'],name:'Cell Reboot',icon:'♻',desc:'Heal 30% HP + cleanse debuffs',mp:22,cd:0,maxCd:4,
    effect(p){const h=Math.floor(p.maxHp*0.3);p.hp=Math.min(p.maxHp,p.hp+h);p.debuffs=[];_pvfx('explode','#44ffaa');UI.dmgNumAt(_pp().x,_pp().y,h,'heal');DM.say('CELL REBOOT — system clean!');}},
-  {id:'overcharge',name:'Overcharge',icon:'🔋',desc:'Restore 50% MP',mp:0,cd:0,maxCd:5,
+  {id:'overcharge',tags:['defense'],name:'Overcharge',icon:'🔋',desc:'Restore 50% MP',mp:0,cd:0,maxCd:5,
    effect(p){const r=Math.floor(p.maxMp*0.5);p.mp=Math.min(p.maxMp,p.mp+r);_pvfx('spark','#aa66ff');DM.say('OVERCHARGE — power restored!');}},
 
   // ── Reflect & thorns ──
-  {id:'firewall',name:'Firewall',icon:'🔥',desc:'Reflect 30% damage 3 turns',mp:22,cd:0,maxCd:4,
+  {id:'firewall',tags:['reflect','defense'],name:'Firewall',icon:'🔥',desc:'Reflect 30% damage 3 turns',mp:22,cd:0,maxCd:4,
    effect(p){p.addBuff('reflect',{reflect:0.3,turns:3});_pvfx('explode',OR);DM.say('FIREWALL — damage reflected!');}},
-  {id:'thornsProtocol',name:'Thorns Protocol',icon:'🌵',desc:'Reflect 50% damage 2 turns',mp:24,cd:0,maxCd:4,
+  {id:'thornsProtocol',tags:['reflect','defense'],name:'Thorns Protocol',icon:'🌵',desc:'Reflect 50% damage 2 turns',mp:24,cd:0,maxCd:4,
    effect(p){p.addBuff('reflect',{reflect:0.5,turns:2});_pvfx('spark',GR);DM.say('THORNS PROTOCOL — touch and burn!');}},
-  {id:'voltSkin',name:'Volt Skin',icon:'⚡',desc:'Reflect 20% + stun attackers 2t',mp:22,cd:0,maxCd:4,
+  {id:'voltSkin',tags:['reflect','defense'],name:'Volt Skin',icon:'⚡',desc:'Reflect 20% + stun attackers 2t',mp:22,cd:0,maxCd:4,
    effect(p){p.addBuff('reflect',{reflect:0.2,turns:2});p.addBuff('counterStun',{turns:2});_pvfx('spark',CY);DM.say('VOLT SKIN — shocking touch!');}},
-  {id:'venomAura',name:'Venom Aura',icon:'☠',desc:'Poison attackers for 3 turns',mp:18,cd:0,maxCd:3,
+  {id:'venomAura',tags:['reflect','defense'],name:'Venom Aura',icon:'☠',desc:'Poison attackers for 3 turns',mp:18,cd:0,maxCd:3,
    effect(p){p.addBuff('venomAura',{poisonDmg:Math.floor(p.atk*0.5),turns:3});_pvfx('spark','#44ff00');DM.say('VENOM AURA — toxic field!');}},
 
   // ── Crowd control ──
-  {id:'empPulse',name:'EMP Pulse',icon:'📡',desc:'Stun all enemies 1 turn',mp:25,cd:0,maxCd:5,
+  {id:'empPulse',tags:['stun','cc','defense'],name:'EMP Pulse',icon:'📡',desc:'Stun all enemies 1 turn',mp:25,cd:0,maxCd:5,
    effect(p,en){en.forEach(e=>{if(e.hp>0)e.stunTurns=(e.stunTurns||0)+1;});_aoeVfx(en,'spark',CY);DM.say('EMP PULSE — systems jammed!');}},
-  {id:'flashbang',name:'Flashbang',icon:'💡',desc:'Stun all enemies 2 turns',mp:30,cd:0,maxCd:6,
+  {id:'flashbang',tags:['stun','cc','defense'],name:'Flashbang',icon:'💡',desc:'Stun all enemies 2 turns',mp:30,cd:0,maxCd:6,
    effect(p,en){en.forEach(e=>{if(e.hp>0)e.stunTurns=(e.stunTurns||0)+2;});_aoeVfx(en,'explode','#ffffff');DM.say('FLASHBANG — blinded!');}},
-  {id:'iceWall',name:'Ice Wall',icon:'🧊',desc:'Stun 1 enemy + block 1 hit',mp:18,cd:0,maxCd:3,
+  {id:'iceWall',tags:['stun','cc','dodge','defense'],name:'Ice Wall',icon:'🧊',desc:'Stun 1 enemy + block 1 hit',mp:18,cd:0,maxCd:3,
    effect(p,en){const t=_tgt(en);if(t)t.stunTurns=(t.stunTurns||0)+1;p.addBuff('dodge',{dodges:1,turns:2});_pvfx('explode','#88ddff');DM.say('ICE WALL — frozen barrier!');}},
-  {id:'smokeBomb',name:'Smoke Bomb',icon:'💨',desc:'Block 2 hits + stun 1 enemy',mp:20,cd:0,maxCd:4,
+  {id:'smokeBomb',tags:['stun','cc','dodge','defense'],name:'Smoke Bomb',icon:'💨',desc:'Block 2 hits + stun 1 enemy',mp:20,cd:0,maxCd:4,
    effect(p,en){p.addBuff('dodge',{dodges:2,turns:3});const t=_tgt(en);if(t)t.stunTurns=(t.stunTurns||0)+1;_pvfx('explode','#666688');DM.say('SMOKE BOMB — vanished!');}},
-  {id:'gravLock',name:'Grav Lock',icon:'🕳',desc:'Stun strongest enemy 2 turns',mp:22,cd:0,maxCd:4,
+  {id:'gravLock',tags:['stun','cc','defense'],name:'Grav Lock',icon:'🕳',desc:'Stun strongest enemy 2 turns',mp:22,cd:0,maxCd:4,
    effect(p,en){const alive=en.filter(e=>e.hp>0);if(!alive.length)return;const t=alive.reduce((a,b)=>b.atk>a.atk?b:a);t.stunTurns=(t.stunTurns||0)+2;const pos=Arena.getEnemyPos(GameState.enemies.indexOf(t));Arena.spawnVFX('explode',pos.x,pos.y,PU);DM.say('GRAV LOCK — pinned down!');}},
 
   // ── Stat buffs ──
-  {id:'adrenalineShot',name:'Adrenaline Shot',icon:'💉',desc:'+50% SPD for 3 turns',mp:16,cd:0,maxCd:3,
+  {id:'adrenalineShot',tags:['defense'],name:'Adrenaline Shot',icon:'💉',desc:'+50% SPD for 3 turns',mp:16,cd:0,maxCd:3,
    effect(p){p.addBuff('spdUp',{spd:Math.floor(p.baseSpd*0.5),turns:3});_pvfx('spark',GR);DM.say('ADRENALINE SHOT — lightning fast!');}},
-  {id:'chromePlating',name:'Chrome Plating',icon:'🪙',desc:'+40% DEF + 20% ATK 2 turns',mp:22,cd:0,maxCd:4,
+  {id:'chromePlating',tags:['defense'],name:'Chrome Plating',icon:'🪙',desc:'+40% DEF + 20% ATK 2 turns',mp:22,cd:0,maxCd:4,
    effect(p){p.addBuff('defUp',{def:Math.floor(p.baseDef*0.4),turns:2});p.addBuff('atkUp',{atk:Math.floor(p.baseAtk*0.2),turns:2});_pvfx('spark',GD);DM.say('CHROME PLATING — upgraded!');}},
-  {id:'combatStim',name:'Combat Stim',icon:'💊',desc:'+30% ATK + SPD for 2 turns',mp:20,cd:0,maxCd:4,
+  {id:'combatStim',tags:['defense'],name:'Combat Stim',icon:'💊',desc:'+30% ATK + SPD for 2 turns',mp:20,cd:0,maxCd:4,
    effect(p){p.addBuff('atkUp',{atk:Math.floor(p.baseAtk*0.3),turns:2});p.addBuff('spdUp',{spd:Math.floor(p.baseSpd*0.3),turns:2});_pvfx('spark',OR);DM.say('COMBAT STIM — overdrive!');}},
-  {id:'fortressMode',name:'Fortress Mode',icon:'🏰',desc:'+100% DEF but -50% SPD 3t',mp:18,cd:0,maxCd:4,
+  {id:'fortressMode',tags:['defense'],name:'Fortress Mode',icon:'🏰',desc:'+100% DEF but -50% SPD 3t',mp:18,cd:0,maxCd:4,
    effect(p){p.addBuff('defUp',{def:p.baseDef,turns:3});p.addBuff('spdDown',{spd:-Math.floor(p.baseSpd*0.5),turns:3});_pvfx('explode','#4466aa');DM.say('FORTRESS MODE — immovable!');}},
-  {id:'cloakField',name:'Cloak Field',icon:'🌫',desc:'70% dodge chance 2 turns',mp:24,cd:0,maxCd:5,
+  {id:'cloakField',tags:['dodge','evade','defense'],name:'Cloak Field',icon:'🌫',desc:'70% dodge chance 2 turns',mp:24,cd:0,maxCd:5,
    effect(p){p.addBuff('phaseShield',{dodgeChance:0.7,turns:2});_pvfx('spark',PU);DM.say('CLOAK FIELD — invisible!');}},
-  {id:'deadManSwitch',name:'Dead Man Switch',icon:'💀',desc:'If below 20% HP heal 50%+block 2',mp:20,cd:0,maxCd:5,
+  {id:'deadManSwitch',tags:['defense'],name:'Dead Man Switch',icon:'💀',desc:'If below 20% HP heal 50%+block 2',mp:20,cd:0,maxCd:5,
    effect(p){const low=p.hp/p.maxHp<0.2;if(low){const h=Math.floor(p.maxHp*0.5);p.hp=Math.min(p.maxHp,p.hp+h);p.addBuff('dodge',{dodges:2,turns:2});UI.dmgNumAt(_pp().x,_pp().y,h,'heal');_pvfx('explode',RD);DM.say('DEAD MAN SWITCH — not today!');}else{const h=Math.floor(p.maxHp*0.1);p.hp=Math.min(p.maxHp,p.hp+h);UI.dmgNumAt(_pp().x,_pp().y,h,'heal');_pvfx('spark','#886666');DM.say('DEAD MAN SWITCH — standby.');}}},
 ];
 
@@ -4734,73 +4739,73 @@ const WEAPONS = [
 // ── POTIONS: 30 potions that activate buffs — added as usable spells ──
 const POTIONS = [
   // ── Healing potions (6) ──
-  {id:'nanoVial',name:'Nano Vial',icon:'🧪',desc:'Heal 30% HP',mp:12,cd:0,maxCd:3,type:'Heal',
+  {id:'nanoVial',tags:['potion'],name:'Nano Vial',icon:'🧪',desc:'Heal 30% HP',mp:12,cd:0,maxCd:3,type:'Heal',
    effect(p){const h=Math.floor(p.maxHp*0.3);p.hp=Math.min(p.maxHp,p.hp+h);_pvfx('explode','#00ff88');UI.dmgNumAt(_pp().x,_pp().y,h,'heal');DM.say('NANO VIAL — patched up!');}},
-  {id:'bioElixir',name:'Bio Elixir',icon:'🧪',desc:'Heal 50% HP',mp:20,cd:0,maxCd:4,type:'Heal',
+  {id:'bioElixir',tags:['potion'],name:'Bio Elixir',icon:'🧪',desc:'Heal 50% HP',mp:20,cd:0,maxCd:4,type:'Heal',
    effect(p){const h=Math.floor(p.maxHp*0.5);p.hp=Math.min(p.maxHp,p.hp+h);_pvfx('explode','#44ff88');UI.dmgNumAt(_pp().x,_pp().y,h,'heal');DM.say('BIO ELIXIR — fully restored!');}},
-  {id:'synthSerum',name:'Synth Serum',icon:'💉',desc:'Heal 20% + regen 10% x3',mp:16,cd:0,maxCd:3,type:'Heal',
+  {id:'synthSerum',tags:['potion'],name:'Synth Serum',icon:'💉',desc:'Heal 20% + regen 10% x3',mp:16,cd:0,maxCd:3,type:'Heal',
    effect(p){const h=Math.floor(p.maxHp*0.2);p.hp=Math.min(p.maxHp,p.hp+h);p.addBuff('regen',{regen:Math.floor(p.maxHp*0.1),turns:3});_pvfx('spark',GR);UI.dmgNumAt(_pp().x,_pp().y,h,'heal');DM.say('SYNTH SERUM — regenerating!');}},
-  {id:'reviveDose',name:'Revive Dose',icon:'💊',desc:'If below 25% heal 60%',mp:14,cd:0,maxCd:5,type:'Heal',
+  {id:'reviveDose',tags:['potion'],name:'Revive Dose',icon:'💊',desc:'If below 25% heal 60%',mp:14,cd:0,maxCd:5,type:'Heal',
    effect(p){const low=p.hp/p.maxHp<0.25;const h=Math.floor(p.maxHp*(low?0.6:0.15));p.hp=Math.min(p.maxHp,p.hp+h);_pvfx('explode',low?GR:'#668866');UI.dmgNumAt(_pp().x,_pp().y,h,'heal');DM.say(low?'REVIVE DOSE — back from the edge!':'REVIVE DOSE — small boost.');}},
-  {id:'bloodPack',name:'Blood Pack',icon:'🩸',desc:'Heal 40% + cleanse debuffs',mp:18,cd:0,maxCd:4,type:'Heal',
+  {id:'bloodPack',tags:['potion'],name:'Blood Pack',icon:'🩸',desc:'Heal 40% + cleanse debuffs',mp:18,cd:0,maxCd:4,type:'Heal',
    effect(p){const h=Math.floor(p.maxHp*0.4);p.hp=Math.min(p.maxHp,p.hp+h);p.debuffs=[];_pvfx('explode','#ff4466');UI.dmgNumAt(_pp().x,_pp().y,h,'heal');DM.say('BLOOD PACK — system purge!');}},
-  {id:'quickPatch',name:'Quick Patch',icon:'🩹',desc:'Heal 15% HP (low cost)',mp:8,cd:0,maxCd:2,type:'Heal',
+  {id:'quickPatch',tags:['potion'],name:'Quick Patch',icon:'🩹',desc:'Heal 15% HP (low cost)',mp:8,cd:0,maxCd:2,type:'Heal',
    effect(p){const h=Math.floor(p.maxHp*0.15);p.hp=Math.min(p.maxHp,p.hp+h);_pvfx('spark','#88ffaa');UI.dmgNumAt(_pp().x,_pp().y,h,'heal');DM.say('QUICK PATCH — minor fix!');}},
 
   // ── Power potions (6) ──
-  {id:'berserkerShot',name:'Berserker Shot',icon:'🔴',desc:'+60% ATK for 3 turns',mp:18,cd:0,maxCd:4,type:'Power',
+  {id:'berserkerShot',tags:['potion'],name:'Berserker Shot',icon:'🔴',desc:'+60% ATK for 3 turns',mp:18,cd:0,maxCd:4,type:'Power',
    effect(p){p.addBuff('atkUp',{atk:Math.floor(p.baseAtk*0.6),turns:3});_pvfx('explode',RD);DM.say('BERSERKER SHOT — rage unleashed!');}},
-  {id:'precisionDrop',name:'Precision Drop',icon:'🎯',desc:'+40% ATK + crit 3 turns',mp:16,cd:0,maxCd:3,type:'Power',
+  {id:'precisionDrop',tags:['potion'],name:'Precision Drop',icon:'🎯',desc:'+40% ATK + crit 3 turns',mp:16,cd:0,maxCd:3,type:'Power',
    effect(p){p.addBuff('atkUp',{atk:Math.floor(p.baseAtk*0.4),turns:3});p.critBonus+=0.15;_pvfx('spark',GD);DM.say('PRECISION DROP — locked on!');}},
-  {id:'overloadTonic',name:'Overload Tonic',icon:'⚡',desc:'+80% ATK for 2 turns',mp:22,cd:0,maxCd:5,type:'Power',
+  {id:'overloadTonic',tags:['potion'],name:'Overload Tonic',icon:'⚡',desc:'+80% ATK for 2 turns',mp:22,cd:0,maxCd:5,type:'Power',
    effect(p){p.addBuff('atkUp',{atk:Math.floor(p.baseAtk*0.8),turns:2});_pvfx('explode',OR);DM.say('OVERLOAD TONIC — maximum power!');}},
-  {id:'venomCoat',name:'Venom Coat',icon:'☠',desc:'Poison all enemies 3 turns',mp:16,cd:0,maxCd:3,type:'Power',
+  {id:'venomCoat',tags:['potion'],name:'Venom Coat',icon:'☠',desc:'Poison all enemies 3 turns',mp:16,cd:0,maxCd:3,type:'Power',
    effect(p,en){en.forEach(e=>{if(e.hp>0)e.poison=(e.poison||0)+Math.floor(p.atk*0.4);});_aoeVfx(en,'spark','#44ff00');DM.say('VENOM COAT — toxic spread!');}},
-  {id:'critElixir',name:'Crit Elixir',icon:'💎',desc:'+30% crit chance 4 turns',mp:14,cd:0,maxCd:4,type:'Power',
+  {id:'critElixir',tags:['potion'],name:'Crit Elixir',icon:'💎',desc:'+30% crit chance 4 turns',mp:14,cd:0,maxCd:4,type:'Power',
    effect(p){p.critBonus+=0.3;_pvfx('spark',MG);DM.say('CRIT ELIXIR — sharpened senses!');}},
-  {id:'blitzDose',name:'Blitz Dose',icon:'💨',desc:'+50% SPD + ATK for 2 turns',mp:18,cd:0,maxCd:4,type:'Power',
+  {id:'blitzDose',tags:['potion'],name:'Blitz Dose',icon:'💨',desc:'+50% SPD + ATK for 2 turns',mp:18,cd:0,maxCd:4,type:'Power',
    effect(p){p.addBuff('spdUp',{spd:Math.floor(p.baseSpd*0.5),turns:2});p.addBuff('atkUp',{atk:Math.floor(p.baseAtk*0.5),turns:2});_pvfx('spark',CY);DM.say('BLITZ DOSE — hyperspeed!');}},
 
   // ── Shield potions (6) ──
-  {id:'ironBrew',name:'Iron Brew',icon:'🛡',desc:'+60% DEF for 3 turns',mp:16,cd:0,maxCd:3,type:'Shield',
+  {id:'ironBrew',tags:['potion'],name:'Iron Brew',icon:'🛡',desc:'+60% DEF for 3 turns',mp:16,cd:0,maxCd:3,type:'Shield',
    effect(p){p.addBuff('defUp',{def:Math.floor(p.baseDef*0.6),turns:3});_pvfx('spark','#4488ff');DM.say('IRON BREW — armor hardened!');}},
-  {id:'ghostDraft',name:'Ghost Draft',icon:'👻',desc:'Block next 2 hits',mp:14,cd:0,maxCd:3,type:'Shield',
+  {id:'ghostDraft',tags:['potion'],name:'Ghost Draft',icon:'👻',desc:'Block next 2 hits',mp:14,cd:0,maxCd:3,type:'Shield',
    effect(p){p.addBuff('dodge',{dodges:2,turns:3});_pvfx('spark',PU);DM.say('GHOST DRAFT — phasing!');}},
-  {id:'mirrorDraught',name:'Mirror Draught',icon:'🪞',desc:'Reflect 40% damage 3 turns',mp:18,cd:0,maxCd:4,type:'Shield',
+  {id:'mirrorDraught',tags:['potion'],name:'Mirror Draught',icon:'🪞',desc:'Reflect 40% damage 3 turns',mp:18,cd:0,maxCd:4,type:'Shield',
    effect(p){p.addBuff('reflect',{reflect:0.4,turns:3});_pvfx('explode',CY);DM.say('MIRROR DRAUGHT — send it back!');}},
-  {id:'stoneFlask',name:'Stone Flask',icon:'🪨',desc:'+100% DEF for 1 turn',mp:12,cd:0,maxCd:3,type:'Shield',
+  {id:'stoneFlask',tags:['potion'],name:'Stone Flask',icon:'🪨',desc:'+100% DEF for 1 turn',mp:12,cd:0,maxCd:3,type:'Shield',
    effect(p){p.addBuff('defUp',{def:p.baseDef,turns:1});_pvfx('explode','#aaaacc');DM.say('STONE FLASK — immovable!');}},
-  {id:'voidInk',name:'Void Ink',icon:'🌑',desc:'60% dodge chance 2 turns',mp:18,cd:0,maxCd:4,type:'Shield',
+  {id:'voidInk',tags:['potion'],name:'Void Ink',icon:'🌑',desc:'60% dodge chance 2 turns',mp:18,cd:0,maxCd:4,type:'Shield',
    effect(p){p.addBuff('phaseShield',{dodgeChance:0.6,turns:2});_pvfx('spark','#6600cc');DM.say('VOID INK — invisible!');}},
-  {id:'absorbGel',name:'Absorb Gel',icon:'🫧',desc:'Block 3 hits',mp:20,cd:0,maxCd:5,type:'Shield',
+  {id:'absorbGel',tags:['potion'],name:'Absorb Gel',icon:'🫧',desc:'Block 3 hits',mp:20,cd:0,maxCd:5,type:'Shield',
    effect(p){p.addBuff('dodge',{dodges:3,turns:4});_pvfx('explode','#88ddff');DM.say('ABSORB GEL — shielded!');}},
 
   // ── Utility potions (6) ──
-  {id:'hackTonic',name:'Hack Tonic',icon:'💾',desc:'Restore 40% MP',mp:0,cd:0,maxCd:4,type:'Utility',
+  {id:'hackTonic',tags:['potion'],name:'Hack Tonic',icon:'💾',desc:'Restore 40% MP',mp:0,cd:0,maxCd:4,type:'Utility',
    effect(p){const r=Math.floor(p.maxMp*0.4);p.mp=Math.min(p.maxMp,p.mp+r);_pvfx('spark','#aa66ff');DM.say('HACK TONIC — power restored!');}},
-  {id:'stunBomb',name:'Stun Bomb',icon:'💡',desc:'Stun all enemies 1 turn',mp:16,cd:0,maxCd:4,type:'Utility',
+  {id:'stunBomb',tags:['potion'],name:'Stun Bomb',icon:'💡',desc:'Stun all enemies 1 turn',mp:16,cd:0,maxCd:4,type:'Utility',
    effect(p,en){en.forEach(e=>{if(e.hp>0)e.stunTurns=(e.stunTurns||0)+1;});_aoeVfx(en,'spark','#ffffff');DM.say('STUN BOMB — blinded!');}},
-  {id:'cleanseDraft',name:'Cleanse Draft',icon:'♻',desc:'Remove all debuffs + 10% HP',mp:10,cd:0,maxCd:3,type:'Utility',
+  {id:'cleanseDraft',tags:['potion'],name:'Cleanse Draft',icon:'♻',desc:'Remove all debuffs + 10% HP',mp:10,cd:0,maxCd:3,type:'Utility',
    effect(p){p.debuffs=[];const h=Math.floor(p.maxHp*0.1);p.hp=Math.min(p.maxHp,p.hp+h);_pvfx('spark','#44ffaa');UI.dmgNumAt(_pp().x,_pp().y,h,'heal');DM.say('CLEANSE DRAFT — purified!');}},
-  {id:'timeDilate',name:'Time Dilate',icon:'⏳',desc:'+80% SPD for 2 turns',mp:14,cd:0,maxCd:4,type:'Utility',
+  {id:'timeDilate',tags:['potion'],name:'Time Dilate',icon:'⏳',desc:'+80% SPD for 2 turns',mp:14,cd:0,maxCd:4,type:'Utility',
    effect(p){p.addBuff('spdUp',{spd:Math.floor(p.baseSpd*0.8),turns:2});_pvfx('spark',GR);DM.say('TIME DILATE — slowing time!');}},
-  {id:'gravFlask',name:'Grav Flask',icon:'🕳',desc:'Stun strongest enemy 2 turns',mp:16,cd:0,maxCd:4,type:'Utility',
+  {id:'gravFlask',tags:['potion'],name:'Grav Flask',icon:'🕳',desc:'Stun strongest enemy 2 turns',mp:16,cd:0,maxCd:4,type:'Utility',
    effect(p,en){const alive=en.filter(e=>e.hp>0);if(!alive.length)return;const t=alive.reduce((a,b)=>b.atk>a.atk?b:a);t.stunTurns=(t.stunTurns||0)+2;const pos=Arena.getEnemyPos(GameState.enemies.indexOf(t));Arena.spawnVFX('explode',pos.x,pos.y,PU);DM.say('GRAV FLASK — pinned!');}},
-  {id:'adrenalineVial',name:'Adrenaline Vial',icon:'💉',desc:'+30% ATK SPD DEF 2 turns',mp:20,cd:0,maxCd:5,type:'Utility',
+  {id:'adrenalineVial',tags:['potion'],name:'Adrenaline Vial',icon:'💉',desc:'+30% ATK SPD DEF 2 turns',mp:20,cd:0,maxCd:5,type:'Utility',
    effect(p){p.addBuff('atkUp',{atk:Math.floor(p.baseAtk*0.3),turns:2});p.addBuff('spdUp',{spd:Math.floor(p.baseSpd*0.3),turns:2});p.addBuff('defUp',{def:Math.floor(p.baseDef*0.3),turns:2});_pvfx('explode',GD);DM.say('ADRENALINE VIAL — full boost!');}},
 
   // ── Exotic potions (6) ──
-  {id:'chaosFlask',name:'Chaos Flask',icon:'🌀',desc:'Random: heal, buff ATK, or shield',mp:14,cd:0,maxCd:3,type:'Exotic',
+  {id:'chaosFlask',tags:['potion'],name:'Chaos Flask',icon:'🌀',desc:'Random: heal, buff ATK, or shield',mp:14,cd:0,maxCd:3,type:'Exotic',
    effect(p){const r=Math.floor(Math.random()*3);if(r===0){const h=Math.floor(p.maxHp*0.35);p.hp=Math.min(p.maxHp,p.hp+h);UI.dmgNumAt(_pp().x,_pp().y,h,'heal');_pvfx('explode',GR);DM.say('CHAOS FLASK — healed!');}else if(r===1){p.addBuff('atkUp',{atk:Math.floor(p.baseAtk*0.5),turns:3});_pvfx('explode',OR);DM.say('CHAOS FLASK — power surge!');}else{p.addBuff('dodge',{dodges:2,turns:3});_pvfx('explode',PU);DM.say('CHAOS FLASK — shielded!');}}},
-  {id:'glitchBrew',name:'Glitch Brew',icon:'👾',desc:'Random buff: mega ATK or mega DEF',mp:16,cd:0,maxCd:4,type:'Exotic',
+  {id:'glitchBrew',tags:['potion'],name:'Glitch Brew',icon:'👾',desc:'Random buff: mega ATK or mega DEF',mp:16,cd:0,maxCd:4,type:'Exotic',
    effect(p){if(Math.random()<0.5){p.addBuff('atkUp',{atk:Math.floor(p.baseAtk*0.8),turns:2});_pvfx('explode',RD);DM.say('GLITCH BREW — attack overload!');}else{p.addBuff('defUp',{def:Math.floor(p.baseDef*0.8),turns:2});_pvfx('explode','#4488ff');DM.say('GLITCH BREW — defense overload!');}}},
-  {id:'quantumDrop',name:'Quantum Drop',icon:'🌌',desc:'Heal 20% + random mega buff',mp:18,cd:0,maxCd:4,type:'Exotic',
+  {id:'quantumDrop',tags:['potion'],name:'Quantum Drop',icon:'🌌',desc:'Heal 20% + random mega buff',mp:18,cd:0,maxCd:4,type:'Exotic',
    effect(p){const h=Math.floor(p.maxHp*0.2);p.hp=Math.min(p.maxHp,p.hp+h);UI.dmgNumAt(_pp().x,_pp().y,h,'heal');const buffs=[['atkUp',{atk:Math.floor(p.baseAtk*0.6),turns:2}],['spdUp',{spd:Math.floor(p.baseSpd*0.6),turns:2}],['defUp',{def:Math.floor(p.baseDef*0.6),turns:2}]];const b=buffs[Math.floor(Math.random()*buffs.length)];p.addBuff(b[0],b[1]);_pvfx('explode',MG);DM.say('QUANTUM DROP — reality shifted!');}},
-  {id:'dataDrink',name:'Data Drink',icon:'💾',desc:'Restore 30% HP + 30% MP',mp:0,cd:0,maxCd:4,type:'Exotic',
+  {id:'dataDrink',tags:['potion'],name:'Data Drink',icon:'💾',desc:'Restore 30% HP + 30% MP',mp:0,cd:0,maxCd:4,type:'Exotic',
    effect(p){const h=Math.floor(p.maxHp*0.3);p.hp=Math.min(p.maxHp,p.hp+h);const m=Math.floor(p.maxMp*0.3);p.mp=Math.min(p.maxMp,p.mp+m);_pvfx('explode','#aa88ff');UI.dmgNumAt(_pp().x,_pp().y,h,'heal');DM.say('DATA DRINK — dual restore!');}},
-  {id:'neonShake',name:'Neon Shake',icon:'🥤',desc:'All stats +20% for 3 turns',mp:20,cd:0,maxCd:5,type:'Exotic',
+  {id:'neonShake',tags:['potion'],name:'Neon Shake',icon:'🥤',desc:'All stats +20% for 3 turns',mp:20,cd:0,maxCd:5,type:'Exotic',
    effect(p){p.addBuff('atkUp',{atk:Math.floor(p.baseAtk*0.2),turns:3});p.addBuff('defUp',{def:Math.floor(p.baseDef*0.2),turns:3});p.addBuff('spdUp',{spd:Math.floor(p.baseSpd*0.2),turns:3});_pvfx('explode',CY);DM.say('NEON SHAKE — balanced boost!');}},
-  {id:'voidDrops',name:'Void Drops',icon:'🖤',desc:'Damage self 15% but +100% ATK 2t',mp:10,cd:0,maxCd:4,type:'Exotic',
+  {id:'voidDrops',tags:['potion'],name:'Void Drops',icon:'🖤',desc:'Damage self 15% but +100% ATK 2t',mp:10,cd:0,maxCd:4,type:'Exotic',
    effect(p){const d=Math.floor(p.maxHp*0.15);p.hp=Math.max(1,p.hp-d);p.addBuff('atkUp',{atk:p.baseAtk,turns:2});_pvfx('explode',RD);DM.say('VOID DROPS — pain is power!');}},
 ];
 
@@ -4936,6 +4941,7 @@ class Enemy {
     this.baseDef=type.def||0; this.def=this.baseDef; this.baseSpd=type.spd;
     this.actionCounter=0; this.buffs=[]; this.debuffs=[];
     this.turnCount=0; this.phase=1; this.deathTimer=0;
+    this.telegraph=null; // Telegraph system (Phase 1.1)
     this.animState='idle.base'; this.animTimer=0; this.lowHpSaid=false;
   }
   addBuff(id,p){this.buffs=this.buffs.filter(b=>b.id!==id);this.buffs.push({id,...p});this.recalc();}
@@ -4962,6 +4968,390 @@ class Enemy {
     const pct=this.hp/this.maxHp,np=pct>.67?1:pct>.34?2:3;
     if(np!==this.phase){this.phase=np;this.ability.fn(this,GameState.player,np);}
   }
+}
+
+// ============================================================
+// TELEGRAPH SYSTEM — Phase 1.1
+// ============================================================
+
+function determineTelegraph(enemy, incomingDamage, player) {
+    const damageRatio = incomingDamage / Math.max(1, player.hp);
+    const isSpecial = enemy.ability &&
+        ['aoe', 'execute', 'multi_hit', 'special'].includes(enemy.ability.subtype);
+    const isBoss = enemy.id === 'quantumBoss' || enemy.id === 'theArchitect' || (enemy.maxHp >= 200);
+
+    if (isBoss) return true;
+    if (isSpecial) return true;
+    if (damageRatio > 0.40) return true;
+    if (damageRatio > 0.20) return Math.random() < 0.5;
+    return false;
+}
+
+function buildTelegraph(enemy, incomingDamage, player) {
+    const isBoss = enemy.id === 'quantumBoss' || enemy.id === 'theArchitect' || (enemy.maxHp >= 200);
+
+    const abilitySubtype = enemy.ability?.subtype || 'physical';
+    const counterMap = {
+        'heavy_physical': 'shield',
+        'aoe_physical':   'shield',
+        'heavy_magical':  'stun',
+        'execute':        'stun',
+        'multi_hit':      'dodge',
+        'sweep':          'dodge',
+        'magical':        'reflect',
+        'beam':           'reflect',
+        'physical':       'shield'
+    };
+    const counterType = counterMap[abilitySubtype] || 'shield';
+
+    const ratio = incomingDamage / Math.max(1, player.hp);
+    let threatLevel = 'LOW';
+    if (ratio >= 0.75) threatLevel = 'LETHAL';
+    else if (ratio >= 0.50) threatLevel = 'HIGH';
+    else if (ratio >= 0.25) threatLevel = 'MEDIUM';
+
+    const attackName = enemy.ability?.name || `${enemy.name} STRIKE`;
+
+    return {
+        active: true,
+        attackName: attackName,
+        attackType: abilitySubtype,
+        turnsRemaining: isBoss ? 2 : 1,
+        counterType: counterType,
+        warningText: `\u26A1 ${enemy.name}: ${attackName.toUpperCase()}`,
+        damage: incomingDamage,
+        threatLevel: threatLevel
+    };
+}
+
+function checkPlayerCounter(telegraph, playerLastAction) {
+    if (!telegraph || !playerLastAction) return null;
+
+    const counterMap = {
+        'shield':  ['shield', 'defense'],
+        'stun':    ['stun', 'cc'],
+        'dodge':   ['dodge', 'evade'],
+        'reflect': ['reflect']
+    };
+
+    const validActions = counterMap[telegraph.counterType] || [];
+    const isCounter = validActions.some(tag =>
+        playerLastAction.type === tag ||
+        (playerLastAction.tags && playerLastAction.tags.includes(tag))
+    );
+
+    if (!isCounter) return null;
+
+    const bonuses = {
+        'shield':  { type: 'negate_and_retaliate', damageMult: 0, retaliateRatio: 0.20 },
+        'stun':    { type: 'cancel_and_skip', damageMult: 0 },
+        'dodge':   { type: 'evade_and_empower', damageMult: 0, nextAttackMult: 1.5 },
+        'reflect': { type: 'reflect_damage', damageMult: 0, reflectMult: 1.5 }
+    };
+
+    return bonuses[telegraph.counterType] || null;
+}
+
+function applyCounterBonus(counterResult, enemy, player) {
+    const eIdx = GameState.enemies.indexOf(enemy);
+    const ePos = Arena.getEnemyPos(eIdx);
+    const pPos = Arena.getPlayerPos();
+    switch (counterResult.type) {
+        case 'negate_and_retaliate': {
+            const retaliationDmg = Math.floor(counterResult.retaliateRatio * enemy.atk);
+            enemy.hp = Math.max(0, enemy.hp - retaliationDmg);
+            Arena.spawnText(`COUNTER! -${retaliationDmg}`, ePos.x, ePos.y - 20, '#ffd700', 12);
+            break;
+        }
+        case 'cancel_and_skip':
+            enemy.actionCounter = 0;
+            Arena.spawnText('CANCELLED!', ePos.x, ePos.y - 20, '#ffd700', 12);
+            break;
+        case 'evade_and_empower':
+            GameState._nextAttackMult = counterResult.nextAttackMult;
+            Arena.spawnText('EVADE! +50% ATK', pPos.x, pPos.y - 20, '#ffd700', 12);
+            break;
+        case 'reflect_damage': {
+            const reflectedDmg = Math.floor(enemy.atk * counterResult.reflectMult);
+            enemy.hp = Math.max(0, enemy.hp - reflectedDmg);
+            Arena.spawnText(`REFLECT! -${reflectedDmg}`, ePos.x, ePos.y - 20, '#ffd700', 12);
+            break;
+        }
+    }
+}
+
+// ============================================================
+// REACTION COMBAT SYSTEM — Phase 1.4 (Ace Attorney style)
+// ============================================================
+
+// Reaction phase state — stored on GameState._reactionPhase
+if(!GameState._reactionPhase) GameState._reactionPhase={
+  active:false,enemy:null,telegraph:null,
+  timeLimit:3000,timeRemaining:3000,timerStarted:0,
+  playerResponded:false,responseSpell:null,responseGrade:null,
+  bubbleScale:0,bubbleRotation:0,tauntText:'',resultText:'',resultTimer:0,
+  pendingQueue:[]
+};
+
+// Comedy text pools
+const ENEMY_TAUNTS={
+  generic:['THIS WILL HURT.','YOUR FIREWALL IS GARBAGE.','FEEL THE BYTE.','DELETING YOU NOW.','FATAL ERROR: YOU.','INITIATING PAIN PROTOCOL.','SKILL CHECK: FAILED.','YOU ARE NOT PREPARED.','NO INSURANCE WHERE YOU\'RE GOING.','THIS IS GOING ON YOUR PERMANENT RECORD.'],
+  boss:['I HAVE BEEN WAITING FOR THIS.','YOUR SUFFERING IS SCHEDULED.','THREAT LEVEL: YOU. RESPONSE: MAXIMUM.','I HAVE KILLED BETTER.','YOU ARE AN ACCEPTABLE CASUALTY.','THIS ZONE BELONGS TO ME. SO DO YOUR HP.','OVERRIDE COMPLETE. YOU\'RE NEXT.','SCANNING... TARGET ACQUIRED. GOODBYE.']
+};
+const REACTION_RESULT_TEXT={
+  nullify:['ERROR 404: ATTACK NOT FOUND.','FIREWALL ACTIVATED.','NICE TRY, CHROME BREATH.','NOPE.','SYSTEM: DENIED.','BLOCKED AT THE ROUTER.','NOT TODAY.','COUNTERPROTOCOL: SUCCESS.'],
+  silence:['SIT DOWN.','BUFFERING... ATTACK FAILED.','STUN.EXE ENTERED THE CHAT.','INTERRUPT SIGNAL SENT.','SHUT IT DOWN.','YOUR ATTACK HAS BEEN RESCHEDULED FOR NEVER.'],
+  absorb:['SHIELD TOOK THE HIT. MOSTLY.','OW. BUT MANAGEABLE.','ABSORBED. KIND OF.','SHIELD SAYS: RUDE.','LESS THAN EXPECTED. STILL BAD.'],
+  clash:['MUTUAL ASSURED PAIN.','WE BOTH FELT THAT.','EQUAL OPPORTUNITY VIOLENCE.','IMPRESSIVE. ALSO OW.','NOBODY WINS. EVERYBODY HURTS.'],
+  resist:['DAMAGE REDUCED. DIGNITY INTACT.','PARTIAL HIT. STILL ALIVE. BARELY.','TANKED IT. SORT OF.','SURVIVED. TECHNICALLY.','LESS DEAD THAN EXPECTED.'],
+  direct_hit:['SKILL ISSUE DETECTED.','FATAL EXCEPTION: PAIN.EXE','HP NOT FOUND.','THAT WAS YOUR FAULT.','DAMAGE INCOMING. DAMAGE ARRIVED.','MAYBE BLOCK NEXT TIME?','DIRECT HIT. MAXIMUM DISRESPECT.','REACTION TIME: UNACCEPTABLE.'],
+  potion_during_attack:['YOU DRANK SOMETHING DURING MY ATTACK??','ARE YOU SERIOUS RIGHT NOW.','UNBELIEVABLE.','POTION SPEEDRUN. RESPECT. ALSO OW.']
+};
+
+function randomFrom(arr){return arr[Math.floor(Math.random()*arr.length)];}
+function getEnemyTaunt(enemy){
+  if(enemy.maxHp>=200||enemy.id==='quantumBoss'||enemy.id==='theArchitect')return randomFrom(ENEMY_TAUNTS.boss);
+  return randomFrom(ENEMY_TAUNTS.generic);
+}
+
+// Time limits per tier (ms)
+const REACTION_TIME={normal:2500,heavy:3000,boss:4000,execute:3500};
+
+function openReactionPhase(enemy,telegraph){
+  const rp=GameState._reactionPhase;
+  if(rp.active){rp.pendingQueue.push({enemy,telegraph});return;}
+  const isBoss=enemy.maxHp>=200||enemy.id==='quantumBoss'||enemy.id==='theArchitect';
+  const finalTime=isBoss?REACTION_TIME.boss:REACTION_TIME.normal;
+  rp.active=true;rp.enemy=enemy;rp.telegraph=telegraph;
+  rp.timeLimit=finalTime;rp.timeRemaining=finalTime;rp.timerStarted=Date.now();
+  rp.playerResponded=false;rp.responseSpell=null;rp.responseGrade=null;
+  rp.bubbleScale=0;rp.bubbleRotation=(Math.random()-0.5)*0.08;
+  rp.tauntText=getEnemyTaunt(enemy);rp.resultText='';rp.resultTimer=0;
+}
+
+function updateReactionPhase(){
+  const rp=GameState._reactionPhase;
+  if(!rp.active)return;
+  if(rp.bubbleScale<1)rp.bubbleScale=Math.min(1,rp.bubbleScale+0.06);
+  if(!rp.playerResponded){
+    rp.timeRemaining=Math.max(0,rp.timeLimit-(Date.now()-rp.timerStarted));
+    if(rp.timeRemaining<=0)resolveReactionPhase(null);
+  }
+  if(rp.playerResponded&&rp.resultTimer>0){
+    rp.resultTimer-=16;
+    if(rp.resultTimer<=0)closeReactionPhase();
+  }
+}
+
+function handleReactionSpellClick(spell){
+  const rp=GameState._reactionPhase;
+  if(!rp.active||rp.playerResponded)return false;
+  // Cast the spell normally (consume MP, set CD, track cast count)
+  const p=GameState.player;
+  if(spell.cd>0||p.mp<spell.mp)return false;
+  resolveReactionPhase(spell);
+  return true;
+}
+
+function resolveReactionPhase(spell){
+  const rp=GameState._reactionPhase;
+  rp.playerResponded=true;rp.responseSpell=spell;
+  const telegraph=rp.telegraph;const enemy=rp.enemy;const p=GameState.player;
+  let grade='direct_hit';let damageMultiplier=1.0;
+
+  if(!spell){
+    grade='direct_hit';damageMultiplier=1.0;
+  }else if(spell.tags&&spell.tags.includes('potion')){
+    grade='resist';damageMultiplier=1.0;
+    rp.resultText=randomFrom(REACTION_RESULT_TEXT.potion_during_attack);
+    rp.responseGrade='potion_special';
+    // Cast the potion effect
+    p.mp-=spell.mp;spell.cd=spell.maxCd;
+    if(spell.effect)spell.effect(p,GameState.enemies.filter(e=>e.hp>0));
+    UI.renderSpells();UI.updateBars();
+    _finalizeReaction(grade,damageMultiplier,telegraph,enemy,p);
+    return;
+  }else{
+    const counterResult=checkPlayerCounter(telegraph,{type:spell.tags?spell.tags[0]:'attack',tags:spell.tags||[],name:spell.name});
+    if(counterResult){
+      switch(counterResult.type){
+        case 'cancel_and_skip':grade='silence';damageMultiplier=0;break;
+        case 'negate_and_retaliate':grade='nullify';damageMultiplier=0;break;
+        case 'evade_and_empower':grade='nullify';damageMultiplier=0;break;
+        case 'reflect_damage':grade='nullify';damageMultiplier=0;break;
+      }
+      applyCounterBonus(counterResult,enemy,p);
+      // Cast the spell effect too
+      p.mp-=spell.mp;spell.cd=spell.maxCd;
+      if(spell.effect)spell.effect(p,GameState.enemies.filter(e=>e.hp>0));
+      UI.renderSpells();UI.updateBars();
+    }else{
+      const isAttack=spell.tags&&spell.tags.includes('attack');
+      const isDefense=spell.tags&&(spell.tags.includes('shield')||spell.tags.includes('defense')||spell.tags.includes('stun')||spell.tags.includes('dodge'));
+      const isPhysical=telegraph.attackType&&telegraph.attackType.includes('physical');
+      if(isAttack){
+        grade='clash';damageMultiplier=0.5;
+        const clashDmg=Math.floor(p.atk*1.5);
+        enemy.hp=Math.max(0,enemy.hp-clashDmg);
+        const ePos=Arena.getEnemyPos(GameState.enemies.indexOf(enemy));
+        Arena.spawnText(`-${clashDmg}`,ePos.x,ePos.y-20,MG,12);
+      }else if(isDefense&&isPhysical){
+        grade='absorb';damageMultiplier=0.30;
+      }else if(isDefense){
+        grade='resist';damageMultiplier=0.60;
+      }else{
+        grade='direct_hit';damageMultiplier=1.0;
+      }
+      // Cast the spell
+      p.mp-=spell.mp;spell.cd=spell.maxCd;
+      if(grade!=='nullify'&&grade!=='silence'&&spell.effect)spell.effect(p,GameState.enemies.filter(e=>e.hp>0));
+      UI.renderSpells();UI.updateBars();
+    }
+  }
+  rp.responseGrade=grade;
+  if(!rp.resultText)rp.resultText=randomFrom(REACTION_RESULT_TEXT[grade]||REACTION_RESULT_TEXT.direct_hit);
+  _finalizeReaction(grade,damageMultiplier,telegraph,enemy,p);
+}
+
+function _finalizeReaction(grade,damageMultiplier,telegraph,enemy,player){
+  const rp=GameState._reactionPhase;
+  if(damageMultiplier>0){
+    const finalDmg=Math.floor(telegraph.damage*damageMultiplier);
+    player.hp=Math.max(0,player.hp-finalDmg);
+    if(finalDmg>0){UI.dmgNumPlayer(finalDmg,'phit');Audio.play('hit');}
+    UI.updateBars();
+  }
+  DM.say(rp.resultText);
+  rp.resultTimer=1800;
+}
+
+function closeReactionPhase(){
+  const rp=GameState._reactionPhase;
+  rp.active=false;rp.enemy=null;rp.telegraph=null;
+  rp.playerResponded=false;rp.responseSpell=null;rp.responseGrade=null;
+  rp.resultText='';rp.bubbleScale=0;
+  _clearSpellHalos();
+  if(rp.pendingQueue.length>0){
+    const next=rp.pendingQueue.shift();
+    setTimeout(()=>openReactionPhase(next.enemy,next.telegraph),200);
+  }
+}
+
+function getSpellEffectivenessHint(spell,telegraph){
+  if(!telegraph||!spell)return 'unknown';
+  const counterResult=checkPlayerCounter(telegraph,{type:spell.tags?spell.tags[0]:'attack',tags:spell.tags||[],name:spell.name});
+  if(counterResult)return 'nullify';
+  if(spell.tags&&spell.tags.includes('potion'))return 'potion';
+  if(spell.tags&&spell.tags.includes('attack'))return 'clash';
+  if(spell.tags&&(spell.tags.includes('shield')||spell.tags.includes('defense'))){
+    return telegraph.attackType&&telegraph.attackType.includes('physical')?'absorb':'resist';
+  }
+  return 'unknown';
+}
+
+// Manga-style jagged speech bubble
+function _drawMangaBubble(ctx,x,y,w,h,borderColor){
+  const r=10,spike=5,freq=14;
+  ctx.beginPath();ctx.moveTo(x+r,y);
+  let px=x+r;
+  while(px<x+w-r){const mid=px+freq/2;ctx.lineTo(mid,y-spike);ctx.lineTo(Math.min(px+freq,x+w-r),y);px+=freq;}
+  ctx.arcTo(x+w,y,x+w,y+r,r);
+  let py=y+r;
+  while(py<y+h-r){const mid=py+freq/2;ctx.lineTo(x+w+spike,mid);ctx.lineTo(x+w,Math.min(py+freq,y+h-r));py+=freq;}
+  ctx.arcTo(x+w,y+h,x+w-r,y+h,r);ctx.lineTo(x+r,y+h);
+  ctx.arcTo(x,y+h,x,y+h-r,r);ctx.lineTo(x,y+r);ctx.arcTo(x,y,x+r,y,r);ctx.closePath();
+  ctx.fillStyle='rgba(5,5,20,0.95)';ctx.fill();
+  ctx.strokeStyle=borderColor;ctx.lineWidth=2;ctx.stroke();
+}
+
+// Main reaction phase renderer — called from Arena.render()
+function renderReactionPhase(ctx,rp){
+  if(!rp.active)return;
+  const W=Arena.W,H=Arena.H;
+
+  // Dim background
+  ctx.save();ctx.fillStyle='rgba(0,0,0,0.55)';ctx.fillRect(0,0,W,H);ctx.restore();
+  if(rp.bubbleScale<=0)return;
+
+  // Position bubble above enemy
+  const eIdx=GameState.enemies.indexOf(rp.enemy);
+  const ePos=eIdx>=0?Arena.getEnemyPos(eIdx):{x:W*0.65,y:H*0.35};
+  const bW=280,bH=80;
+  const bX=Math.min(W-bW-20,Math.max(20,ePos.x-bW/2));
+  const bY=Math.max(10,ePos.y-bH-50);
+
+  ctx.save();
+  ctx.translate(bX+bW/2,bY+bH/2);ctx.rotate(rp.bubbleRotation);ctx.scale(rp.bubbleScale,rp.bubbleScale);
+  ctx.translate(-(bX+bW/2),-(bY+bH/2));
+
+  const threatColor={'LETHAL':'#ff4444','HIGH':'#ff8800','MEDIUM':'#ffff00','LOW':'#00ffff'}[rp.telegraph.threatLevel]||'#ff00ff';
+  ctx.shadowColor=threatColor;ctx.shadowBlur=18;
+  _drawMangaBubble(ctx,bX,bY,bW,bH,threatColor);
+  ctx.shadowBlur=0;
+
+  // Attack name
+  ctx.font='11px "Press Start 2P"';ctx.fillStyle='#ffffff';ctx.textAlign='center';
+  const displayName=rp.telegraph.attackName.toUpperCase().substring(0,22);
+  ctx.fillText(displayName,bX+bW/2,bY+26);
+  // Taunt
+  ctx.font='7px "Share Tech Mono"';ctx.fillStyle='#00ffff';
+  ctx.fillText((rp.tauntText||'').substring(0,36),bX+bW/2,bY+50);
+  // Threat badge
+  ctx.font='7px "Press Start 2P"';ctx.fillStyle=threatColor;
+  ctx.fillText(`[${rp.telegraph.threatLevel}]`,bX+bW/2,bY+68);
+  ctx.textAlign='left';ctx.restore();
+
+  // Tail pointer
+  ctx.save();
+  ctx.beginPath();ctx.moveTo(bX+bW/2-10,bY+bH);ctx.lineTo(bX+bW/2+10,bY+bH);ctx.lineTo(ePos.x,ePos.y-10);ctx.closePath();
+  ctx.fillStyle='rgba(5,5,20,0.95)';ctx.strokeStyle=threatColor;ctx.lineWidth=1.5;ctx.fill();ctx.stroke();
+  ctx.restore();
+
+  // Countdown ring (bottom-left)
+  if(!rp.playerResponded){
+    const rx=80,ry=H-80,rr=32;
+    const progress=rp.timeRemaining/rp.timeLimit;
+    const startA=-Math.PI/2,endA=startA+(Math.PI*2*progress);
+    ctx.save();
+    ctx.beginPath();ctx.arc(rx,ry,rr,0,Math.PI*2);ctx.strokeStyle='rgba(255,255,255,0.1)';ctx.lineWidth=6;ctx.stroke();
+    const ringClr=progress>0.5?'#00ffff':progress>0.25?'#ff8800':'#ff4444';
+    ctx.beginPath();ctx.arc(rx,ry,rr,startA,endA);ctx.strokeStyle=ringClr;ctx.lineWidth=6;ctx.lineCap='round';
+    ctx.shadowColor=ringClr;ctx.shadowBlur=8;ctx.stroke();ctx.shadowBlur=0;
+    ctx.font='14px "Press Start 2P"';ctx.fillStyle=ringClr;ctx.textAlign='center';
+    ctx.fillText(Math.ceil(rp.timeRemaining/1000),rx,ry+5);
+    ctx.font='6px "Press Start 2P"';ctx.fillStyle='#aaaaaa';
+    ctx.fillText('REACT',rx,ry+rr+14);ctx.textAlign='left';ctx.restore();
+
+    // Spell button effectiveness halos (DOM-based since buttons are HTML)
+    _updateSpellHalos(rp.telegraph);
+  }
+
+  // Result text (centered, after response)
+  if(rp.playerResponded&&rp.resultText&&rp.resultTimer>0){
+    const alpha=Math.min(1,rp.resultTimer/400);
+    const rClr={nullify:'#00ff41',silence:'#00ffff',absorb:'#00aaff',clash:'#ff00ff',resist:'#ffff00',direct_hit:'#ff4444',potion_special:'#ffaa00'}[rp.responseGrade]||'#ffffff';
+    ctx.save();ctx.globalAlpha=alpha;ctx.font='13px "Press Start 2P"';ctx.fillStyle=rClr;
+    ctx.shadowColor=rClr;ctx.shadowBlur=12;ctx.textAlign='center';
+    ctx.fillText(rp.resultText,W/2,H/2-20);ctx.shadowBlur=0;ctx.textAlign='left';ctx.restore();
+  }
+}
+
+// DOM-based spell button halos (since buttons are HTML elements, not canvas)
+function _updateSpellHalos(telegraph){
+  const btns=document.querySelectorAll('.spbtn');
+  const p=GameState.player;if(!p)return;
+  const haloColors={nullify:'0,255,65',absorb:'0,170,255',clash:'255,0,255',resist:'255,255,0',potion:'255,170,0',unknown:'50,50,70'};
+  btns.forEach((btn,i)=>{
+    const spell=p.spells[i];if(!spell)return;
+    const hint=getSpellEffectivenessHint(spell,telegraph);
+    const rgb=haloColors[hint]||haloColors.unknown;
+    const pulse=0.5+Math.sin(Date.now()/300)*0.3;
+    btn.style.boxShadow=`0 0 12px rgba(${rgb},${pulse}),inset 0 0 6px rgba(${rgb},0.2)`;
+    btn.style.borderColor=`rgba(${rgb},${pulse+0.2})`;
+  });
+}
+function _clearSpellHalos(){
+  document.querySelectorAll('.spbtn').forEach(btn=>{btn.style.boxShadow='';btn.style.borderColor='';});
 }
 
 const Combat = {
@@ -5103,6 +5493,9 @@ const Combat = {
     const critChance=(p.hasBuff('crit')?0.35:0)+(p.critBonus||0);
     const isCrit=Math.random()<critChance;
     const d=this.deal(target,p.atk,isCrit);
+    // MP regen on melee hit: 3 base, 5 on crit
+    const mpGain=isCrit?5:3;
+    if(p.mp<p.maxMp){p.mp=Math.min(p.maxMp,p.mp+mpGain);UI.updateBars();}
     const idx=GameState.enemies.indexOf(target);
     if(idx>=0){
       const pos=Arena.getEnemyPos(idx);
@@ -5116,6 +5509,30 @@ const Combat = {
   },
   enemyAttack(en,p){
     if(en.isStunned()||en.debuffs.some(d=>d.id==='exhausted')){DM.say(`${en.name} stunned!`);return;}
+
+    // --- TELEGRAPH SYSTEM INJECTION (Phase 1.1) ---
+    const incomingDmgEstimate = Math.max(1, en.atk - Math.max(0, p.def));
+    const shouldTelegraph = determineTelegraph(en, incomingDmgEstimate, p);
+
+    if (shouldTelegraph && !en.telegraph) {
+        en.telegraph = buildTelegraph(en, incomingDmgEstimate, p);
+        DM.say(en.telegraph.warningText);
+        return; // Enemy spends this turn charging, does not attack
+    }
+
+    if (en.telegraph && en.telegraph.active) {
+        en.telegraph.turnsRemaining--;
+        if (en.telegraph.turnsRemaining > 0) {
+            DM.say(`${en.name}: ${en.telegraph.attackName} INCOMING [${en.telegraph.turnsRemaining}T]`);
+            return;
+        }
+        // Telegraph fires — open reaction window (Phase 1.4)
+        openReactionPhase(en, en.telegraph);
+        en.telegraph = null;
+        return; // Damage handled inside reaction phase
+    }
+    // --- END TELEGRAPH INJECTION ---
+
     if(p.isDodging()){UI.dmgNumPlayer(0,'miss');Arena.spawnText('MISS!',Arena.getPlayerPos().x,Arena.getPlayerPos().y-25,'#888888',10);DM.say('Attack dodged!');Arena.triggerDodge(true);return;}
     const blocked=Math.max(0,p.def);
     let rawDmg=Math.max(1,en.atk-(en.id==='ghostHacker'?0:blocked));
@@ -5162,6 +5579,8 @@ const Combat = {
     if(spell.cd>0||p.mp<spell.mp||(spell.hackedTurns||0)>0)return;
     Audio.play(spell.id==='bioPulse'?'heal':'spell');
     p.mp-=spell.mp;spell.cd=spell.maxCd;
+    // Track last player action for telegraph counter system (Phase 1.1)
+    GameState._playerLastAction={type:spell.tags?spell.tags[0]:'attack',tags:spell.tags||['attack'],name:spell.name};
     // Spell evolution: track casts, evolve at 10
     if(!spell.castCount)spell.castCount=0;
     spell.castCount++;
@@ -5193,6 +5612,8 @@ const Combat = {
     UI.updateBars();UI.updateSpells();
   },
   tick(){
+    // Reaction phase update — pause combat turns while active (Phase 1.4)
+    if(GameState._reactionPhase&&GameState._reactionPhase.active){updateReactionPhase();return;}
     const p=GameState.player,enemies=GameState.enemies;
     if(!p||p.hp<=0)return;
     GameState.turnCount++;GameState.floorTurns++;
@@ -5671,7 +6092,7 @@ const UI={
       btn.innerHTML=`<div class="spico">${sp.icon}</div><div class="splbl">${sp.name.split(' ').slice(0,2).join(' ')}</div><div class="cdov" style="display:none">0<small>CD</small></div>`;
       if(sp.evolved)btn.style.borderColor='var(--GD)';
       btn.title=`${sp.name}${sp.evolved?' [EVOLVED]':''}\n${sp.desc}\nMP:${sp.mp} CD:${sp.maxCd}${sp.castCount?' ('+sp.castCount+' casts)':''}`;
-      btn.addEventListener('click',()=>{if(GameState.combatRunning)Combat.castSpell(p,sp,GameState.enemies);});
+      btn.addEventListener('click',()=>{if(!GameState.combatRunning)return;if(GameState._reactionPhase&&GameState._reactionPhase.active&&!GameState._reactionPhase.playerResponded){handleReactionSpellClick(sp);return;}Combat.castSpell(p,sp,GameState.enemies);});
       bar.appendChild(btn);
     });
   },
@@ -6548,6 +6969,7 @@ const Game={
       blockBtn.addEventListener('click',()=>{
         if(!GameState.combatRunning||GameState.blockCd>0||GameState.isBlocking)return;
         GameState.isBlocking=true;GameState.blockCd=2;
+        GameState._playerLastAction={type:'shield',tags:['shield','defense'],name:'Block'};
         blockBtn.classList.add('blocking');
         const bb=document.getElementById('blockBubble');if(bb)bb.classList.add('show');
         DM.say('BLOCKING! Incoming damage halved!');
