@@ -2429,7 +2429,7 @@ const Arena = {
       ctx.fillRect(0,0,W,H*0.06);ctx.fillRect(0,H*0.94,W,H*0.06);
       ctx.restore();
     }
-    if(GameState.enemies.some(e=>e.isBoss&&e.hp>0)){
+    if(GameState.enemies?.some(e=>e.isBoss&&e.hp>0)){
       const bp=0.04+Math.sin(t*0.07)*0.03;
       ctx.save();ctx.globalAlpha=bp;ctx.fillStyle=MG;
       ctx.fillRect(0,0,W*0.04,H);ctx.fillRect(W*0.96,0,W*0.04,H);
@@ -3386,7 +3386,7 @@ const Arena = {
   triggerSpellFlash(name,icon){this._spellFlash={active:true,timer:0,name:name||'SKILL',icon:icon||'⚡'};},
 
   getEnemyPos(idx) {
-    const enemies = GameState.enemies;
+    const enemies = GameState.enemies||[];
     const alive = enemies.filter(e=>e.hp>0);
     const n = alive.length, eAreaW = this.W*.52, eStartX = this.W*.45;
     const en = enemies[idx]; if(!en) return {x:this.W*.7,y:this.H*.5};
@@ -6566,7 +6566,7 @@ const Combat = {
     if(GameState._phaseBanner&&GameState._phaseBanner.active)return;
     // Reaction phase update — pause combat turns while active (Phase 1.4)
     if(GameState._reactionPhase&&GameState._reactionPhase.active){updateReactionPhase();return;}
-    const p=GameState.player,enemies=GameState.enemies;
+    const p=GameState.player,enemies=GameState.enemies||[];
     if(!p||p.hp<=0)return;
     GameState.turnCount++;GameState.floorTurns++;
     if(GameState.turnsLeft>0)GameState.turnsLeft--;
@@ -7195,7 +7195,7 @@ const UI={
   // Turn order display
   updateTurnOrder(){
     const el=document.getElementById('turnOrder');if(!el)return;
-    const p=GameState.player;const enemies=GameState.enemies;
+    const p=GameState.player;const enemies=GameState.enemies||[];
     if(!p||!enemies.length){el.innerHTML='<span class="to-label">NEXT:</span>';return;}
     // Build action order for next 3 ticks
     const units=[
@@ -7518,8 +7518,9 @@ const MatrixRain = {
   chars:'01アウエカキクサシセタチツネノハヒフヘマミメモヤラリルレロワン',
 
   init(){
+    if(this._inited)return;this._inited=true;
     this.cv=document.getElementById('matrixCV');
-    if(!this.cv)return;
+    if(!this.cv){this._inited=false;return;}
     this.ctx=this.cv.getContext('2d');
     this.resize();
     window.addEventListener('resize',()=>this.resize());
@@ -7607,8 +7608,9 @@ const City = {
   stars:[],
 
   init() {
+    if(this._inited)return;this._inited=true;
     this.cv = document.getElementById('cityCV');
-    if (!this.cv) return;
+    if (!this.cv){this._inited=false;return;}
     this.ctx = this.cv.getContext('2d');
     this.resize();
     for (let i=0;i<180;i++) this.stars.push({
@@ -7957,7 +7959,7 @@ const Game={
             const open=pm.classList.contains('show');
             pm.classList.toggle('show',!open);
             if(!open&&GameState.combatRunning){clearInterval(GameState.combatInterval);GameState.combatInterval=null;GameState.combatRunning=false;}
-            else if(open&&!GameState.combatRunning&&GameState.enemies.filter(e=>e.hp>0).length){
+            else if(open&&!GameState.combatRunning&&(GameState.enemies||[]).filter(e=>e.hp>0).length){
               GameState.combatRunning=true;if(GameState.combatInterval)clearInterval(GameState.combatInterval);GameState.combatInterval=setInterval(()=>Combat.tick(),Game._combatSpeed||1200);
             }
           }
@@ -7967,7 +7969,7 @@ const Game={
     const pauseResume=document.getElementById('pauseResume');
     if(pauseResume)pauseResume.addEventListener('click',()=>{
       const pm=document.getElementById('pauseMenu');pm.classList.remove('show');
-      if(!GameState.combatRunning&&GameState.enemies.filter(e=>e.hp>0).length){
+      if(!GameState.combatRunning&&(GameState.enemies||[]).filter(e=>e.hp>0).length){
         GameState.combatRunning=true;GameState.combatInterval=setInterval(()=>Combat.tick(),Game._combatSpeed||1200);
       }
     });
@@ -9215,6 +9217,7 @@ const AIDialog = {
   },
 
   hideAll(){
+    if(this._twIv){clearInterval(this._twIv);this._twIv=null;}
     clearTimeout(this._queueTimer); this._queueTimer = null;
     this._queue = [];
     clearTimeout(this._enemyTimer); clearTimeout(this._playerTimer);
@@ -9224,11 +9227,12 @@ const AIDialog = {
 
   // Typewrite at 30ms/char; dismiss timer starts AFTER completion
   _typewrite(el, text){
+    if(this._twIv)clearInterval(this._twIv);
     el.textContent = '';
     let i = 0;
-    const iv = setInterval(()=>{
+    this._twIv = setInterval(()=>{
       el.textContent += text[i++]||'';
-      if(i >= text.length) clearInterval(iv);
+      if(i >= text.length){clearInterval(this._twIv);this._twIv=null;}
     }, 30);
   },
 
