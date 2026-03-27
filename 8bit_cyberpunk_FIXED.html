@@ -5187,6 +5187,7 @@ function getEnemyTaunt(enemy){
 const REACTION_TIME={normal:2500,heavy:3000,boss:4000,execute:3500};
 
 function openReactionPhase(enemy,telegraph){
+  if(!enemy||enemy.hp<=0)return;
   const rp=GameState._reactionPhase;
   if(rp.active){rp.pendingQueue.push({enemy,telegraph});return;}
   const isBoss=enemy.maxHp>=200||enemy.id==='quantumBoss'||enemy.id==='theArchitect';
@@ -5201,6 +5202,8 @@ function openReactionPhase(enemy,telegraph){
 function updateReactionPhase(){
   const rp=GameState._reactionPhase;
   if(!rp.active)return;
+  // Abort if all enemies are dead — don't hold combat hostage
+  if(!(GameState.enemies||[]).some(e=>e.hp>0)){closeReactionPhase();return;}
   if(rp.bubbleScale<1)rp.bubbleScale=Math.min(1,rp.bubbleScale+0.06);
   if(!rp.playerResponded){
     rp.timeRemaining=Math.max(0,rp.timeLimit-(Date.now()-rp.timerStarted));
