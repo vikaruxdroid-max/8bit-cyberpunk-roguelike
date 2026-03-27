@@ -213,7 +213,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#060618;font-family:
 .phud-right{display:flex;flex-direction:column;align-items:flex-end;gap:clamp(5px,0.6vh,9px);}
 .spbar{display:flex;gap:clamp(3px,0.4vw,6px);flex-wrap:nowrap;}
 .spbtn{
-  width:clamp(40px,4.5vw,60px);height:clamp(40px,4.5vw,60px);
+  width:clamp(36px,3.8vw,56px);height:clamp(36px,3.8vw,56px);
   background:rgba(12,8,30,.92);
   border:1.5px solid rgba(136,0,255,.5);
   cursor:pointer;position:relative;
@@ -1081,17 +1081,17 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
   <!-- BOOT SCREEN -->
   <div class="scr on" id="sBOOT" style="background:#000800;display:flex;align-items:center;justify-content:center;z-index:9999;">
     <div id="bootTerminal" style="
-      width:min(700px,90vw);font-family:'Press Start 2P',monospace;font-size:clamp(10px,1.4vw,16px);
-      color:#33ff33;text-shadow:0 0 8px rgba(51,255,51,0.6);line-height:2.2;
-      padding:clamp(20px,3vw,40px);position:relative;
+      width:min(700px,90vw);max-height:min(500px,85vh);font-family:'Press Start 2P',monospace;font-size:clamp(8px,1.1vw,13px);
+      color:#33ff33;text-shadow:0 0 8px rgba(51,255,51,0.6);line-height:1.9;
+      padding:clamp(14px,2vw,28px);position:relative;
       background:#000800;border:2px solid #226622;border-radius:12px;
       box-shadow:0 0 40px rgba(51,255,51,0.08),inset 0 0 80px rgba(0,8,0,0.9);
-      overflow:hidden;
+      overflow:hidden;display:flex;flex-direction:column;
     ">
       <div style="position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,0.15) 0px,rgba(0,0,0,0.15) 2px,transparent 2px,transparent 4px);z-index:1;"></div>
       <div style="position:absolute;inset:0;pointer-events:none;border-radius:12px;box-shadow:inset 0 0 60px rgba(0,20,0,0.7);z-index:2;"></div>
-      <div id="bootLines" style="position:relative;z-index:3;"></div>
-      <div id="bootBar" style="position:relative;z-index:3;margin-top:1.5em;height:clamp(14px,2vh,20px);border:1px solid #33ff33;border-radius:2px;overflow:hidden;display:none;">
+      <div id="bootLines" style="position:relative;z-index:3;flex:1;overflow-y:auto;min-height:0;"></div>
+      <div id="bootBar" style="position:relative;z-index:3;margin-top:0.8em;height:clamp(10px,1.5vh,16px);border:1px solid #33ff33;border-radius:2px;overflow:hidden;display:none;flex-shrink:0;">
         <div id="bootFill" style="height:100%;width:0%;background:#33ff33;transition:width 0.3s;box-shadow:0 0 10px rgba(51,255,51,0.5);"></div>
       </div>
     </div>
@@ -1393,9 +1393,14 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
         <div id="vicCharStats" style="display:none;"></div>
       </div>
     </div>
-    <!-- BOTTOM: UPGRADES (boss only) + CONTINUE -->
+    <!-- BOTTOM: SPELL SWAP + UPGRADES + CONTINUE -->
     <div class="vic-bottom">
-      <div class="vic-upg-hdr">◆ CHOOSE AN UPGRADE ◆</div>
+      <!-- Spell swap offer -->
+      <div id="vicSpellSwap" style="display:none;margin-bottom:clamp(6px,0.8vh,10px);">
+        <div class="vic-upg-hdr" style="color:#ff00ff;text-shadow:0 0 10px rgba(255,0,255,.4);">◆ SWAP A SPELL? ◆</div>
+        <div id="vicSpellSwapContent" style="display:flex;align-items:center;justify-content:center;gap:clamp(8px,1vw,16px);padding:clamp(4px,0.6vh,8px) 0;"></div>
+      </div>
+      <div class="vic-upg-hdr" id="vicUpgHdr">◆ CHOOSE AN UPGRADE ◆</div>
       <div class="vic-upg-row" id="vicUpgrades"></div>
       <div class="vic-foot">
         <span class="vic-upg-hint" id="vicUpgHint">SELECT AN UPGRADE TO CONTINUE</span>
@@ -4127,6 +4132,14 @@ const DEFENSIVE_SKILLS = [
    effect(p){const low=p.hp/p.maxHp<0.2;if(low){const h=Math.floor(p.maxHp*0.5);p.hp=Math.min(p.maxHp,p.hp+h);p.addBuff('dodge',{dodges:2,turns:2});UI.dmgNumAt(_pp().x,_pp().y,h,'heal');_pvfx('explode',RD);DM.say('DEAD MAN SWITCH — not today!');}else{const h=Math.floor(p.maxHp*0.1);p.hp=Math.min(p.maxHp,p.hp+h);UI.dmgNumAt(_pp().x,_pp().y,h,'heal');_pvfx('spark','#886666');DM.say('DEAD MAN SWITCH — standby.');}}},
 ];
 
+// ── Spell pool identification helper ──
+function getSpellPool(spellId){
+  if(ACTIVE_SKILLS.some(s=>s.id===spellId)) return {pool:ACTIVE_SKILLS,type:'active'};
+  if(DEFENSIVE_SKILLS.some(s=>s.id===spellId)) return {pool:DEFENSIVE_SKILLS,type:'defensive'};
+  if(POTIONS.some(s=>s.id===spellId)) return {pool:POTIONS,type:'potion'};
+  return null;
+}
+
 // Keep CLASSES as a lookup for legacy references (Arena accent, etc.)
 const CLASSES = {};
 
@@ -4266,6 +4279,7 @@ const SaveSystem = {
         selectedGender:GameState.selectedGender||'man',
         selectedAccent:GameState.selectedAccent||CY,
         activeSkillIds:(GameState.player?.spells||[]).filter(s=>ACTIVE_SKILLS.some(a=>a.id===s.id)).map(s=>s.id),
+        defensiveSkillIds:(GameState.player?.spells||[]).filter(s=>DEFENSIVE_SKILLS.some(d=>d.id===s.id)).map(s=>s.id),
         potionIds:(GameState.player?.spells||[]).filter(s=>POTIONS.some(d=>d.id===s.id)).map(s=>s.id),
         passiveIds:GameState.player?.passiveIds||[],
         statAlloc:GameState.ccState?.statAlloc||{hp:0,atk:0,def:0,spd:0,mp:0},
@@ -4296,11 +4310,16 @@ const SaveSystem = {
       if(!weapons.length)weapons.push(WEAPONS[0]);
       const activeSkills=(d.activeSkillIds||[d.activeSkillId||'plasmaStrike']).map(id=>ACTIVE_SKILLS.find(s=>s.id===id)).filter(Boolean);
       if(!activeSkills.length)activeSkills.push(ACTIVE_SKILLS[0]);
-      const potions=(d.potionIds||d.defenseSkillIds||[]).map(id=>POTIONS.find(s=>s.id===id)||DEFENSIVE_SKILLS.find(s=>s.id===id)).filter(Boolean);
+      const defensiveSkills=(d.defensiveSkillIds||[]).map(id=>DEFENSIVE_SKILLS.find(s=>s.id===id)).filter(Boolean);
+      const potions=(d.potionIds||[]).map(id=>POTIONS.find(s=>s.id===id)).filter(Boolean);
+      // Legacy: old saves may have defenseSkillIds in potionIds slot
+      if(!potions.length&&!defensiveSkills.length&&d.defenseSkillIds){
+        d.defenseSkillIds.forEach(id=>{const s=POTIONS.find(p=>p.id===id)||DEFENSIVE_SKILLS.find(p=>p.id===id);if(s)potions.push(s);});
+      }
       const passiveSkills=(d.passiveIds||[d.passiveId]).filter(Boolean).map(id=>PASSIVE_SKILLS.find(s=>s.id===id)).filter(Boolean);
-      const cfg={gender:d.selectedGender||'man',accent:d.selectedAccent||CY,statAlloc:d.statAlloc||{hp:0,atk:0,def:0,spd:0,mp:0},activeSkills,potions,passiveSkills,weapons};
+      const cfg={gender:d.selectedGender||'man',accent:d.selectedAccent||CY,statAlloc:d.statAlloc||{hp:0,atk:0,def:0,spd:0,mp:0},activeSkills,defensiveSkills,potions,passiveSkills,weapons};
       const alloc=cfg.statAlloc;
-      GameState.ccState={gender:cfg.gender,accent:Object.entries(ACCENT_COLORS).find(([,v])=>v===cfg.accent)?.[0]||'cyan',statAlloc:alloc,pointsLeft:STAT_POINTS_TOTAL-Object.values(alloc).reduce((a,b)=>a+b,0),randActive:activeSkills,randPassive:passiveSkills,randWeapons:weapons,randPotions:potions};
+      GameState.ccState={gender:cfg.gender,accent:Object.entries(ACCENT_COLORS).find(([,v])=>v===cfg.accent)?.[0]||'cyan',statAlloc:alloc,pointsLeft:STAT_POINTS_TOTAL-Object.values(alloc).reduce((a,b)=>a+b,0),randActive:activeSkills,randPassive:passiveSkills,randDefensive:defensiveSkills,randWeapons:weapons,randPotions:potions};
       const p=new Player(cfg);
       p.hp=d.hp;p.maxHp=d.maxHp;p.mp=d.mp;p.maxMp=d.maxMp;
       p.baseAtk=d.baseAtk;p.atk=d.atk;p.baseDef=d.baseDef;p.def=d.def;
@@ -4868,10 +4887,11 @@ class Player {
     this.spd = this.baseSpd;
     this.actionCounter=0; this.buffs=[]; this.debuffs=[];
     this.equip=weapons[0]||null; this.weapons=weapons; this.animState='idle.base'; this.animTimer=0;
-    // Active skills (2) + Potions (2) = 4 spells
+    // Active skills (2) + Defensive skill (1) + Potion (1) = 4 spells
     const actives = cfg.activeSkills || [ACTIVE_SKILLS[0]];
+    const defensives = cfg.defensiveSkills || [];
     const potions = cfg.potions || [];
-    this.spells=[...actives,...potions].map(sk=>({...sk, effect:sk.effect, cd:0, hackedTurns:0}));
+    this.spells=[...actives,...defensives,...potions].map(sk=>({...sk, effect:sk.effect, cd:0, hackedTurns:0}));
     if(weaponBonus.cdReduce) this.spells.forEach(s=>s.maxCd=Math.max(1,s.maxCd-weaponBonus.cdReduce));
     this.spellsCast=new Set(); this.healedThisFloor=false;
     this.level=1; this.xp=0; this.xpToNext=50; this.critBonus=0;
@@ -6689,11 +6709,15 @@ const Game={
   buildClassSelect(){
     if(!GameState.ccState){
       const shuffle=a=>[...a].sort(()=>Math.random()-.5);
+      const ra=shuffle(ACTIVE_SKILLS).slice(0,2);
+      const ra2=shuffle(ACTIVE_SKILLS.filter(s=>!ra.includes(s))).slice(0,2);
       GameState.ccState={
         gender:'man', accent:'cyan',
         statAlloc:{hp:0,atk:0,def:0,spd:0,mp:0}, pointsLeft:STAT_POINTS_TOTAL,
         portraitIdx:0, runnerName:'', difficulty:'normal',
-        randActive:shuffle(ACTIVE_SKILLS).slice(0,2), selActive:0,
+        randActive:ra, selActive:0,
+        randActive2:ra2, selActive2:0,
+        randDefensive:shuffle(DEFENSIVE_SKILLS).slice(0,2), selDefensive:0,
         randPassive:shuffle(PASSIVE_SKILLS).slice(0,2), selPassive:0,
         randWeapons:shuffle(WEAPONS).slice(0,2), selWeapon:0,
         randPotions:shuffle(POTIONS).slice(0,2), selPotion:0
@@ -6811,29 +6835,33 @@ const Game={
     topRow.appendChild(rightCol);
     grid.appendChild(topRow);
 
-    // ── ROW 2: SKILLS + EQUIPMENT — four columns, 2 random each ──
+    // ── ROW 2: SKILLS + EQUIPMENT — 3x2 grid, pick 1 of 2 each ──
     const midRow=document.createElement('div');
-    midRow.style.cssText='display:flex;gap:clamp(8px,1.2vw,16px);flex:1;min-height:0;';
+    midRow.style.cssText='display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(6px,1vw,12px);flex:1;min-height:0;';
 
     const buildPanel=(label,items,showMp,selKey)=>{
-      const box=document.createElement('div');box.className='cc-panel';box.style.cssText='flex:1;display:flex;flex-direction:column;overflow-y:hidden;';
+      const box=document.createElement('div');box.className='cc-panel';box.style.cssText='display:flex;flex-direction:column;overflow-y:hidden;min-height:0;';
       box.innerHTML=`<div class="slbl" style="flex-shrink:0;">${label}</div>`;
-      const col=document.createElement('div');col.style.cssText='display:flex;flex-direction:column;gap:clamp(6px,0.8vh,10px);flex:1;min-height:0;';
+      const col=document.createElement('div');col.style.cssText='display:flex;flex-direction:column;gap:clamp(4px,0.6vh,8px);flex:1;min-height:0;';
       items.forEach((sk,i)=>{
         const c=document.createElement('div');c.className='spc'+(cc[selKey]===i?' sel':'');
-        c.style.cssText='cursor:pointer;flex:1;display:flex;align-items:center;gap:clamp(8px,1vw,14px);padding:clamp(10px,1.2vh,16px) clamp(10px,1.2vw,16px);box-sizing:border-box;min-height:0;';
-        const mpInfo=showMp&&sk.mp!=null?`<div style="${F}font-size:clamp(8px,0.8vw,11px);color:#776;text-align:right;flex-shrink:0;line-height:1.6;white-space:nowrap;">MP:${sk.mp}<br>CD:${sk.maxCd}</div>`:'';
-        c.innerHTML=`<div style="${F}font-size:clamp(20px,2.5vw,32px);flex-shrink:0;width:clamp(32px,3.5vw,44px);text-align:center;">${sk.icon}</div><div style="flex:1;min-width:0;overflow:hidden;"><div style="${F}font-size:clamp(10px,1.1vw,14px);color:#ffe100;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${sk.name}</div><div style="${F}font-size:clamp(8px,0.85vw,11px);color:#99a;line-height:1.4;">${sk.desc}</div></div>${mpInfo}`;
+        c.style.cssText='cursor:pointer;flex:1;display:flex;align-items:center;gap:clamp(6px,0.8vw,10px);padding:clamp(6px,0.8vh,10px) clamp(8px,1vw,12px);box-sizing:border-box;min-height:0;';
+        const mpInfo=showMp&&sk.mp!=null?`<div style="${F}font-size:clamp(7px,0.7vw,10px);color:#776;text-align:right;flex-shrink:0;line-height:1.5;white-space:nowrap;">MP:${sk.mp}<br>CD:${sk.maxCd}</div>`:'';
+        c.innerHTML=`<div style="${F}font-size:clamp(16px,2vw,24px);flex-shrink:0;width:clamp(24px,2.5vw,36px);text-align:center;">${sk.icon}</div><div style="flex:1;min-width:0;overflow:hidden;"><div style="${F}font-size:clamp(8px,0.9vw,12px);color:#ffe100;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${sk.name}</div><div style="${F}font-size:clamp(7px,0.75vw,10px);color:#99a;line-height:1.3;">${sk.desc}</div></div>${mpInfo}`;
         c.addEventListener('click',()=>{cc[selKey]=i;col.querySelectorAll('.spc').forEach(x=>x.classList.remove('sel'));c.classList.add('sel');});
         col.appendChild(c);
       });
       box.appendChild(col);return box;
     };
 
-    midRow.appendChild(buildPanel('◆ ACTIVE SKILL',cc.randActive,true,'selActive'));
-    midRow.appendChild(buildPanel('◆ PASSIVE SKILL',cc.randPassive,false,'selPassive'));
-    midRow.appendChild(buildPanel('◆ WEAPON',cc.randWeapons,false,'selWeapon'));
+    // Row 1: Attack skills + Defense
+    midRow.appendChild(buildPanel('◆ ATTACK 1',cc.randActive,true,'selActive'));
+    midRow.appendChild(buildPanel('◆ ATTACK 2',cc.randActive2,true,'selActive2'));
+    midRow.appendChild(buildPanel('◆ DEFENSE',cc.randDefensive,true,'selDefensive'));
+    // Row 2: Potion + Passive + Weapon
     midRow.appendChild(buildPanel('◆ POTION',cc.randPotions,true,'selPotion'));
+    midRow.appendChild(buildPanel('◆ PASSIVE',cc.randPassive,false,'selPassive'));
+    midRow.appendChild(buildPanel('◆ WEAPON',cc.randWeapons,false,'selWeapon'));
 
     grid.appendChild(midRow);
     setTimeout(()=>this._updatePreview(),100);
@@ -6944,7 +6972,11 @@ const Game={
       gender: cc.gender,
       accent: ACCENT_COLORS[cc.accent]||CY,
       statAlloc: cc.statAlloc,
-      activeSkills: [cc.randActive[cc.selActive||0]||ACTIVE_SKILLS[0]],
+      activeSkills: [
+        cc.randActive[cc.selActive||0]||ACTIVE_SKILLS[0],
+        cc.randActive2[cc.selActive2||0]||ACTIVE_SKILLS[1]
+      ],
+      defensiveSkills: [cc.randDefensive[cc.selDefensive||0]||DEFENSIVE_SKILLS[0]],
       passiveSkills: [cc.randPassive[cc.selPassive||0]||PASSIVE_SKILLS[0]],
       weapons: [cc.randWeapons[cc.selWeapon||0]||WEAPONS[0]],
       potions: [cc.randPotions[cc.selPotion||0]||POTIONS[0]]
@@ -8082,6 +8114,8 @@ const VictoryScreen = {
     this._takenItem = null;
     this._takenSlot = null;
     this._selectedUpgrade = null;
+    this._swapOffer = null;
+    this._swapDecision = null;
     this._snapshot = [...LootScreen.pending];
     this._gold = LootScreen.gold;
     // Credit gold to inventory once
@@ -8100,6 +8134,7 @@ const VictoryScreen = {
       this._renderRelics();
       this._renderPaperdoll();
       this._renderInventory();
+      this._renderSpellSwap();
       this._renderUpgrades();
       this._updateContinue();
     }catch(e){
@@ -8454,16 +8489,88 @@ const VictoryScreen = {
     });
   },
 
+  _renderSpellSwap() {
+    const wrap = document.getElementById('vicSpellSwap');
+    const cont = document.getElementById('vicSpellSwapContent');
+    if (!wrap || !cont) return;
+    const p = GameState.player;
+    if (!p || !p.spells || p.spells.length < 2) { wrap.style.display = 'none'; return; }
+
+    // Pick a random spell slot to offer a swap for
+    const slotIdx = Math.floor(Math.random() * p.spells.length);
+    const currentSpell = p.spells[slotIdx];
+    const poolInfo = getSpellPool(currentSpell.id);
+    if (!poolInfo) { wrap.style.display = 'none'; return; }
+
+    // Pick a random replacement from the same pool (excluding current spells)
+    const currentIds = new Set(p.spells.map(s => s.id));
+    const candidates = poolInfo.pool.filter(s => !currentIds.has(s.id));
+    if (!candidates.length) { wrap.style.display = 'none'; return; }
+    const offered = candidates[Math.floor(Math.random() * candidates.length)];
+
+    this._swapOffer = { slotIdx, currentSpell, offered, poolType: poolInfo.type };
+    wrap.style.display = 'block';
+
+    const F = "font-family:'Share Tech Mono',monospace;";
+    const typeLabel = { active: 'ATTACK', defensive: 'DEFENSE', potion: 'POTION' }[poolInfo.type] || 'SPELL';
+
+    const makeCard = (spell, label, borderClr) => {
+      const evolved = spell.evolved ? ' [EX]' : '';
+      const casts = spell.castCount ? ` (${spell.castCount} casts)` : '';
+      return `<div style="flex:1;max-width:280px;border:1.5px solid ${borderClr};border-radius:6px;padding:clamp(8px,1vh,14px) clamp(10px,1.2vw,16px);background:rgba(10,10,30,.85);display:flex;flex-direction:column;gap:4px;">
+        <div style="${F}font-size:clamp(7px,0.7vw,9px);color:${borderClr};text-transform:uppercase;letter-spacing:1px;">${label}</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:clamp(18px,2vw,26px);">${spell.icon}</span>
+          <div style="flex:1;min-width:0;">
+            <div style="${F}font-size:clamp(9px,1vw,13px);color:#ffe100;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${spell.name}${evolved}</div>
+            <div style="${F}font-size:clamp(7px,0.75vw,10px);color:#99a;line-height:1.4;">${spell.desc}</div>
+          </div>
+          <div style="${F}font-size:clamp(7px,0.7vw,9px);color:#776;text-align:right;white-space:nowrap;line-height:1.5;">MP:${spell.mp}<br>CD:${spell.maxCd}${casts}</div>
+        </div>
+      </div>`;
+    };
+
+    cont.innerHTML = `
+      ${makeCard(currentSpell, 'CURRENT ' + typeLabel, '#00ffff')}
+      <div style="display:flex;flex-direction:column;gap:6px;align-items:center;flex-shrink:0;">
+        <button id="vicSwapBtn" style="${F}font-size:clamp(8px,0.9vw,12px);padding:6px 14px;background:rgba(255,0,255,.15);border:1px solid #ff00ff;color:#ff00ff;cursor:pointer;border-radius:4px;">⟲ SWAP</button>
+        <button id="vicKeepBtn" style="${F}font-size:clamp(8px,0.9vw,12px);padding:6px 14px;background:rgba(0,255,255,.08);border:1px solid rgba(0,255,255,.3);color:#00ffff;cursor:pointer;border-radius:4px;">✓ KEEP</button>
+      </div>
+      ${makeCard(offered, 'OFFERED ' + typeLabel, '#ff00ff')}
+    `;
+
+    document.getElementById('vicSwapBtn').addEventListener('click', () => {
+      // Replace the spell
+      p.spells[slotIdx] = { ...offered, effect: offered.effect, cd: 0, hackedTurns: 0, castCount: 0, evolved: false };
+      this._swapDecision = 'swap';
+      cont.innerHTML = `<div style="${F}font-size:clamp(10px,1.1vw,14px);color:#ff00ff;text-shadow:0 0 10px rgba(255,0,255,.5);padding:10px;">⟲ SWAPPED: ${currentSpell.name} → ${offered.name}</div>`;
+      UI.renderSpells();
+      this._updateContinue();
+    });
+
+    document.getElementById('vicKeepBtn').addEventListener('click', () => {
+      this._swapDecision = 'keep';
+      cont.innerHTML = `<div style="${F}font-size:clamp(10px,1.1vw,14px);color:#00ffff;text-shadow:0 0 10px rgba(0,255,255,.3);padding:10px;">✓ KEEPING: ${currentSpell.name}</div>`;
+      this._updateContinue();
+    });
+  },
+
   _updateContinue() {
     const btn = document.getElementById('vicContinueBtn');
     const hint = document.getElementById('vicUpgHint');
     if (!btn) return;
     const hasLevelUp = GameState.levelUpPending;
     const needsChoice = hasLevelUp || this._isBoss;
-    const active = !needsChoice || !!this._selectedUpgrade;
+    const swapDone = !this._swapOffer || this._swapDecision !== null;
+    const upgDone = !needsChoice || !!this._selectedUpgrade;
+    const active = swapDone && upgDone;
     btn.disabled = !active;
     btn.classList.toggle('active', active);
-    if (hint) hint.textContent = !needsChoice ? '▶ CONTINUE TO NEXT ROOM' : active ? '✓ UPGRADE SELECTED' : 'SELECT AN UPGRADE TO CONTINUE';
+    if (hint) {
+      if (!swapDone) hint.textContent = 'SWAP OR KEEP YOUR SPELL TO CONTINUE';
+      else if (!upgDone) hint.textContent = 'SELECT AN UPGRADE TO CONTINUE';
+      else hint.textContent = '▶ CONTINUE TO NEXT ROOM';
+    }
   },
 
   // Called by vicContinueBtn click
