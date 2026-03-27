@@ -1,0 +1,10 @@
+name = "neon-dungeon-ai"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+# Do NOT put ANTHROPIC_API_KEY here.
+# Set it securely via: wrangler secret put ANTHROPIC_API_KEY
+
+[[routes]]
+pattern = "neon-dungeon-ai.YOUR_SUBDOMAIN.workers.dev/*"
+zone_name = "workers.dev"

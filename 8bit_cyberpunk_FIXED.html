@@ -3167,7 +3167,13 @@ const Arena = {
     return line.replace(/\{spell\}/g,spell).replace(/\{gender\}/g,gender);
   },
   triggerBossIntro(boss,onDone){
-    this._bossIntro={active:true,timer:0,totalFrames:360,boss,onDone,dialogShown:false};
+    const intro={active:true,timer:0,totalFrames:360,boss,onDone,dialogShown:false,narration:null,narrationChars:0};
+    this._bossIntro=intro;
+    // Kick off AI narration immediately — stored when resolved, fallback if slow/unavailable
+    const zone=typeof ZONES!=='undefined'?ZONES[GameState.currentZoneId]:null;
+    getBossNarration(boss,GameState.player||{},zone).then(text=>{
+      if(intro.active)intro.narration=text;
+    });
   },
   _renderBossIntro(ctx,W,H){
     const bi=this._bossIntro;if(!bi.active)return;
@@ -3323,6 +3329,12 @@ const Arena = {
         ctx.fillStyle='#ff4444';
         ctx.fillText('▸ ZONE BOSS ◂',W/2,H*0.26);
       }
+      // DM narration box — typewriter reveal (AI result or fallback)
+      if(mp>0.5&&bi.narration){
+        bi.narrationChars=Math.min(bi.narration.length,(bi.narrationChars||0)+2);
+        const nw=Math.min(W*0.76,520);
+        this._renderNarrationBox(ctx,bi.narration,bi.narrationChars,(W-nw)/2,H*0.76,nw,62);
+      }
       if(bi.timer%6===0&&!arrived)this.triggerShake(3,4);
     }
     // PHASE 4 (0.55-0.72): Dismount flash + boss dialog
@@ -3381,6 +3393,50 @@ const Arena = {
       AIDialog.hideAll();
       if(bi.onDone)bi.onDone();
     }
+  },
+  _renderNarrationBox(ctx,text,chars,x,y,w,h){
+    const visible=text.slice(0,chars);
+    ctx.save();
+    // Background panel
+    ctx.globalAlpha=0.9;
+    ctx.fillStyle='#0a0a1a';
+    ctx.fillRect(x,y,w,h);
+    ctx.globalAlpha=1;
+    ctx.strokeStyle='#00ffff';ctx.lineWidth=1;
+    ctx.strokeRect(x,y,w,h);
+    // Magenta corner accents
+    ctx.strokeStyle='#ff00ff';ctx.lineWidth=2;
+    const c=7;
+    [[x,y,1,1],[x+w,y,-1,1],[x,y+h,1,-1],[x+w,y+h,-1,-1]].forEach(([cx,cy,dx,dy])=>{
+      ctx.beginPath();ctx.moveTo(cx+dx*c,cy);ctx.lineTo(cx,cy);ctx.lineTo(cx,cy+dy*c);ctx.stroke();
+    });
+    // Text
+    ctx.font="10px 'Share Tech Mono',monospace";
+    ctx.textBaseline='top';ctx.textAlign='left';
+    const pad=8,lh=14;
+    // Prefix in magenta
+    ctx.fillStyle='#ff00ff';
+    ctx.fillText('> DM:',x+pad,y+pad);
+    const prefW=ctx.measureText('> DM: ').width;
+    // Narration in matrix green with word-wrap
+    ctx.fillStyle='#00ff41';
+    const maxW=w-pad*2;
+    let line='',lx=x+pad+prefW,ly=y+pad,first=true;
+    for(const word of visible.split(' ')){
+      const test=line?(line+' '+word):word;
+      const tw=ctx.measureText(test).width;
+      const avail=first?maxW-prefW:maxW;
+      if(tw>avail&&line){
+        ctx.fillText(line,lx,ly);
+        ly+=lh;lx=x+pad;first=false;line=word;
+      }else{line=test;}
+    }
+    if(line)ctx.fillText(line,lx,ly);
+    // Cursor blink while typing
+    if(chars<text.length&&Math.floor(Date.now()/350)%2===0){
+      ctx.fillText('█',lx+ctx.measureText(line).width+2,ly);
+    }
+    ctx.restore();
   },
   triggerKillCam(x,y,color,isCrit,lastDmg){this._killCam={active:true,timer:0,x,y,color:color||'#ff00ff',isCrit:!!isCrit,lastDmg:lastDmg||0};Audio.play('death');},
   triggerSpellFlash(name,icon){this._spellFlash={active:true,timer:0,name:name||'SKILL',icon:icon||'⚡'};},
@@ -4418,6 +4474,152 @@ const SaveSystem = {
   },
   clear(){try{localStorage.removeItem(this._key);}catch{}},
 };
+
+// ═══════════════════════════════════════════════════════════════
+// AI SERVICE — Cloudflare Worker proxy (Phase 4)
+// Game runs fully offline — AI features are progressive enhancement only
+// Deploy worker/worker.js to Cloudflare, then set WORKER_URL below.
+// ═══════════════════════════════════════════════════════════════
+const AIService = {
+  WORKER_URL: 'https://neon-dungeon-ai.neondungeon.workers.dev',
+  TIMEOUT_MS: 3000,
+  enabled: true,
+  async call(feature, payload) {
+    if (!this.WORKER_URL || !this.enabled) return null;
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), this.TIMEOUT_MS);
+    try {
+      const res = await fetch(this.WORKER_URL, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({feature, payload}),
+        signal: ctrl.signal
+      });
+      clearTimeout(tid);
+      if (!res.ok) throw new Error(`Worker ${res.status}`);
+      const data = await res.json();
+      return data.result || null;
+    } catch (err) {
+      clearTimeout(tid);
+      if (err.name !== 'AbortError') {
+        console.warn('[AI] Unreachable — disabling for session');
+        this.enabled = false;
+      } else {
+        console.warn('[AI] Timeout — fallback content used');
+      }
+      return null;
+    }
+  }
+};
+
+// ── AI Prompt Templates (exact per spec Section 10) ──
+const AI_PROMPTS = {
+  boss_narration: (p) =>
+`You are the Dungeon Master of Neon Dungeon, a grimdark cyberpunk roguelike set in a neon-soaked dystopia. Your tone is Warhammer 40K grimness blended with Ghost in the Shell philosophical dread.
+
+CURRENT CONTEXT:
+- Player class: ${p.playerClass}
+- Player level: ${p.playerLevel}
+- Player HP: ${p.playerHp}%
+- Player's active spells: ${p.playerSpells.join(', ')}
+- Zone: ${p.zoneName}
+- Boss: ${p.bossName}
+- Run depth: Zone ${p.runDepth} of 8
+
+REQUIREMENTS:
+- Write exactly 2 sentences of combat narration for this boss encounter
+- First sentence: describe the boss appearing/speaking (menacing, specific to their identity)
+- Second sentence: hint at what the player must do to survive (vague but tactically relevant)
+- Tone: cold, brutal, no hope
+- No emojis, no exclamation points, no hero's journey encouragement
+- Maximum 40 words total
+
+Respond with ONLY the narration text. No preamble, no labels, no quotes.`,
+
+  run_coaching: (p) =>
+`You are a cold, data-driven combat analyst reviewing a cyberpunk dungeon run. Provide tactical coaching with zero sentimentality.
+
+RUN DATA:
+- Outcome: ${p.outcome}
+${p.deathCause ? `- Died to: ${p.deathCause}` : ''}
+- Zones cleared: ${p.zonesCleared}/8
+- Damage dealt/taken ratio: ${(p.totalDamageDealt / Math.max(1, p.totalDamageTaken)).toFixed(2)}
+- Missed counter opportunities: ${p.missedCounters}
+
+REQUIREMENTS:
+- 3 bullet points maximum
+- Each point: one specific, actionable coaching tip based on the data
+- Be blunt. If they played poorly, say so with data.
+- Maximum 15 words per bullet point
+- Format: start each bullet with "▸ "
+
+Respond with ONLY the 3 bullet points. No preamble, no score, no encouragement.`,
+
+  difficulty_tuning: (p) =>
+`You are a difficulty balancer for a roguelike game. Analyze player performance and return a JSON tuning object.
+
+PERFORMANCE DATA (Zone ${p.currentZone} → ${p.nextZone}):
+- HP entering boss: ${p.hpPercentageEnteringBoss}% of max
+- Turns to kill boss: ${p.turnsToKillBoss} (expected: 15-25)
+- Counter miss rate: ${p.counterMissRate}% (healthy: <40%)
+- Deaths this run: ${p.deathsThisRun}
+
+TUNING RULES:
+- If player is dominant (boss HP > 70%, turns < 12, miss rate < 20%): increase challenge
+- If player is struggling (boss HP < 30%, turns > 30, miss rate > 60%): reduce challenge
+- If player is balanced: minor adjustment only
+- Max tuning swing: ±25% stat multiplier, ±15% ability probability
+- Never reduce below 0.7× base stats; never exceed 1.5× base stats
+
+Respond with ONLY valid JSON, no markdown, no explanation:
+{"enemyStatMultiplier":1.0,"abilityProbability":1.0,"reasoning":"one sentence max"}`,
+
+  zone_lore: (p) =>
+`You are the lore keeper of Neon Dungeon, a grimdark cyberpunk city where data is flesh and corporate law is gravity.
+
+ZONE: ${p.zoneName}
+ZONE ID: ${p.zoneId}
+ZONES CLEARED: ${p.zonesCleared}
+
+Write a 2-sentence atmospheric description of this zone. Cold, specific, world-building. No generic cyberpunk cliches.
+Maximum 35 words. Respond with ONLY the description.`,
+
+  spell_commentary: (p) =>
+`You are a cynical netrunner commenting on a loadout swap in a cyberpunk dungeon run.
+
+KEPT: ${p.keptSpell}
+SWAPPED OUT: ${p.rejectedSpell}
+SWAPPED IN: ${p.newSpell}
+ZONE: ${p.zoneName}
+
+Write ONE sentence of dry tactical commentary on this swap decision. Blunt. Max 20 words.
+Respond with ONLY the sentence.`
+};
+
+// ── Fallback boss narrations (used when AI unavailable) ──
+const FALLBACK_BOSS_NARRATIONS = {
+  neonNexusBoss:    "The Nexus guardian coalesces from stolen signal and residual code. The frequency that kills it has never been documented.",
+  corporateBoss:    "The Enforcer marks your file closed before the fight begins. Everything it does next is administrative.",
+  virusBoss:        "The Viral Hive recognizes nothing in you worth preserving. Adaptation is not your ally here.",
+  samuraiBoss:      "The Chrome Samurai has archived three thousand executions. Yours will not be distinguished.",
+  quantumBoss:      "The Quantum Arbiter exists in the outcome of this fight simultaneously. You do not.",
+  _default:         "Something cold and complete regards your approach. It has been waiting — not for you, but for the sequence you complete."
+};
+
+// ── AI Feature: Boss Narration ──
+async function getBossNarration(boss, player, zone) {
+  const payload = {
+    bossName:     boss.name || 'Boss',
+    playerClass:  player.class || 'Runner',
+    playerLevel:  player.level || 1,
+    playerHp:     Math.round(((player.hp||1) / (player.maxHp||1)) * 100),
+    playerSpells: (player.spells || []).map(s => s.name),
+    zoneName:     zone?.name || 'Unknown Zone',
+    runDepth:     (GameState.zonesCleared || []).length + 1
+  };
+  const result = await AIService.call('boss_narration', payload);
+  return result || FALLBACK_BOSS_NARRATIONS[boss.id] || FALLBACK_BOSS_NARRATIONS._default;
+}
 
 // ═══════════════════════════════════════════════════════════════
 // MANGA INTRO — cinematic panel reveal before world map

@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "game",
-      "runtimeExecutable": "powershell.exe",
-      "runtimeArgs": ["-ExecutionPolicy", "Bypass", "-File", "C:\\Users\\carlo\\OneDrive\\game\\serve.ps1"],
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "-l", "9777", "C:\\game\\.claude\\worktrees\\funny-bouman"],
       "port": 9777,
       "autoPort": false
     }
