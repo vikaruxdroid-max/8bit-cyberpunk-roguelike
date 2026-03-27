@@ -1693,7 +1693,13 @@ const Arena = {
     // Init hex particles
     this._initHexParticles();
     window.addEventListener('resize', () => this.resize());
-    requestAnimationFrame(() => this.loop());
+    requestAnimationFrame(ts=>this.loop(ts));
+    this.cv.addEventListener('click',e=>{
+      if(GameState.miniGame&&GameState.miniGame.active&&GameState.miniGame.phase==='playing'){
+        const rect=this.cv.getBoundingClientRect();
+        handleMiniGameClick(e,e.clientX-rect.left,e.clientY-rect.top);
+      }
+    });
   },
 
   _initHexParticles(){
@@ -1718,7 +1724,9 @@ const Arena = {
     if (w > 40 && h > 40) { this.W = w; this.H = h; this.cv.width = w; this.cv.height = h; }
   },
 
-  loop() {
+  loop(ts) {
+    const dt = this._prevTs ? Math.min(ts - this._prevTs, 50) : 16;
+    this._prevTs = ts;
     this.time++;
     // Auto-resize check every 30 frames (not every frame)
     if (this.time%30===0 && this.cv && this.cv.parentElement) {
@@ -1727,8 +1735,9 @@ const Arena = {
         this.W = pw; this.H = ph; this.cv.width = pw; this.cv.height = ph;
       }
     }
+    if(GameState.miniGame&&GameState.miniGame.active)updateMiniGame(dt);
     this.render();
-    requestAnimationFrame(() => this.loop());
+    requestAnimationFrame(ts=>this.loop(ts));
   },
 
   render() {
@@ -1741,6 +1750,8 @@ const Arena = {
     ctx.shadowColor = 'transparent';
 
     ctx.clearRect(0, 0, W, H);
+    // Mini-game full-screen override (Phase 2.1)
+    if(GameState.miniGame&&GameState.miniGame.active){renderMiniGame(ctx);return;}
     // Subtle parallax on background image (cached DOM ref)
     if(!this._wrapEl)this._wrapEl=document.getElementById('arenaWrap');
     if(this._wrapEl&&t%2===0){const px=Math.sin(t*0.008)*8,py=Math.cos(t*0.006)*4;this._wrapEl.style.backgroundPosition=`calc(50% + ${px|0}px) calc(50% + ${py|0}px)`;}
@@ -4877,6 +4888,10 @@ const GameState = {
   currentZoneId:null,
   zonesCleared:[],
   zonesUnlocked:['neonNexus'],
+  // Mini-game system (Phase 2.1)
+  lastRoomWasMiniGame:false, pendingSecretRoom:null, zoneBossDefeated:false,
+  _pendingRoomIdx:0,
+  miniGame:{active:false,type:null,phase:'intro',score:null,timer:0,timerMax:0,data:{},introTimer:1500,resultTimer:2000},
 };
 
 class Player {
@@ -5412,6 +5427,469 @@ function _clearSpellHalos(){
   document.querySelectorAll('.spbtn').forEach(btn=>{btn.style.boxShadow='';btn.style.borderColor='';});
 }
 
+// ============================================================
+// MINI-GAME SYSTEM — Phase 2.1
+// ============================================================
+
+const MINIGAME_TYPES=['hack','lock','code','reflex','hustle','memory'];
+const MINIGAME_NAMES={hack:'HACKING TERMINAL',lock:'LOCKPICK SEQUENCE',code:'CODE BREAKER',reflex:'NEURAL REFLEX TEST',hustle:'MARKET HUSTLE',memory:'DATA CORRUPTION'};
+
+function checkMiniGameTrigger(nextIdx){
+  const state=GameState;
+  const nextRoom=state.currentFloor?.rooms[nextIdx];
+  if(nextRoom&&nextRoom.type==='boss')return false;
+  if(state.lastRoomWasMiniGame)return false;
+  if(state.roomsCleared===0||state.roomsCleared%3!==0)return false;
+  const chance=state.zoneBossDefeated?0.40:0.25;
+  return Math.random()<chance;
+}
+
+function openMiniGame(){
+  const mg=GameState.miniGame;
+  mg.active=true;
+  mg.type=MINIGAME_TYPES[Math.floor(Math.random()*MINIGAME_TYPES.length)];
+  mg.phase='intro';mg.score=null;mg.introTimer=1500;mg.resultTimer=2000;mg.data={};
+  initMiniGameData(mg.type);
+}
+
+function initMiniGameData(type){
+  const mg=GameState.miniGame;
+  switch(type){
+    case 'hack':
+      mg.timer=30000;mg.timerMax=30000;
+      mg.data={grid:generateHackGrid(),revealed:new Array(16).fill(false),matched:new Array(16).fill(false),firstPick:null,lockout:false,lockoutTimer:0};
+      break;
+    case 'lock':
+      mg.timer=20000;mg.timerMax=20000;
+      mg.data={tumblers:3,solved:0,angle:0,sweepSpeed:0.04,safeStart:Math.random()*Math.PI*2,safeWidth:Math.PI/6,failed:false};
+      break;
+    case 'code':
+      mg.timer=0;mg.timerMax=0;
+      mg.data={secret:generateCodeSecret(),guesses:[],currentInput:[],maxGuesses:6};
+      break;
+    case 'reflex':
+      mg.timer=0;mg.timerMax=0;
+      mg.data={prompts:generateReflexPrompts(5),current:0,score:0,showAt:1000,windowMs:800,promptVisible:false};
+      break;
+    case 'hustle':
+      mg.timer=0;mg.timerMax=0;
+      mg.data={cups:[0,1,2],ballCup:0,shuffles:0,maxShuffles:6+((GameState.currentFloor?.rooms?.length||6)/2|0),shuffleTimer:600,shuffleSpeed:600,bet:25,revealed:false,playerPick:null};
+      break;
+    case 'memory':
+      const len=Math.min(7,4+Math.floor((GameState.currentFloor?.rooms?.length||6)/4));
+      mg.timer=0;mg.timerMax=0;
+      mg.data={sequence:generateMemorySequence(len),showing:true,showIndex:0,showTimer:500,input:[],symbols:['⌘','⟁','⬡','◈','⊛','⌬','⊕','⋈']};
+      break;
+  }
+}
+
+function updateMiniGame(dt){
+  const mg=GameState.miniGame;
+  if(!mg.active)return;
+  if(mg.phase==='intro'){mg.introTimer-=dt;if(mg.introTimer<=0)mg.phase='playing';return;}
+  if(mg.phase==='result'){mg.resultTimer-=dt;if(mg.resultTimer<=0)closeMiniGame();return;}
+  if(mg.timerMax>0){mg.timer=Math.max(0,mg.timer-dt);if(mg.timer<=0){resolveMiniGame('timeout');return;}}
+  switch(mg.type){
+    case 'hack':
+      if(mg.data.lockout){mg.data.lockoutTimer-=dt;if(mg.data.lockoutTimer<=0){mg.data.lockout=false;mg.data.revealed=mg.data.revealed.map((r,i)=>mg.data.matched[i]?r:false);}}
+      break;
+    case 'lock':   updateLockpick(dt); break;
+    case 'reflex': updateReflex(dt); break;
+    case 'hustle': updateHustle(dt); break;
+    case 'memory': updateMemory(dt); break;
+  }
+}
+
+function resolveMiniGame(reason){
+  const mg=GameState.miniGame;
+  mg.score=(reason==='timeout'||reason==='fail')?'FAIL':reason;
+  mg.phase='result';
+  DM.say('MINI-GAME: '+MINIGAME_NAMES[mg.type]+' \u2014 '+mg.score);
+  if(mg.score!=='FAIL')GameState.pendingSecretRoom=mg.score;
+}
+
+function closeMiniGame(){
+  const mg=GameState.miniGame;
+  mg.active=false;
+  GameState.lastRoomWasMiniGame=true;
+  if(GameState.pendingSecretRoom){
+    openSecretRoom(GameState.pendingSecretRoom);
+  }else{
+    Game.enterRoom(GameState._pendingRoomIdx);
+  }
+}
+
+function openSecretRoom(tier){
+  // Stub — implemented in Block 2.2
+  DM.say('SECRET ROOM ['+tier+'] — unlocked by Block 2.2');
+  GameState.pendingSecretRoom=null;
+  Game.enterRoom(GameState._pendingRoomIdx);
+}
+
+// ── HACK (Pattern Match) ──
+function generateHackGrid(){
+  const symbols=['⌘','⟁','⬡','◈','⊛','⌬','⊕','⋈'];
+  const pairs=[...symbols,...symbols];
+  for(let i=pairs.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pairs[i],pairs[j]]=[pairs[j],pairs[i]];}
+  return pairs;
+}
+function handleHackClick(cellIndex){
+  const d=GameState.miniGame.data;
+  if(d.lockout||d.matched[cellIndex]||d.revealed[cellIndex])return;
+  d.revealed[cellIndex]=true;
+  if(d.firstPick===null){d.firstPick=cellIndex;}
+  else{
+    const a=d.firstPick,b=cellIndex;
+    if(d.grid[a]===d.grid[b]){
+      d.matched[a]=d.matched[b]=true;d.firstPick=null;
+      if(d.matched.every(m=>m)){const pct=GameState.miniGame.timer/GameState.miniGame.timerMax;resolveMiniGame(pct>0.5?'GOLD':pct>0.17?'SILVER':'BRONZE');}
+    }else{d.lockout=true;d.lockoutTimer=800;d.firstPick=null;}
+  }
+}
+function renderHackGame(ctx){
+  const d=GameState.miniGame.data;
+  const cw=Arena.W,ch=Arena.H;
+  const cellSize=56,cols=4,rows=4;
+  const gridW=cols*cellSize+(cols-1)*8,gridH=rows*cellSize+(rows-1)*8;
+  const startX=cw/2-gridW/2,startY=ch/2-gridH/2;
+  for(let i=0;i<16;i++){
+    const col=i%cols,row=Math.floor(i/cols);
+    const x=startX+col*(cellSize+8),y=startY+row*(cellSize+8);
+    ctx.save();
+    if(d.matched[i]){ctx.fillStyle='#003300';ctx.strokeStyle='#00ff41';}
+    else if(d.revealed[i]){ctx.fillStyle='#1a001a';ctx.strokeStyle='#ff00ff';}
+    else{ctx.fillStyle='#0a0a1a';ctx.strokeStyle='#00ffff';}
+    ctx.lineWidth=1;ctx.fillRect(x,y,cellSize,cellSize);ctx.strokeRect(x,y,cellSize,cellSize);
+    if(d.revealed[i]||d.matched[i]){
+      ctx.font='20px "Share Tech Mono"';ctx.fillStyle=d.matched[i]?'#00ff41':'#ff00ff';ctx.textAlign='center';
+      ctx.fillText(d.grid[i],x+cellSize/2,y+cellSize/2+7);ctx.textAlign='left';
+    }else{
+      ctx.font='10px "Press Start 2P"';ctx.fillStyle='#1a3a3a';ctx.textAlign='center';
+      ctx.fillText('?',x+cellSize/2,y+cellSize/2+4);ctx.textAlign='left';
+    }
+    ctx.restore();
+  }
+}
+function getMiniGameHackCell(x,y){
+  const cw=Arena.W,ch=Arena.H,cellSize=56,cols=4;
+  const gridW=cols*cellSize+(cols-1)*8,gridH=cols*cellSize+(cols-1)*8;
+  const startX=cw/2-gridW/2,startY=ch/2-gridH/2;
+  for(let i=0;i<16;i++){
+    const col=i%cols,row=Math.floor(i/cols);
+    const cx=startX+col*(cellSize+8),cy=startY+row*(cellSize+8);
+    if(x>=cx&&x<=cx+cellSize&&y>=cy&&y<=cy+cellSize)return i;
+  }
+  return null;
+}
+
+// ── LOCKPICK (Timing) ──
+function updateLockpick(dt){
+  const d=GameState.miniGame.data;
+  d.angle=(d.angle+d.sweepSpeed*dt/16)%(Math.PI*2);
+}
+function handleLockpickClick(){
+  const d=GameState.miniGame.data;
+  let diff=Math.abs(d.angle-d.safeStart);
+  if(diff>Math.PI)diff=Math.PI*2-diff;
+  if(diff<d.safeWidth/2){
+    d.solved++;DM.say('TUMBLER '+d.solved+' LOCKED');
+    if(d.solved>=d.tumblers){resolveMiniGame('GOLD');return;}
+    d.safeWidth=Math.max(0.15,d.safeWidth-0.05);d.safeStart=Math.random()*Math.PI*2;d.sweepSpeed+=0.005;
+    GameState.miniGame.timer=20000-(d.solved*5000);
+  }else{
+    GameState.miniGame.timer=Math.max(1000,GameState.miniGame.timer-3000);
+    DM.say('SLIP! TUMBLER RESET');d.safeStart=Math.random()*Math.PI*2;
+  }
+}
+function renderLockpick(ctx){
+  const d=GameState.miniGame.data;
+  const cw=Arena.W,ch=Arena.H,cx=cw/2,cy=ch/2,r=120;
+  ctx.save();
+  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.strokeStyle='#333355';ctx.lineWidth=12;ctx.stroke();
+  ctx.beginPath();ctx.arc(cx,cy,r,d.safeStart-d.safeWidth/2,d.safeStart+d.safeWidth/2);ctx.strokeStyle='#00ff41';ctx.lineWidth=12;ctx.stroke();
+  const ix=cx+Math.cos(d.angle)*r,iy=cy+Math.sin(d.angle)*r;
+  ctx.beginPath();ctx.arc(ix,iy,8,0,Math.PI*2);ctx.fillStyle='#ff00ff';ctx.shadowColor='#ff00ff';ctx.shadowBlur=10;ctx.fill();ctx.shadowBlur=0;
+  ctx.font='9px "Press Start 2P"';ctx.fillStyle='#00ffff';ctx.textAlign='center';
+  ctx.fillText('TUMBLER '+(d.solved+1)+' / '+d.tumblers,cx,cy+r+30);ctx.textAlign='left';ctx.restore();
+}
+
+// ── CODE BREAKER (Wordle-style) ──
+function generateCodeSecret(){return[0,1,2,3].map(()=>Math.floor(Math.random()*10));}
+function handleCodeInput(digit){const d=GameState.miniGame.data;if(d.currentInput.length<4)d.currentInput.push(digit);}
+function handleCodeDelete(){GameState.miniGame.data.currentInput.pop();}
+function handleCodeSubmit(){
+  const d=GameState.miniGame.data;if(d.currentInput.length<4)return;
+  const guess=[...d.currentInput];
+  const result=guess.map((g,i)=>g===d.secret[i]?'correct':d.secret.includes(g)?'misplaced':'wrong');
+  d.guesses.push({digits:guess,result});d.currentInput=[];
+  if(result.every(r=>r==='correct')){const n=d.guesses.length;resolveMiniGame(n<=2?'GOLD':n<=4?'SILVER':'BRONZE');return;}
+  if(d.guesses.length>=d.maxGuesses)resolveMiniGame('FAIL');
+}
+function renderCodeBreaker(ctx){
+  const d=GameState.miniGame.data;
+  const cw=Arena.W,ch=Arena.H;
+  const cellW=50,cellH=50,gap=10,rowH=cellH+gap;
+  const gridX=cw/2-(cellW*4+gap*3)/2,gridY=80;
+  d.guesses.forEach((g,row)=>{
+    g.digits.forEach((digit,col)=>{
+      const x=gridX+col*(cellW+gap),y=gridY+row*rowH;
+      const color=g.result[col]==='correct'?'#00ff41':g.result[col]==='misplaced'?'#ffff00':'#333355';
+      ctx.save();ctx.fillStyle=color;ctx.fillRect(x,y,cellW,cellH);
+      ctx.font='16px "Press Start 2P"';ctx.fillStyle='#000000';ctx.textAlign='center';
+      ctx.fillText(digit,x+cellW/2,y+cellH/2+6);ctx.textAlign='left';ctx.restore();
+    });
+  });
+  const curRow=d.guesses.length;
+  [0,1,2,3].forEach(col=>{
+    const x=gridX+col*(cellW+gap),y=gridY+curRow*rowH;
+    ctx.save();ctx.fillStyle='#0a0a1a';ctx.strokeStyle='#00ffff';ctx.lineWidth=1;
+    ctx.fillRect(x,y,cellW,cellH);ctx.strokeRect(x,y,cellW,cellH);
+    if(d.currentInput[col]!==undefined){ctx.font='16px "Press Start 2P"';ctx.fillStyle='#00ffff';ctx.textAlign='center';ctx.fillText(d.currentInput[col],x+cellW/2,y+cellH/2+6);ctx.textAlign='left';}
+    ctx.restore();
+  });
+  const btnY=gridY+7*rowH+10,btnW=44,btnH=36;
+  for(let i=0;i<10;i++){
+    const x=gridX+(i%5)*(btnW+8),by=btnY+Math.floor(i/5)*(btnH+8);
+    ctx.save();ctx.fillStyle='#111122';ctx.strokeStyle='#00ffff';ctx.lineWidth=1;
+    ctx.fillRect(x,by,btnW,btnH);ctx.strokeRect(x,by,btnW,btnH);
+    ctx.font='11px "Press Start 2P"';ctx.fillStyle='#00ffff';ctx.textAlign='center';
+    ctx.fillText(i,x+btnW/2,by+btnH/2+4);ctx.textAlign='left';ctx.restore();
+  }
+  // DELETE and SUBMIT buttons
+  const row2Y=btnY+2*(btnH+8);
+  ctx.save();ctx.fillStyle='#1a0808';ctx.strokeStyle='#ff4444';ctx.lineWidth=1;
+  ctx.fillRect(gridX,row2Y,btnW*2+8,btnH);ctx.strokeRect(gridX,row2Y,btnW*2+8,btnH);
+  ctx.font='7px "Press Start 2P"';ctx.fillStyle='#ff4444';ctx.textAlign='center';
+  ctx.fillText('DEL',gridX+(btnW*2+8)/2,row2Y+btnH/2+3);
+  const submitX=gridX+3*(btnW+8);
+  ctx.fillStyle='#081a08';ctx.strokeStyle='#00ff41';
+  ctx.fillRect(submitX,row2Y,btnW*2+8,btnH);ctx.strokeRect(submitX,row2Y,btnW*2+8,btnH);
+  ctx.fillStyle='#00ff41';ctx.fillText('OK',submitX+(btnW*2+8)/2,row2Y+btnH/2+3);
+  ctx.textAlign='left';ctx.restore();
+}
+function getMiniGameCodeBtn(x,y){
+  const cw=Arena.W;
+  const cellW=50,cellH=50,gap=10,rowH=cellH+gap;
+  const gridX=cw/2-(cellW*4+gap*3)/2,gridY=80;
+  const btnY=gridY+7*rowH+10,btnW=44,btnH=36;
+  for(let i=0;i<10;i++){
+    const bx=gridX+(i%5)*(btnW+8),by=btnY+Math.floor(i/5)*(btnH+8);
+    if(x>=bx&&x<=bx+btnW&&y>=by&&y<=by+btnH)return i;
+  }
+  const row2Y=btnY+2*(btnH+8);
+  if(x>=gridX&&x<=gridX+btnW*2+8&&y>=row2Y&&y<=row2Y+btnH)return 'DELETE';
+  const submitX=gridX+3*(btnW+8);
+  if(x>=submitX&&x<=submitX+btnW*2+8&&y>=row2Y&&y<=row2Y+btnH)return 'SUBMIT';
+  return null;
+}
+
+// ── NEURAL REFLEX (Reaction) ──
+function generateReflexPrompts(count){const opts=['UP','DOWN','LEFT','RIGHT','A','B'];return Array.from({length:count},()=>opts[Math.floor(Math.random()*opts.length)]);}
+function updateReflex(dt){
+  const d=GameState.miniGame.data;
+  if(d.current>=d.prompts.length)return;
+  if(!d.promptVisible){d.showAt-=dt;if(d.showAt<=0){d.promptVisible=true;d.showAt=d.windowMs;}}
+  else{d.showAt-=dt;if(d.showAt<=0){d.promptVisible=false;d.current++;d.showAt=400;if(d.current>=d.prompts.length)finishReflex();}}
+}
+function handleReflexInput(label){
+  const d=GameState.miniGame.data;
+  if(!d.promptVisible||d.current>=d.prompts.length)return;
+  if(label===d.prompts[d.current]){const rt=d.windowMs-d.showAt;if(rt<600)d.score++;else if(rt<d.windowMs)d.score+=0.5;}
+  d.promptVisible=false;d.current++;d.showAt=400;
+  if(d.current>=d.prompts.length)finishReflex();
+}
+function finishReflex(){const d=GameState.miniGame.data;const pct=d.score/d.prompts.length;resolveMiniGame(pct>=0.8?'GOLD':pct>=0.5?'SILVER':pct>0?'BRONZE':'FAIL');}
+function renderReflex(ctx){
+  const d=GameState.miniGame.data;
+  const cw=Arena.W,ch=Arena.H;
+  // Progress indicator
+  ctx.save();ctx.font='8px "Press Start 2P"';ctx.fillStyle='#555577';ctx.textAlign='center';
+  ctx.fillText((d.current+1)+'/'+d.prompts.length,cw/2,ch/2-80);ctx.textAlign='left';ctx.restore();
+  if(!d.promptVisible||d.current>=d.prompts.length){}
+  else{
+    const prompt=d.prompts[d.current];
+    ctx.save();ctx.font='32px "Press Start 2P"';ctx.fillStyle='#ff00ff';ctx.shadowColor='#ff00ff';ctx.shadowBlur=20;ctx.textAlign='center';
+    ctx.fillText(prompt,cw/2,ch/2);ctx.shadowBlur=0;ctx.textAlign='left';ctx.restore();
+  }
+  const btns=['UP','DOWN','LEFT','RIGHT','A','B'];
+  const currentPrompt=d.current<d.prompts.length?d.prompts[d.current]:null;
+  btns.forEach((label,i)=>{
+    const x=80+(i%3)*120,y=ch-120+Math.floor(i/3)*50;
+    ctx.save();ctx.fillStyle=label===currentPrompt&&d.promptVisible?'#1a001a':'#0a0a1a';
+    ctx.strokeStyle=label===currentPrompt&&d.promptVisible?'#ff00ff':'#333355';ctx.lineWidth=1;
+    ctx.fillRect(x,y,100,36);ctx.strokeRect(x,y,100,36);
+    ctx.font='8px "Press Start 2P"';ctx.fillStyle='#aaaaaa';ctx.textAlign='center';
+    ctx.fillText(label,x+50,y+22);ctx.textAlign='left';ctx.restore();
+  });
+}
+function getMiniGameReflexBtn(x,y){
+  const ch=Arena.H;
+  const btns=['UP','DOWN','LEFT','RIGHT','A','B'];
+  for(let i=0;i<btns.length;i++){
+    const bx=80+(i%3)*120,by=ch-120+Math.floor(i/3)*50;
+    if(x>=bx&&x<=bx+100&&y>=by&&y<=by+36)return btns[i];
+  }
+  return null;
+}
+
+// ── MARKET HUSTLE (Shell Game) ──
+function updateHustle(dt){
+  const d=GameState.miniGame.data;
+  if(d.shuffles>=d.maxShuffles||d.revealed)return;
+  d.shuffleTimer-=dt;
+  if(d.shuffleTimer<=0){
+    const a=Math.floor(Math.random()*3);let b=Math.floor(Math.random()*2);if(b>=a)b++;
+    [d.cups[a],d.cups[b]]=[d.cups[b],d.cups[a]];
+    d.shuffles++;d.shuffleTimer=d.shuffleSpeed;d.shuffleSpeed=Math.max(200,d.shuffleSpeed-30);
+  }
+}
+function handleHustleClick(cupIndex){
+  const d=GameState.miniGame.data;
+  if(d.shuffles<d.maxShuffles||d.revealed)return;
+  d.playerPick=cupIndex;d.revealed=true;
+  const won=d.cups[cupIndex]===d.ballCup;
+  if(won){Inventory.gold=(Inventory.gold||0)+d.bet*2;resolveMiniGame('GOLD');}
+  else{Inventory.gold=Math.max(0,(Inventory.gold||0)-d.bet);resolveMiniGame('BRONZE');}
+}
+function renderHustle(ctx){
+  const d=GameState.miniGame.data;
+  const cw=Arena.W,ch=Arena.H,cupW=70,cupH=90;
+  const positions=[cw/2-160,cw/2-35,cw/2+90];
+  positions.forEach((x,i)=>{
+    const hasBall=d.cups[i]===d.ballCup,y=ch/2-cupH/2;
+    ctx.save();ctx.fillStyle=d.playerPick===i?'#1a1a00':'#0a0a1a';
+    ctx.strokeStyle=d.playerPick===i?'#ffd700':'#00ffff';ctx.lineWidth=1.5;
+    ctx.fillRect(x,y,cupW,cupH);ctx.strokeRect(x,y,cupW,cupH);
+    ctx.font='8px "Press Start 2P"';ctx.fillStyle='#aaaaaa';ctx.textAlign='center';
+    ctx.fillText('CUP '+(i+1),x+cupW/2,y+cupH+20);
+    if(d.revealed&&hasBall){ctx.font='24px "Share Tech Mono"';ctx.fillStyle='#ffd700';ctx.fillText('\u25CF',x+cupW/2,y+cupH/2+8);}
+    ctx.textAlign='left';ctx.restore();
+  });
+  if(!d.revealed){
+    ctx.font='8px "Press Start 2P"';ctx.fillStyle='#ffd700';ctx.textAlign='center';
+    ctx.fillText('BET: '+d.bet+' CR',cw/2,ch/2+cupH/2+50);
+    if(d.shuffles>=d.maxShuffles){ctx.fillStyle='#00ffff';ctx.fillText('PICK A CUP',cw/2,ch/2+cupH/2+70);}
+    ctx.textAlign='left';
+  }
+}
+function getMiniGameHustleCup(x,y){
+  const cw=Arena.W,ch=Arena.H,cupW=70,cupH=90;
+  const positions=[cw/2-160,cw/2-35,cw/2+90];
+  const cupY=ch/2-cupH/2;
+  for(let i=0;i<3;i++){if(x>=positions[i]&&x<=positions[i]+cupW&&y>=cupY&&y<=cupY+cupH)return i;}
+  return null;
+}
+
+// ── DATA CORRUPTION (Memory Sequence) ──
+function generateMemorySequence(len){const s=['⌘','⟁','⬡','◈','⊛','⌬','⊕','⋈'];return Array.from({length:len},()=>s[Math.floor(Math.random()*s.length)]);}
+function updateMemory(dt){
+  const d=GameState.miniGame.data;
+  if(!d.showing)return;
+  d.showTimer-=dt;
+  if(d.showTimer<=0){
+    d.showIndex++;
+    if(d.showIndex>=d.sequence.length){d.showing=false;GameState.miniGame.timer=10000;GameState.miniGame.timerMax=10000;}
+    else{d.showTimer=500;}
+  }
+}
+function handleMemoryInput(symbol){
+  const d=GameState.miniGame.data;if(d.showing)return;
+  d.input.push(symbol);
+  const idx=d.input.length-1;
+  if(d.input[idx]!==d.sequence[idx]){resolveMiniGame('FAIL');return;}
+  if(d.input.length===d.sequence.length){const tb=GameState.miniGame.timer/GameState.miniGame.timerMax;resolveMiniGame(tb>0.6?'GOLD':tb>0.3?'SILVER':'BRONZE');}
+}
+function renderMemory(ctx){
+  const d=GameState.miniGame.data;
+  const cw=Arena.W,ch=Arena.H,btnSize=70,gap=12,cols=4;
+  const gridW=cols*btnSize+(cols-1)*gap,gridX=cw/2-gridW/2,gridY=ch-220;
+  if(d.showing&&d.showIndex<d.sequence.length){
+    ctx.save();ctx.font='48px "Share Tech Mono"';ctx.fillStyle='#ff00ff';ctx.shadowColor='#ff00ff';ctx.shadowBlur=20;
+    ctx.textAlign='center';ctx.fillText(d.sequence[d.showIndex],cw/2,ch/2);ctx.shadowBlur=0;ctx.textAlign='left';ctx.restore();
+    ctx.save();ctx.font='8px "Press Start 2P"';ctx.fillStyle='#555577';ctx.textAlign='center';
+    ctx.fillText('MEMORIZE: '+(d.showIndex+1)+'/'+d.sequence.length,cw/2,ch/2-60);ctx.textAlign='left';ctx.restore();
+  }
+  if(!d.showing){
+    d.symbols.forEach((sym,i)=>{
+      const col=i%cols,row=Math.floor(i/cols);
+      const x=gridX+col*(btnSize+gap),y=gridY+row*(btnSize+gap);
+      ctx.save();ctx.fillStyle='#0a0a1a';ctx.strokeStyle='#00ffff';ctx.lineWidth=1;
+      ctx.fillRect(x,y,btnSize,btnSize);ctx.strokeRect(x,y,btnSize,btnSize);
+      ctx.font='22px "Share Tech Mono"';ctx.fillStyle='#00ffff';ctx.textAlign='center';
+      ctx.fillText(sym,x+btnSize/2,y+btnSize/2+8);ctx.textAlign='left';ctx.restore();
+    });
+    d.sequence.forEach((_,i)=>{
+      const filled=i<d.input.length;
+      ctx.save();ctx.beginPath();ctx.arc(cw/2-(d.sequence.length*16)/2+i*16+8,70,5,0,Math.PI*2);
+      ctx.fillStyle=filled?'#00ff41':'#333355';ctx.fill();ctx.restore();
+    });
+  }
+}
+function getMiniGameMemorySymbol(x,y){
+  const cw=Arena.W,ch=Arena.H,btnSize=70,gap=12,cols=4;
+  const gridW=cols*btnSize+(cols-1)*gap,gridX=cw/2-gridW/2,gridY=ch-220;
+  const symbols=['⌘','⟁','⬡','◈','⊛','⌬','⊕','⋈'];
+  for(let i=0;i<symbols.length;i++){
+    const col=i%cols,row=Math.floor(i/cols);
+    const bx=gridX+col*(btnSize+gap),by=gridY+row*(btnSize+gap);
+    if(x>=bx&&x<=bx+btnSize&&y>=by&&y<=by+btnSize)return symbols[i];
+  }
+  return null;
+}
+
+// ── RENDER DISPATCHER ──
+function renderMiniGame(ctx){
+  const mg=GameState.miniGame;
+  const cw=Arena.W,ch=Arena.H;
+  ctx.fillStyle='#050510';ctx.fillRect(0,0,cw,ch);
+  for(let y=0;y<ch;y+=4){ctx.fillStyle='rgba(0,0,0,0.15)';ctx.fillRect(0,y,cw,2);}
+  if(mg.phase==='intro'){
+    ctx.save();ctx.font='12px "Press Start 2P"';ctx.fillStyle='#00ffff';ctx.textAlign='center';
+    ctx.fillText('MINI-GAME',cw/2,ch/2-20);
+    ctx.font='9px "Press Start 2P"';ctx.fillStyle='#ff00ff';
+    ctx.fillText(MINIGAME_NAMES[mg.type],cw/2,ch/2+10);ctx.textAlign='left';ctx.restore();return;
+  }
+  if(mg.phase==='result'){renderMiniGameResult(ctx,mg);return;}
+  ctx.save();ctx.font='8px "Press Start 2P"';ctx.fillStyle='#555577';ctx.fillText(MINIGAME_NAMES[mg.type],20,30);
+  if(mg.timerMax>0){
+    const pct=mg.timer/mg.timerMax,tc=pct>0.5?'#00ffff':pct>0.25?'#ff8800':'#ff4444';
+    ctx.fillStyle=tc;ctx.textAlign='right';ctx.fillText(Math.ceil(mg.timer/1000)+'s',cw-20,30);ctx.textAlign='left';
+    ctx.fillStyle=tc;ctx.fillRect(20,38,(cw-40)*pct,3);
+  }
+  ctx.restore();
+  switch(mg.type){
+    case 'hack':   renderHackGame(ctx); break;
+    case 'lock':   renderLockpick(ctx); break;
+    case 'code':   renderCodeBreaker(ctx); break;
+    case 'reflex': renderReflex(ctx); break;
+    case 'hustle': renderHustle(ctx); break;
+    case 'memory': renderMemory(ctx); break;
+  }
+}
+function renderMiniGameResult(ctx,mg){
+  const cw=Arena.W,ch=Arena.H;
+  const scoreColors={GOLD:'#ffd700',SILVER:'#cccccc',BRONZE:'#cd7f32',FAIL:'#ff4444'};
+  const color=scoreColors[mg.score]||'#ffffff';
+  ctx.save();ctx.font='14px "Press Start 2P"';ctx.fillStyle=color;ctx.shadowColor=color;ctx.shadowBlur=16;ctx.textAlign='center';
+  ctx.fillText(mg.score,cw/2,ch/2-10);ctx.shadowBlur=0;
+  ctx.font='7px "Press Start 2P"';ctx.fillStyle='#aaaaaa';
+  ctx.fillText(mg.score!=='FAIL'?'SECRET ROOM UNLOCKED':'NO SECRET ROOM',cw/2,ch/2+20);
+  ctx.textAlign='left';ctx.restore();
+}
+
+// ── CLICK DISPATCHER ──
+function handleMiniGameClick(event,x,y){
+  const mg=GameState.miniGame;
+  switch(mg.type){
+    case 'hack':{const ci=getMiniGameHackCell(x,y);if(ci!==null)handleHackClick(ci);break;}
+    case 'lock':handleLockpickClick();break;
+    case 'code':{const cb=getMiniGameCodeBtn(x,y);if(cb==='DELETE')handleCodeDelete();else if(cb==='SUBMIT')handleCodeSubmit();else if(cb!==null)handleCodeInput(cb);break;}
+    case 'reflex':{const rb=getMiniGameReflexBtn(x,y);if(rb)handleReflexInput(rb);break;}
+    case 'hustle':{const ci=getMiniGameHustleCup(x,y);if(ci!==null)handleHustleClick(ci);break;}
+    case 'memory':{const ms=getMiniGameMemorySymbol(x,y);if(ms)handleMemoryInput(ms);break;}
+  }
+}
+
 const Combat = {
   _dpsWindow:[],_dpsVal:0,
   _trackDPS(dmg){
@@ -5867,7 +6345,13 @@ const Combat = {
             LootScreen.reset();
             try{
               if(nextIdx<totalRooms){
-                Game.enterRoom(nextIdx);
+                GameState.lastRoomWasMiniGame=false;
+                if(checkMiniGameTrigger(nextIdx)){
+                  GameState._pendingRoomIdx=nextIdx;
+                  openMiniGame();
+                }else{
+                  Game.enterRoom(nextIdx);
+                }
               } else {
                 WorldMap.show();
               }
