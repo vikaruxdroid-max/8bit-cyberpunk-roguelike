@@ -1,0 +1,1 @@
+﻿wrangler secret put ANTHROPIC_API_KEY
