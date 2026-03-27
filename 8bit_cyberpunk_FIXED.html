@@ -2232,7 +2232,7 @@ const Arena = {
       if (enWasHurt) ctx.restore();
 
       // HP bar — bigger with colored fill
-      this.hpBar(ctx, ex-4, ey - 16, sz.w+8, en.hp, en.maxHp, en.color || RD);
+      this.hpBar(ctx, ex-4, ey - 16, sz.w+8, en.hp, en.maxHp, en.color || RD, en.isBoss?en.phase:null);
       // Name label with dark background
       ctx.save();
       const eName = en.name.slice(0,12);
@@ -2377,6 +2377,11 @@ const Arena = {
     // Reaction combat overlay (Phase 1.4) — renders on top of everything
     if (GameState._reactionPhase && GameState._reactionPhase.active) {
       renderReactionPhase(ctx, GameState._reactionPhase);
+    }
+
+    // Phase transition banner (Phase 1.2) — renders above reaction overlay
+    if (GameState._phaseBanner && GameState._phaseBanner.active) {
+      renderPhaseBanner(ctx);
     }
 
     // Vignettes
@@ -2991,18 +2996,26 @@ const Arena = {
     if(hasRoomBg2[zoneId]) ctx.restore();
   },
 
-  hpBar(ctx, x, y, w, hp, maxHp, col) {
+  hpBar(ctx, x, y, w, hp, maxHp, col, bossPhase=null) {
     const pct = Math.max(0, hp/maxHp);
     const h=7;
     // Dark background with border
     ctx.fillStyle='rgba(0,0,0,0.7)'; ctx.fillRect(x-1, y-1, w+2, h+2);
     ctx.fillStyle='#0a0a14'; ctx.fillRect(x, y, w, h);
-    // Color based on HP%
-    let barColor;
-    if(pct>0.6)barColor=col||'#39ff14';
-    else if(pct>0.3)barColor='#ffcc00';
-    else barColor='#ff2244';
-    ctx.fillStyle=barColor; ctx.fillRect(x, y, w*pct, h);
+    // Phase-aware color override for boss enemies
+    if(bossPhase!==null){
+      const phaseColor={1:'#00ffff',2:'#ff8800',3:'#ff4444'}[bossPhase]||col||'#39ff14';
+      if(bossPhase===3)ctx.globalAlpha=0.7+Math.sin(Date.now()/200)*0.3;
+      ctx.fillStyle=phaseColor; ctx.fillRect(x, y, w*pct, h);
+      ctx.globalAlpha=1.0;
+    } else {
+      // Color based on HP%
+      let barColor;
+      if(pct>0.6)barColor=col||'#39ff14';
+      else if(pct>0.3)barColor='#ffcc00';
+      else barColor='#ff2244';
+      ctx.fillStyle=barColor; ctx.fillRect(x, y, w*pct, h);
+    }
     // Shine sweep
     const shinePos=(this.time*0.8)%100/100;
     if(shinePos>0&&shinePos<1){
@@ -3985,18 +3998,18 @@ const ACTIVE_SKILLS = [
   // ── Single target heavy hitters ──
   {id:'plasmaStrike',tags:['attack'],name:'Plasma Strike',icon:'⚡',desc:'2.5x ATK single target',mp:20,cd:0,maxCd:3,
    effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*2.5));_vfx(t,'slash',OR);DM.say('PLASMA STRIKE! Devastating blow!');}},
-  {id:'dataSplice',tags:['attack'],name:'Data Splice',icon:'🗡',desc:'3x ATK guaranteed crit',mp:22,cd:0,maxCd:3,
-   effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*3),true);_vfx(t,'slash',MG);DM.say('DATA SPLICE! Triple critical!');}},
-  {id:'railgunBurst',tags:['attack'],name:'Railgun Burst',icon:'🔫',desc:'3.5x ATK single target',mp:28,cd:0,maxCd:4,
-   effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*3.5));_vfx(t,'explode',CY);DM.say('RAILGUN BURST! Armor pierced!');}},
+  {id:'dataSplice',tags:['attack','armor_pierce'],name:'Data Splice',icon:'🗡',desc:'3x ATK guaranteed crit — pierces shields',mp:22,cd:0,maxCd:3,
+   effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*3),true,['armor_pierce']);_vfx(t,'slash',MG);DM.say('DATA SPLICE! Triple critical!');}},
+  {id:'railgunBurst',tags:['attack','armor_pierce'],name:'Railgun Burst',icon:'🔫',desc:'3.5x ATK single target — pierces shields',mp:28,cd:0,maxCd:4,
+   effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*3.5),false,['armor_pierce']);_vfx(t,'explode',CY);DM.say('RAILGUN BURST! Armor pierced!');}},
   {id:'neuralSpike',tags:['attack'],name:'Neural Spike',icon:'🧠',desc:'2x ATK ignores DEF',mp:18,cd:0,maxCd:3,
    effect(p,en){const t=_tgt(en);if(!t)return;const dmg=Math.floor(p.atk*2);t.hp=Math.max(0,t.hp-dmg);_vfx(t,'slash',PU);UI.dmgNumAt(Arena.getEnemyPos(GameState.enemies.indexOf(t)).x,Arena.getEnemyPos(GameState.enemies.indexOf(t)).y,dmg);DM.say('NEURAL SPIKE! Defenses bypassed!');}},
   {id:'photonLance',tags:['attack'],name:'Photon Lance',icon:'✴',desc:'2.8x ATK single target',mp:22,cd:0,maxCd:3,
    effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*2.8));_vfx(t,'slash',GD);DM.say('PHOTON LANCE! Beam locked!');}},
   {id:'cryptoShiv',tags:['attack'],name:'Crypto Shiv',icon:'🔪',desc:'2x ATK + 2x ATK combo',mp:20,cd:0,maxCd:3,
    effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*2));Combat.deal(t,Math.floor(p.atk*2));_vfx(t,'slash',RD);DM.say('CRYPTO SHIV! Double slash!');}},
-  {id:'overclockSlam',tags:['attack'],name:'Overclock Slam',icon:'💥',desc:'4x ATK heavy hit',mp:32,cd:0,maxCd:5,
-   effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*4));_vfx(t,'explode',OR);DM.say('OVERCLOCK SLAM! Maximum force!');}},
+  {id:'overclockSlam',tags:['attack','armor_pierce'],name:'Overclock Slam',icon:'💥',desc:'4x ATK heavy hit — pierces shields',mp:32,cd:0,maxCd:5,
+   effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*4),false,['armor_pierce']);_vfx(t,'explode',OR);DM.say('OVERCLOCK SLAM! Maximum force!');}},
   {id:'virusInject',tags:['attack'],name:'Virus Inject',icon:'🦠',desc:'1.5x ATK + 1.5x ATK poison tick',mp:16,cd:0,maxCd:3,
    effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*1.5));t.poison=(t.poison||0)+Math.floor(p.atk*1.5);_vfx(t,'spark',GR);DM.say('VIRUS INJECT! Corruption spreading!');}},
   {id:'magnetPull',tags:['attack'],name:'Magnet Pull',icon:'🧲',desc:'2x ATK pulls weakest enemy',mp:18,cd:0,maxCd:3,
@@ -4017,8 +4030,8 @@ const ACTIVE_SKILLS = [
    effect(p,en){en.forEach(e=>{if(e.hp>0)Combat.deal(e,Math.floor(p.atk*1.6));});_aoeVfx(en,'explode',RD);DM.say('PULSE GRENADE! Fragmentation!');}},
 
   // ── Execute / conditional damage ──
-  {id:'killSwitch',tags:['attack'],name:'Kill Switch',icon:'☠',desc:'5x ATK on targets below 30% HP',mp:20,cd:0,maxCd:4,
-   effect(p,en){const t=_tgt(en);if(!t)return;const mult=t.hp/t.maxHp<0.3?5:1.5;Combat.deal(t,Math.floor(p.atk*mult));_vfx(t,'explode',RD);DM.say(mult>3?'KILL SWITCH! Executed!':'KILL SWITCH! Not yet...');}},
+  {id:'killSwitch',tags:['attack','armor_pierce'],name:'Kill Switch',icon:'☠',desc:'5x ATK on targets below 30% HP — pierces shields',mp:20,cd:0,maxCd:4,
+   effect(p,en){const t=_tgt(en);if(!t)return;const mult=t.hp/t.maxHp<0.3?5:1.5;Combat.deal(t,Math.floor(p.atk*mult),false,['armor_pierce']);_vfx(t,'explode',RD);DM.say(mult>3?'KILL SWITCH! Executed!':'KILL SWITCH! Not yet...');}},
   {id:'overdriveSlash',tags:['attack'],name:'Overdrive Slash',icon:'⚡',desc:'2x ATK + 1x per combo',mp:22,cd:0,maxCd:3,
    effect(p,en){const t=_tgt(en);if(!t)return;const combo=GameState.combo||0;Combat.deal(t,Math.floor(p.atk*(2+combo*0.5)));_vfx(t,'slash',GD);DM.say('OVERDRIVE SLASH! Combo x'+combo+'!');}},
   {id:'surgeBreaker',tags:['attack'],name:'Surge Breaker',icon:'🔱',desc:'3x ATK + bonus vs full HP',mp:24,cd:0,maxCd:4,
@@ -4150,21 +4163,21 @@ const CLASSES = {};
 
 const ETYPES = [
   {id:'glitchDrone',name:'GLITCH DRONE',hp:35,atk:8,def:2,spd:14,sprite:'glitchDrone',color:CY,
-   ability:{name:'Static Burst',trigger:'turn3',used:false,fn(e,p){const d=Math.floor(e.atk*.5);p.hp=Math.max(0,p.hp-d);UI.dmgNumPlayer(d,'phit');DM.say('STATIC BURST! AoE crackle!');}}},
+   ability:{name:'Static Burst',subtype:'aoe',trigger:'turn3',used:false,fn(e,p){const d=Math.floor(e.atk*.5);p.hp=Math.max(0,p.hp-d);UI.dmgNumPlayer(d,'phit');DM.say('STATIC BURST! AoE crackle!');}}},
   {id:'neonGolem',name:'NEON GOLEM',hp:90,atk:12,def:10,spd:4,sprite:'neonGolem',color:PU,
    ability:{name:'Iron Skin',trigger:'hp50',used:false,fn(e){e.addBuff('ironSkin',{def:Math.floor(e.def*.3),turns:2});DM.say('IRON SKIN! It hardens!');}}},
   {id:'voidSpecter',name:'VOID SPECTER',hp:55,atk:14,def:4,spd:9,sprite:'voidSpecter',color:'#aa44ff',
    ability:{name:'Phase Shift',trigger:'hp50',used:false,fn(e){e.addBuff('phase',{dodges:1,turns:2});DM.say('PHASE SHIFT! It phases out!');}}},
   {id:'cyberOgre',name:'CYBER OGRE',hp:110,atk:20,def:8,spd:5,sprite:'cyberOgre',color:OR,
-   ability:{name:'Overload',trigger:'cd5',cdLeft:0,fn(e,p){const d=Math.floor(e.atk*2);p.hp=Math.max(0,p.hp-d);UI.dmgNumPlayer(d,'crit');Arena.spawnVFX('explode',Arena.getPlayerPos().x,Arena.getPlayerPos().y,OR);DM.say('OVERLOAD! Devastating!');}}},
+   ability:{name:'Overload',subtype:'heavy_physical',trigger:'cd5',cdLeft:0,fn(e,p){const d=Math.floor(e.atk*2);p.hp=Math.max(0,p.hp-d);UI.dmgNumPlayer(d,'crit');Arena.spawnVFX('explode',Arena.getPlayerPos().x,Arena.getPlayerPos().y,OR);DM.say('OVERLOAD! Devastating!');}}},
   {id:'dataWraith',name:'DATA WRAITH',hp:65,atk:13,def:3,spd:11,sprite:'dataWraith',color:CY,
-   ability:{name:'MP Drain',trigger:'cd4',cdLeft:0,fn(e,p){p.mp=Math.max(0,p.mp-15);DM.say('DATA WRAITH drains your mana!');}}},
+   ability:{name:'MP Drain',subtype:'special',trigger:'cd4',cdLeft:0,fn(e,p){p.mp=Math.max(0,p.mp-15);DM.say('DATA WRAITH drains your mana!');}}},
   {id:'pulseHound',name:'PULSE HOUND',hp:50,atk:15,def:3,spd:13,sprite:'pulseHound',color:RD,
-   ability:{name:'Bleed',trigger:'cd3',cdLeft:0,fn(e,p){p.addDebuff('bleed',{dmgPct:.05,turns:3});DM.say('PULSE HOUND inflicts bleeding!');}}},
+   ability:{name:'Bleed',subtype:'special',trigger:'cd3',cdLeft:0,fn(e,p){p.addDebuff('bleed',{dmgPct:.05,turns:3});DM.say('PULSE HOUND inflicts bleeding!');}}},
   {id:'circuitLich',name:'CIRCUIT LICH',hp:75,atk:18,def:6,spd:7,sprite:'circuitLich',color:GR,
-   ability:{name:'Arcane Pulse',trigger:'cd3',cdLeft:0,fn(e,p){const d=Math.floor(e.atk);p.hp=Math.max(0,p.hp-d);UI.dmgNumPlayer(d,'phit');DM.say('ARCANE PULSE! Ignores armor!');}}},
+   ability:{name:'Arcane Pulse',subtype:'magical',trigger:'cd3',cdLeft:0,fn(e,p){const d=Math.floor(e.atk);p.hp=Math.max(0,p.hp-d);UI.dmgNumPlayer(d,'phit');DM.say('ARCANE PULSE! Ignores armor!');}}},
   {id:'netrunner',name:'NETRUNNER',hp:60,atk:12,def:3,spd:12,evasion:0.35,sprite:'netrunner',color:CY,
-   ability:{name:'Neural Hack',trigger:'cd6',cdLeft:0,fn(e,p){
+   ability:{name:'Neural Hack',subtype:'special',trigger:'cd6',cdLeft:0,fn(e,p){
      const targets=p.spells.filter(s=>!(s.hackedTurns>0));
      if(!targets.length){DM.say('NEURAL HACK fizzles — all spells already disrupted!');return;}
      const t=targets[Math.floor(Math.random()*targets.length)];
@@ -4182,7 +4195,7 @@ const ETYPES = [
   // ── NEW ENEMIES ──
   {id:'chromeBeast',name:'CHROME BEAST',hp:140,atk:26,def:16,spd:3,sprite:'cyberOgre',color:'#aaaacc',
    behavior:'aggressive',
-   ability:{name:'Crush',trigger:'cd5',cdLeft:0,fn(e,p){
+   ability:{name:'Crush',subtype:'heavy_physical',trigger:'cd5',cdLeft:0,fn(e,p){
      const d=Math.max(1,e.atk*3-p.def);p.hp=Math.max(0,p.hp-d);
      UI.dmgNumPlayer(d,'crit');
      Arena.triggerShake(12,18);Arena.spawnVFX('explode',Arena.getPlayerPos().x,Arena.getPlayerPos().y,OR);
@@ -4191,7 +4204,7 @@ const ETYPES = [
    }}},
   {id:'ghostHacker',name:'GHOST HACKER',hp:70,atk:18,def:2,spd:11,sprite:'dataWraith',color:'#cc88ff',
    behavior:'tactical',evasion:0.0,
-   ability:{name:'Phantom Strike',trigger:'cd3',cdLeft:0,fn(e,p){
+   ability:{name:'Phantom Strike',subtype:'execute',trigger:'cd3',cdLeft:0,fn(e,p){
      const d=Math.max(1,e.atk);// bypasses DEF
      p.hp=Math.max(0,p.hp-d);UI.dmgNumPlayer(d,'crit');
      DM.say('PHANTOM STRIKE! Attack bypasses all armor!');
@@ -4199,14 +4212,14 @@ const ETYPES = [
    }}},
   {id:'neonSpider',name:'NEON SPIDER',hp:55,atk:14,def:4,spd:15,sprite:'pulseHound',color:'#ff44ff',
    behavior:'aggressive',
-   ability:{name:'Venom Web',trigger:'onhit',fn(e,p){
+   ability:{name:'Venom Web',subtype:'special',trigger:'onhit',fn(e,p){
      p.addDebuff('poison',{dmgPct:.07,turns:3});
      DM.say('VENOM WEB! Poison seeping through circuits!');
    }},
    spawned:false},
   {id:'corporateDrone',name:'CORP DRONE',hp:65,atk:13,def:5,spd:9,sprite:'glitchDrone',color:'#4488ff',
    behavior:'tactical',
-   ability:{name:'ATK Suppressor',trigger:'cd5',cdLeft:0,fn(e,p){
+   ability:{name:'ATK Suppressor',subtype:'special',trigger:'cd5',cdLeft:0,fn(e,p){
      const stacks=(p._atkSuppressStacks||0);
      if(stacks<2){p._atkSuppressStacks=(stacks+1);const red=Math.floor(p.baseAtk*.1);p.baseAtk=Math.max(1,p.baseAtk-red);p.atk=Math.max(1,p.atk-red);UI.updateBars();DM.say(`SUPPRESSOR! ATK reduced by 10% (${stacks+1}/2)!`);}
    }}},
@@ -4215,9 +4228,9 @@ const ETYPES = [
    isBoss:true,phase:1,
    ability:{name:'Architect Protocol',trigger:'phase',fn(e,p,phase){
      if(phase===2){
-       e.addBuff('arcShield',{def:8,turns:99});
+       e.shieldHp=Math.floor(e.maxHp*.15); e.shieldActive=true;
        Arena.spawnVFX('ring',Arena.W*.5,Arena.H*.4,'#00ffcc',90);
-       DM.say('ARCHITECT PHASE 2: SHIELDS ONLINE — Systems fortifying!');
+       DM.say('ARCHITECT PHASE 2: SHIELDS ONLINE — Only armor-pierce breaks through!');
      }
      if(phase===3){
        e.buffs=e.buffs.filter(b=>b.id!=='arcShield');e.recalc();
@@ -4942,6 +4955,7 @@ class Enemy {
     this.actionCounter=0; this.buffs=[]; this.debuffs=[];
     this.turnCount=0; this.phase=1; this.deathTimer=0;
     this.telegraph=null; // Telegraph system (Phase 1.1)
+    this.shieldHp=0; this.shieldActive=false; // Shield pool (Phase 1.2)
     this.animState='idle.base'; this.animTimer=0; this.lowHpSaid=false;
   }
   addBuff(id,p){this.buffs=this.buffs.filter(b=>b.id!==id);this.buffs.push({id,...p});this.recalc();}
@@ -4965,8 +4979,14 @@ class Enemy {
   isDodging(){const d=this.buffs.find(b=>b.id==='phase');if(d&&d.dodges>0){d.dodges--;return true;}return false;}
   checkPhase(){
     if(!this.isBoss)return;
-    const pct=this.hp/this.maxHp,np=pct>.67?1:pct>.34?2:3;
-    if(np!==this.phase){this.phase=np;this.ability.fn(this,GameState.player,np);}
+    const pct=this.hp/this.maxHp,np=pct>.60?1:pct>.25?2:3;
+    if(np!==this.phase){
+      this.phase=np;
+      this.ability.fn(this,GameState.player,np);
+      // Pause combat and show phase banner for 2500ms
+      GameState._phaseBanner={active:true,phase:np,enemyName:this.name};
+      setTimeout(()=>{if(GameState._phaseBanner)GameState._phaseBanner.active=false;},2500);
+    }
   }
 }
 
@@ -5096,7 +5116,10 @@ if(!GameState._reactionPhase) GameState._reactionPhase={
 // Comedy text pools
 const ENEMY_TAUNTS={
   generic:['THIS WILL HURT.','YOUR FIREWALL IS GARBAGE.','FEEL THE BYTE.','DELETING YOU NOW.','FATAL ERROR: YOU.','INITIATING PAIN PROTOCOL.','SKILL CHECK: FAILED.','YOU ARE NOT PREPARED.','NO INSURANCE WHERE YOU\'RE GOING.','THIS IS GOING ON YOUR PERMANENT RECORD.'],
-  boss:['I HAVE BEEN WAITING FOR THIS.','YOUR SUFFERING IS SCHEDULED.','THREAT LEVEL: YOU. RESPONSE: MAXIMUM.','I HAVE KILLED BETTER.','YOU ARE AN ACCEPTABLE CASUALTY.','THIS ZONE BELONGS TO ME. SO DO YOUR HP.','OVERRIDE COMPLETE. YOU\'RE NEXT.','SCANNING... TARGET ACQUIRED. GOODBYE.']
+  boss:['I HAVE BEEN WAITING FOR THIS.','YOUR SUFFERING IS SCHEDULED.','THREAT LEVEL: YOU. RESPONSE: MAXIMUM.','I HAVE KILLED BETTER.','YOU ARE AN ACCEPTABLE CASUALTY.','THIS ZONE BELONGS TO ME. SO DO YOUR HP.','OVERRIDE COMPLETE. YOU\'RE NEXT.','SCANNING... TARGET ACQUIRED. GOODBYE.'],
+  samurai:['HONOR IS FOR THE WEAK. PAIN IS FREE.','404: DODGE NOT FOUND.','MY BLADE COSTS MORE THAN YOUR LIFE.','BUSHIDO.EXE HAS LOADED.','CUT THE THEATRICS. AND THEN YOU.'],
+  virus:['I\'VE ALREADY COPIED YOUR SOUL.','CORRUPTION IN PROGRESS...','YOU HAVE 0 ANTIVIRUS.','REPLICATING INTO YOUR HP BAR.','ERROR: CANNOT FIND YOUR WILL TO LIVE.'],
+  corporate:['THIS IS CALLED A PERFORMANCE REVIEW.','YOU\'RE FIRED. ALSO DEAD.','SYNERGIZING YOUR DESTRUCTION.','THIS VIOLENCE IS WITHIN BUDGET.','KINDLY ACCEPT THIS TERMINATION PACKAGE.']
 };
 const REACTION_RESULT_TEXT={
   nullify:['ERROR 404: ATTACK NOT FOUND.','FIREWALL ACTIVATED.','NICE TRY, CHROME BREATH.','NOPE.','SYSTEM: DENIED.','BLOCKED AT THE ROUTER.','NOT TODAY.','COUNTERPROTOCOL: SUCCESS.'],
@@ -5111,6 +5134,10 @@ const REACTION_RESULT_TEXT={
 function randomFrom(arr){return arr[Math.floor(Math.random()*arr.length)];}
 function getEnemyTaunt(enemy){
   if(enemy.maxHp>=200||enemy.id==='quantumBoss'||enemy.id==='theArchitect')return randomFrom(ENEMY_TAUNTS.boss);
+  const n=(enemy.name||'').toLowerCase();
+  if(n.includes('samurai'))return randomFrom(ENEMY_TAUNTS.samurai);
+  if(n.includes('virus')||n.includes('corrupt'))return randomFrom(ENEMY_TAUNTS.virus);
+  if(n.includes('corp')||n.includes('exec')||n.includes('suit'))return randomFrom(ENEMY_TAUNTS.corporate);
   return randomFrom(ENEMY_TAUNTS.generic);
 }
 
@@ -5264,6 +5291,31 @@ function _drawMangaBubble(ctx,x,y,w,h,borderColor){
   ctx.strokeStyle=borderColor;ctx.lineWidth=2;ctx.stroke();
 }
 
+// Phase transition banner — called from Arena.render() during boss phase change
+function renderPhaseBanner(ctx){
+  const pb=GameState._phaseBanner;
+  if(!pb||!pb.active)return;
+  const W=Arena.W,H=Arena.H;
+  // Dark overlay
+  ctx.save();
+  ctx.fillStyle='rgba(0,0,0,0.78)';ctx.fillRect(0,0,W,H);
+  // Red-bordered box
+  const bW=340,bH=90,bX=(W-bW)/2,bY=(H-bH)/2;
+  ctx.fillStyle='rgba(5,5,20,0.95)';ctx.fillRect(bX,bY,bW,bH);
+  ctx.strokeStyle='#ff4444';ctx.lineWidth=2;
+  ctx.shadowColor='#ff4444';ctx.shadowBlur=20;
+  ctx.strokeRect(bX,bY,bW,bH);ctx.shadowBlur=0;
+  // Phase text centered — Press Start 2P 10px
+  ctx.font='10px "Press Start 2P"';ctx.fillStyle='#ff4444';ctx.textAlign='center';
+  ctx.fillText(`\u2014 PHASE ${pb.phase} \u2014`,W/2,bY+32);
+  ctx.font='8px "Press Start 2P"';ctx.fillStyle='#ffffff';
+  const sub=pb.phase===2?'SYSTEMS FORTIFYING':pb.phase===3?'BERSERK MODE ACTIVATED':'ONLINE';
+  ctx.fillText(sub,W/2,bY+56);
+  ctx.font='6px "Press Start 2P"';ctx.fillStyle='#888888';
+  ctx.fillText(pb.enemyName||'',W/2,bY+74);
+  ctx.textAlign='left';ctx.restore();
+}
+
 // Main reaction phase renderer — called from Arena.render()
 function renderReactionPhase(ctx,rp){
   if(!rp.active)return;
@@ -5285,9 +5337,15 @@ function renderReactionPhase(ctx,rp){
   ctx.translate(-(bX+bW/2),-(bY+bH/2));
 
   const threatColor={'LETHAL':'#ff4444','HIGH':'#ff8800','MEDIUM':'#ffff00','LOW':'#00ffff'}[rp.telegraph.threatLevel]||'#ff00ff';
-  ctx.shadowColor=threatColor;ctx.shadowBlur=18;
-  _drawMangaBubble(ctx,bX,bY,bW,bH,threatColor);
-  ctx.shadowBlur=0;
+  const blinkVisible=rp.telegraph.threatLevel==='LETHAL'?Math.floor(Date.now()/500)%2===0:true;
+  if(!blinkVisible){
+    ctx.shadowBlur=0;
+    _drawMangaBubble(ctx,bX,bY,bW,bH,'rgba(100,100,100,0.3)');
+  }else{
+    ctx.shadowColor=threatColor;ctx.shadowBlur=18;
+    _drawMangaBubble(ctx,bX,bY,bW,bH,threatColor);
+    ctx.shadowBlur=0;
+  }
 
   // Attack name
   ctx.font='11px "Press Start 2P"';ctx.fillStyle='#ffffff';ctx.textAlign='center';
@@ -5368,7 +5426,7 @@ const Combat = {
     if(this._dpsEl){this._dpsEl.textContent='DPS:'+this._dpsVal;this._dpsEl.style.display='';}
   },
   lowestHp(en){return en.filter(e=>e.hp>0).sort((a,b)=>a.hp-b.hp)[0]||null;},
-  deal(enemy,amount,isCrit=false){
+  deal(enemy,amount,isCrit=false,tags=[]){
     // Evasion check (e.g. Netrunner)
     if(enemy.evasion&&Math.random()<enemy.evasion){
       const idx=GameState.enemies.indexOf(enemy);
@@ -5392,6 +5450,28 @@ const Combat = {
     // Shock Gauntlets stun chance
     const sg=Object.values(Inventory.equipped).find(i=>i&&i.id&&i.id.startsWith('shockGauntlets'));
     if(sg&&Math.random()<.25){enemy.addDebuff('stun',{turns:1});DM.say('SHOCKED! Enemy stunned!');}
+    // Shield pool interception — armor_pierce bypasses, all else fully blocked (Phase 1.2)
+    if(enemy.shieldActive){
+      const isArmor=tags.includes('armor_pierce');
+      const sIdx=GameState.enemies.indexOf(enemy);
+      const sPos=sIdx>=0?Arena.getEnemyPos(sIdx):{x:Arena.W*.65,y:Arena.H*.4};
+      if(!isArmor){
+        UI.dmgNumAt(sPos.x,sPos.y,0,'miss');
+        DM.say(`${enemy.name}'s shield absorbs the attack!`);
+        return 0;
+      }
+      enemy.shieldHp=Math.max(0,enemy.shieldHp-dmg);
+      UI.dmgNumAt(sPos.x,sPos.y,dmg,'enemy');
+      if(enemy.shieldHp<=0){
+        enemy.shieldActive=false;
+        enemy.addDebuff('stun',{turns:1});
+        Arena.spawnText('SHIELD BREAK!',sPos.x,sPos.y-30,'#ffd700',12);
+        DM.say(`${enemy.name} SHIELD BROKEN! System stunned!`);
+      } else {
+        DM.say(`Shield absorbs hit — ${enemy.shieldHp} HP remaining`);
+      }
+      return dmg;
+    }
     // Ghost Hacker: ability fn uses raw enemy atk ignoring DEF
     enemy.hp=Math.max(0,enemy.hp-dmg);
     GameState.totalDmg+=dmg;
@@ -5612,6 +5692,8 @@ const Combat = {
     UI.updateBars();UI.updateSpells();
   },
   tick(){
+    // Phase banner pause — hold combat during boss phase transition
+    if(GameState._phaseBanner&&GameState._phaseBanner.active)return;
     // Reaction phase update — pause combat turns while active (Phase 1.4)
     if(GameState._reactionPhase&&GameState._reactionPhase.active){updateReactionPhase();return;}
     const p=GameState.player,enemies=GameState.enemies;

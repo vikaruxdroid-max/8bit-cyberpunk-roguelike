@@ -14,7 +14,17 @@
       "WebFetch(*)",
       "WebSearch(*)",
       "Agent(*)",
-      "NotebookEdit(*)"
+      "NotebookEdit(*)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8888/8bit_cyberpunk_FIXED.html)",
+      "Bash(python3 -m http.server 8888)",
+      "Bash(npx --version)",
+      "Bash(powershell.exe -Command \"Start-Process ''C:\\\\Users\\\\carlo\\\\OneDrive\\\\game\\\\8bit_cyberpunk_FIXED.html''\")",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8888/)",
+      "Bash(winget install:*)",
+      "Bash(export PATH=\"$PATH:/c/Program Files/nodejs\")",
+      "Bash(npm --version)",
+      "Bash(gh repo:*)"
     ]
   }
 }
