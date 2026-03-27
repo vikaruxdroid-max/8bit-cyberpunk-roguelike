@@ -1078,8 +1078,27 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
     </div>
   </div>
 
+  <!-- BOOT SCREEN -->
+  <div class="scr on" id="sBOOT" style="background:#000800;display:flex;align-items:center;justify-content:center;z-index:9999;">
+    <div id="bootTerminal" style="
+      width:min(700px,90vw);font-family:'Press Start 2P',monospace;font-size:clamp(10px,1.4vw,16px);
+      color:#33ff33;text-shadow:0 0 8px rgba(51,255,51,0.6);line-height:2.2;
+      padding:clamp(20px,3vw,40px);position:relative;
+      background:#000800;border:2px solid #226622;border-radius:12px;
+      box-shadow:0 0 40px rgba(51,255,51,0.08),inset 0 0 80px rgba(0,8,0,0.9);
+      overflow:hidden;
+    ">
+      <div style="position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,0.15) 0px,rgba(0,0,0,0.15) 2px,transparent 2px,transparent 4px);z-index:1;"></div>
+      <div style="position:absolute;inset:0;pointer-events:none;border-radius:12px;box-shadow:inset 0 0 60px rgba(0,20,0,0.7);z-index:2;"></div>
+      <div id="bootLines" style="position:relative;z-index:3;"></div>
+      <div id="bootBar" style="position:relative;z-index:3;margin-top:1.5em;height:clamp(14px,2vh,20px);border:1px solid #33ff33;border-radius:2px;overflow:hidden;display:none;">
+        <div id="bootFill" style="height:100%;width:0%;background:#33ff33;transition:width 0.3s;box-shadow:0 0 10px rgba(51,255,51,0.5);"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- MAIN MENU -->
-  <div class="scr on" id="sMM">
+  <div class="scr" id="sMM">
     <canvas id="matrixCV"></canvas>
     <div class="mm-overlay">
       <div class="mm-title">
@@ -3946,17 +3965,82 @@ const BASE_STATS = { hp:90, atk:14, def:6, spd:7, mp:85 };
 const STAT_PER_POINT = { hp:10, atk:3, def:2, spd:2, mp:10 };
 const STAT_POINTS_TOTAL = 15;
 
+// ── ACTIVE SKILLS: 30 pure attack skills (no buffs/heals/defense) ──
+// Helpers: _tgt = lowest HP target, _aoe = hit all enemies
+const _tgt=(en)=>Combat.lowestHp(en);
+const _vfx=(t,type,clr)=>{const pos=Arena.getEnemyPos(GameState.enemies.indexOf(t));Arena.spawnVFX(type,pos.x,pos.y,clr);};
+const _aoeVfx=(en,type,clr)=>{en.forEach(e=>{if(e.hp>0){const pos=Arena.getEnemyPos(GameState.enemies.indexOf(e));Arena.spawnVFX(type,pos.x,pos.y,clr);}});};
+
 const ACTIVE_SKILLS = [
+  // ── Single target heavy hitters ──
   {id:'plasmaStrike',name:'Plasma Strike',icon:'⚡',desc:'2.5x ATK single target',mp:20,cd:0,maxCd:3,
-   effect(p,en){const t=Combat.lowestHp(en);if(!t)return;const isCrit=Math.random()<((p.critBonus||0)+(p.hasBuff('crit')?0.35:0));Combat.deal(t,Math.floor(p.atk*2.5),isCrit);const pos=Arena.getEnemyPos(GameState.enemies.indexOf(t));Arena.spawnVFX('slash',pos.x,pos.y,OR);DM.say('PLASMA STRIKE! Devastating blow!');}},
-  {id:'ghostStep',name:'Ghost Step',icon:'👻',desc:'Dodge 2 attacks',mp:25,cd:0,maxCd:4,
-   effect(p){p.addBuff('dodge',{dodges:2,turns:4});Arena.spawnVFX('spark',Arena.getPlayerPos().x,Arena.getPlayerPos().y,GR);DM.say('GHOST STEP — vanished!');}},
-  {id:'dataSplice',name:'Data Splice',icon:'🗡',desc:'3x ATK + crit boost',mp:22,cd:0,maxCd:3,
-   effect(p,en){const t=Combat.lowestHp(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*3),true);p.addBuff('crit',{crit:.2,turns:2});const pos=Arena.getEnemyPos(GameState.enemies.indexOf(t));Arena.spawnVFX('slash',pos.x,pos.y,MG);DM.say('DATA SPLICE! Triple critical!');}},
-  {id:'bioPulse',name:'Bio-Pulse Heal',icon:'💚',desc:'Heal 50% max HP',mp:25,cd:0,maxCd:3,
-   effect(p){const h=Math.floor(p.maxHp*.5);p.hp=Math.min(p.maxHp,p.hp+h);p.healedThisFloor=true;const pp=Arena.getPlayerPos();Arena.spawnVFX('explode',pp.x,pp.y,'#00ff88');UI.dmgNumAt(pp.x,pp.y,h,'heal');DM.say('BIO-PULSE! Systems restored!');}},
-  {id:'voidDrain',name:'Void Drain',icon:'🌑',desc:'2x ATK + lifesteal',mp:20,cd:0,maxCd:3,
-   effect(p,en){const t=Combat.lowestHp(en);if(!t)return;const d=Combat.deal(t,Math.floor(p.atk*2));const st=Math.floor(d*.2);p.hp=Math.min(p.maxHp,p.hp+st);const pp=Arena.getPlayerPos();Arena.spawnVFX('explode',pp.x,pp.y,PU);UI.dmgNumAt(pp.x,pp.y,st,'heal');DM.say('VOID DRAIN! Life siphoned!');}}
+   effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*2.5));_vfx(t,'slash',OR);DM.say('PLASMA STRIKE! Devastating blow!');}},
+  {id:'dataSplice',name:'Data Splice',icon:'🗡',desc:'3x ATK guaranteed crit',mp:22,cd:0,maxCd:3,
+   effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*3),true);_vfx(t,'slash',MG);DM.say('DATA SPLICE! Triple critical!');}},
+  {id:'railgunBurst',name:'Railgun Burst',icon:'🔫',desc:'3.5x ATK single target',mp:28,cd:0,maxCd:4,
+   effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*3.5));_vfx(t,'explode',CY);DM.say('RAILGUN BURST! Armor pierced!');}},
+  {id:'neuralSpike',name:'Neural Spike',icon:'🧠',desc:'2x ATK ignores DEF',mp:18,cd:0,maxCd:3,
+   effect(p,en){const t=_tgt(en);if(!t)return;const dmg=Math.floor(p.atk*2);t.hp=Math.max(0,t.hp-dmg);_vfx(t,'slash',PU);UI.dmgNumAt(Arena.getEnemyPos(GameState.enemies.indexOf(t)).x,Arena.getEnemyPos(GameState.enemies.indexOf(t)).y,dmg);DM.say('NEURAL SPIKE! Defenses bypassed!');}},
+  {id:'photonLance',name:'Photon Lance',icon:'✴',desc:'2.8x ATK single target',mp:22,cd:0,maxCd:3,
+   effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*2.8));_vfx(t,'slash',GD);DM.say('PHOTON LANCE! Beam locked!');}},
+  {id:'cryptoShiv',name:'Crypto Shiv',icon:'🔪',desc:'2x ATK + 2x ATK combo',mp:20,cd:0,maxCd:3,
+   effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*2));Combat.deal(t,Math.floor(p.atk*2));_vfx(t,'slash',RD);DM.say('CRYPTO SHIV! Double slash!');}},
+  {id:'overclockSlam',name:'Overclock Slam',icon:'💥',desc:'4x ATK heavy hit',mp:32,cd:0,maxCd:5,
+   effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*4));_vfx(t,'explode',OR);DM.say('OVERCLOCK SLAM! Maximum force!');}},
+  {id:'virusInject',name:'Virus Inject',icon:'🦠',desc:'1.5x ATK + 1.5x ATK poison tick',mp:16,cd:0,maxCd:3,
+   effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*1.5));t.poison=(t.poison||0)+Math.floor(p.atk*1.5);_vfx(t,'spark',GR);DM.say('VIRUS INJECT! Corruption spreading!');}},
+  {id:'magnetPull',name:'Magnet Pull',icon:'🧲',desc:'2x ATK pulls weakest enemy',mp:18,cd:0,maxCd:3,
+   effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*2));_vfx(t,'spark',CY);DM.say('MAGNET PULL! Target locked!');}},
+  {id:'neonSlash',name:'Neon Slash',icon:'⚔',desc:'2.2x ATK single target',mp:18,cd:0,maxCd:2,
+   effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*2.2));_vfx(t,'slash',MG);DM.say('NEON SLASH! Clean cut!');}},
+
+  // ── AoE damage ──
+  {id:'shockwave',name:'Shockwave',icon:'💫',desc:'1.5x ATK hit all enemies',mp:24,cd:0,maxCd:4,
+   effect(p,en){en.forEach(e=>{if(e.hp>0)Combat.deal(e,Math.floor(p.atk*1.5));});_aoeVfx(en,'explode',CY);DM.say('SHOCKWAVE! All systems rattled!');}},
+  {id:'gridOverload',name:'Grid Overload',icon:'🔌',desc:'1.8x ATK hit all enemies',mp:28,cd:0,maxCd:4,
+   effect(p,en){en.forEach(e=>{if(e.hp>0)Combat.deal(e,Math.floor(p.atk*1.8));});_aoeVfx(en,'spark',OR);DM.say('GRID OVERLOAD! Power surge!');}},
+  {id:'staticBomb',name:'Static Bomb',icon:'💣',desc:'2x ATK hit all enemies',mp:30,cd:0,maxCd:5,
+   effect(p,en){en.forEach(e=>{if(e.hp>0)Combat.deal(e,Math.floor(p.atk*2));});_aoeVfx(en,'explode',GD);DM.say('STATIC BOMB! Detonation!');}},
+  {id:'dataStorm',name:'Data Storm',icon:'🌀',desc:'1.2x ATK x3 random hits',mp:22,cd:0,maxCd:3,
+   effect(p,en){for(let i=0;i<3;i++){const alive=en.filter(e=>e.hp>0);if(!alive.length)break;const t=alive[Math.floor(Math.random()*alive.length)];Combat.deal(t,Math.floor(p.atk*1.2));_vfx(t,'spark',PU);}DM.say('DATA STORM! Chaos unleashed!');}},
+  {id:'pulseGrenade',name:'Pulse Grenade',icon:'🧨',desc:'1.6x ATK hit all enemies',mp:24,cd:0,maxCd:3,
+   effect(p,en){en.forEach(e=>{if(e.hp>0)Combat.deal(e,Math.floor(p.atk*1.6));});_aoeVfx(en,'explode',RD);DM.say('PULSE GRENADE! Fragmentation!');}},
+
+  // ── Execute / conditional damage ──
+  {id:'killSwitch',name:'Kill Switch',icon:'☠',desc:'5x ATK on targets below 30% HP',mp:20,cd:0,maxCd:4,
+   effect(p,en){const t=_tgt(en);if(!t)return;const mult=t.hp/t.maxHp<0.3?5:1.5;Combat.deal(t,Math.floor(p.atk*mult));_vfx(t,'explode',RD);DM.say(mult>3?'KILL SWITCH! Executed!':'KILL SWITCH! Not yet...');}},
+  {id:'overdriveSlash',name:'Overdrive Slash',icon:'⚡',desc:'2x ATK + 1x per combo',mp:22,cd:0,maxCd:3,
+   effect(p,en){const t=_tgt(en);if(!t)return;const combo=GameState.combo||0;Combat.deal(t,Math.floor(p.atk*(2+combo*0.5)));_vfx(t,'slash',GD);DM.say('OVERDRIVE SLASH! Combo x'+combo+'!');}},
+  {id:'surgeBreaker',name:'Surge Breaker',icon:'🔱',desc:'3x ATK + bonus vs full HP',mp:24,cd:0,maxCd:4,
+   effect(p,en){const t=_tgt(en);if(!t)return;const mult=t.hp===t.maxHp?4:3;Combat.deal(t,Math.floor(p.atk*mult));_vfx(t,'slash',CY);DM.say('SURGE BREAKER! First strike!');}},
+
+  // ── Multi-hit / chain ──
+  {id:'burstFire',name:'Burst Fire',icon:'🔥',desc:'1x ATK x4 rapid hits',mp:22,cd:0,maxCd:3,
+   effect(p,en){const t=_tgt(en);if(!t)return;for(let i=0;i<4;i++)Combat.deal(t,Math.floor(p.atk));_vfx(t,'spark',OR);DM.say('BURST FIRE! Quad shot!');}},
+  {id:'chainLightning',name:'Chain Lightning',icon:'⛓',desc:'2x ATK chains to 2 more',mp:26,cd:0,maxCd:4,
+   effect(p,en){const alive=en.filter(e=>e.hp>0);if(!alive.length)return;Combat.deal(alive[0],Math.floor(p.atk*2));_vfx(alive[0],'spark',CY);for(let i=1;i<Math.min(3,alive.length);i++){Combat.deal(alive[i],Math.floor(p.atk*1.2));_vfx(alive[i],'spark',CY);}DM.say('CHAIN LIGHTNING! Arcing!');}},
+  {id:'hackFlurry',name:'Hack Flurry',icon:'⌨',desc:'0.8x ATK x5 random hits',mp:20,cd:0,maxCd:3,
+   effect(p,en){for(let i=0;i<5;i++){const alive=en.filter(e=>e.hp>0);if(!alive.length)break;const t=alive[Math.floor(Math.random()*alive.length)];Combat.deal(t,Math.floor(p.atk*0.8));_vfx(t,'slash',GR);}DM.say('HACK FLURRY! Rapid input!');}},
+  {id:'scatterShot',name:'Scatter Shot',icon:'💠',desc:'1x ATK hits each enemy twice',mp:26,cd:0,maxCd:4,
+   effect(p,en){en.forEach(e=>{if(e.hp>0){Combat.deal(e,Math.floor(p.atk));Combat.deal(e,Math.floor(p.atk));}});_aoeVfx(en,'slash',MG);DM.say('SCATTER SHOT! Spread fire!');}},
+
+  // ── Cyberpunk themed specials ──
+  {id:'blackIce',name:'Black Ice',icon:'🧊',desc:'2.5x ATK freezing strike',mp:22,cd:0,maxCd:3,
+   effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*2.5));t.stunTurns=(t.stunTurns||0)+1;_vfx(t,'explode','#44ddff');DM.say('BLACK ICE! Frozen solid!');}},
+  {id:'malwareBlast',name:'Malware Blast',icon:'☢',desc:'1.5x ATK + 50% poison',mp:18,cd:0,maxCd:3,
+   effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*1.5));t.poison=(t.poison||0)+Math.floor(p.atk*0.5);_vfx(t,'spark',GR);DM.say('MALWARE BLAST! Systems infected!');}},
+  {id:'razorWire',name:'Razor Wire',icon:'🪡',desc:'1.8x ATK bleeds 3 ticks',mp:20,cd:0,maxCd:3,
+   effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*1.8));t.bleed=(t.bleed||0)+3;_vfx(t,'slash',RD);DM.say('RAZOR WIRE! Lacerated!');}},
+  {id:'thermalDet',name:'Thermal Det',icon:'🔴',desc:'2.5x ATK AoE explosion',mp:28,cd:0,maxCd:4,
+   effect(p,en){en.forEach(e=>{if(e.hp>0)Combat.deal(e,Math.floor(p.atk*2.5));});_aoeVfx(en,'explode',OR);DM.say('THERMAL DET! Burn radius!');}},
+  {id:'quantumRend',name:'Quantum Rend',icon:'🌌',desc:'3x ATK tears through armor',mp:26,cd:0,maxCd:4,
+   effect(p,en){const t=_tgt(en);if(!t)return;const dmg=Math.floor(p.atk*3);t.hp=Math.max(0,t.hp-dmg);_vfx(t,'explode',PU);UI.dmgNumAt(Arena.getEnemyPos(GameState.enemies.indexOf(t)).x,Arena.getEnemyPos(GameState.enemies.indexOf(t)).y,dmg);DM.say('QUANTUM REND! Reality torn!');}},
+  {id:'netRunner',name:'Net Runner',icon:'🕸',desc:'1.5x ATK hits all + stun 1',mp:30,cd:0,maxCd:5,
+   effect(p,en){en.forEach(e=>{if(e.hp>0){Combat.deal(e,Math.floor(p.atk*1.5));e.stunTurns=(e.stunTurns||0)+1;}});_aoeVfx(en,'spark',CY);DM.say('NET RUNNER! All trapped!');}},
+  {id:'mercShot',name:'Merc Shot',icon:'🎯',desc:'2x ATK always crits',mp:20,cd:0,maxCd:3,
+   effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*2),true);_vfx(t,'slash',GD);DM.say('MERC SHOT! Bullseye!');}},
+  {id:'plasmaRain',name:'Plasma Rain',icon:'☄',desc:'1x ATK x6 random hits',mp:28,cd:0,maxCd:4,
+   effect(p,en){for(let i=0;i<6;i++){const alive=en.filter(e=>e.hp>0);if(!alive.length)break;const t=alive[Math.floor(Math.random()*alive.length)];Combat.deal(t,Math.floor(p.atk));_vfx(t,'spark',MG);}DM.say('PLASMA RAIN! Incoming!');}},
 ];
 
 const PASSIVE_SKILLS = [
@@ -3967,17 +4051,80 @@ const PASSIVE_SKILLS = [
   {id:'overclock', name:'Overclock',   icon:'⚙',  desc:'-1 all spell cooldowns', apply(p){ p.spells.forEach(s=>s.maxCd=Math.max(1,s.maxCd-1)); }}
 ];
 
+// ── DEFENSIVE SKILLS: 30 pure defense skills (shields, heals, buffs, CC) ──
+const _pp=()=>Arena.getPlayerPos();
+const _pvfx=(type,clr)=>{const pp=_pp();Arena.spawnVFX(type,pp.x,pp.y,clr);};
+
 const DEFENSIVE_SKILLS = [
+  // ── Shields & damage prevention ──
   {id:'shieldWall',name:'Shield Wall',icon:'🛡',desc:'Block next 2 hits',mp:18,cd:0,maxCd:3,
-   effect(p){p.addBuff('dodge',{dodges:2,turns:3});const pp=Arena.getPlayerPos();Arena.spawnVFX('explode',pp.x,pp.y,'#4488ff');DM.say('SHIELD WALL — fortified!');}},
+   effect(p){p.addBuff('dodge',{dodges:2,turns:3});_pvfx('explode','#4488ff');DM.say('SHIELD WALL — fortified!');}},
   {id:'nanoBarrier',name:'Nano Barrier',icon:'🔰',desc:'+50% DEF for 3 turns',mp:20,cd:0,maxCd:4,
-   effect(p){p.addBuff('defUp',{def:Math.floor(p.baseDef*0.5),turns:3});const pp=Arena.getPlayerPos();Arena.spawnVFX('spark',pp.x,pp.y,'#44aaff');DM.say('NANO BARRIER — defense online!');}},
-  {id:'firewall',name:'Firewall',icon:'🔥',desc:'Reflect 30% damage 3 turns',mp:22,cd:0,maxCd:4,
-   effect(p){p.addBuff('reflect',{reflect:0.3,turns:3});const pp=Arena.getPlayerPos();Arena.spawnVFX('explode',pp.x,pp.y,OR);DM.say('FIREWALL — damage reflected!');}},
+   effect(p){p.addBuff('defUp',{def:Math.floor(p.baseDef*0.5),turns:3});_pvfx('spark','#44aaff');DM.say('NANO BARRIER — defense online!');}},
+  {id:'hardLight',name:'Hard Light',icon:'💎',desc:'Block next 3 hits',mp:24,cd:0,maxCd:5,
+   effect(p){p.addBuff('dodge',{dodges:3,turns:4});_pvfx('explode',CY);DM.say('HARD LIGHT — prism shield!');}},
+  {id:'ironProtocol',name:'Iron Protocol',icon:'🔒',desc:'+80% DEF for 2 turns',mp:22,cd:0,maxCd:4,
+   effect(p){p.addBuff('defUp',{def:Math.floor(p.baseDef*0.8),turns:2});_pvfx('spark','#8888ff');DM.say('IRON PROTOCOL — armor locked!');}},
+  {id:'phaseShield',name:'Phase Shield',icon:'🌀',desc:'50% dodge chance 3 turns',mp:20,cd:0,maxCd:4,
+   effect(p){p.addBuff('phaseShield',{dodgeChance:0.5,turns:3});_pvfx('spark',PU);DM.say('PHASE SHIELD — phasing!');}},
+  {id:'ablativeArmor',name:'Ablative Armor',icon:'🪨',desc:'+100% DEF for 1 turn',mp:16,cd:0,maxCd:3,
+   effect(p){p.addBuff('defUp',{def:p.baseDef,turns:1});_pvfx('explode','#aaaacc');DM.say('ABLATIVE ARMOR — maximum plating!');}},
+  {id:'mirrorCoat',name:'Mirror Coat',icon:'🪞',desc:'Block 1 hit + reflect 50%',mp:18,cd:0,maxCd:3,
+   effect(p){p.addBuff('dodge',{dodges:1,turns:2});p.addBuff('reflect',{reflect:0.5,turns:2});_pvfx('spark',CY);DM.say('MIRROR COAT — send it back!');}},
+  {id:'quantumShell',name:'Quantum Shell',icon:'🔮',desc:'Block next 4 hits',mp:30,cd:0,maxCd:6,
+   effect(p){p.addBuff('dodge',{dodges:4,turns:5});_pvfx('explode',MG);DM.say('QUANTUM SHELL — untouchable!');}},
+
+  // ── Healing & regeneration ──
   {id:'repairProto',name:'Repair Protocol',icon:'🔧',desc:'Regen 10% HP for 3 turns',mp:20,cd:0,maxCd:3,
-   effect(p){p.addBuff('regen',{regen:Math.floor(p.maxHp*0.1),turns:3});const pp=Arena.getPlayerPos();Arena.spawnVFX('spark',pp.x,pp.y,GR);DM.say('REPAIR PROTOCOL — nanobots deployed!');}},
-  {id:'empPulse',name:'EMP Pulse',icon:'⚡',desc:'Stun all enemies 1 turn',mp:25,cd:0,maxCd:5,
-   effect(p,en){en.forEach(e=>{if(e.hp>0)e.stunTurns=(e.stunTurns||0)+1;const pos=Arena.getEnemyPos(GameState.enemies.indexOf(e));Arena.spawnVFX('spark',pos.x,pos.y,CY);});DM.say('EMP PULSE — systems jammed!');}}
+   effect(p){p.addBuff('regen',{regen:Math.floor(p.maxHp*0.1),turns:3});_pvfx('spark',GR);DM.say('REPAIR PROTOCOL — nanobots deployed!');}},
+  {id:'bioSurge',name:'Bio Surge',icon:'💚',desc:'Heal 40% max HP instantly',mp:22,cd:0,maxCd:4,
+   effect(p){const h=Math.floor(p.maxHp*0.4);p.hp=Math.min(p.maxHp,p.hp+h);_pvfx('explode','#00ff88');UI.dmgNumAt(_pp().x,_pp().y,h,'heal');DM.say('BIO SURGE — systems restored!');}},
+  {id:'nanoSwarm',name:'Nano Swarm',icon:'🐝',desc:'Regen 15% HP for 2 turns',mp:20,cd:0,maxCd:3,
+   effect(p){p.addBuff('regen',{regen:Math.floor(p.maxHp*0.15),turns:2});_pvfx('spark','#88ff44');DM.say('NANO SWARM — repairing!');}},
+  {id:'synthBlood',name:'Synth Blood',icon:'🩸',desc:'Heal 25% HP + regen 5% x3',mp:24,cd:0,maxCd:4,
+   effect(p){const h=Math.floor(p.maxHp*0.25);p.hp=Math.min(p.maxHp,p.hp+h);p.addBuff('regen',{regen:Math.floor(p.maxHp*0.05),turns:3});_pvfx('explode',RD);UI.dmgNumAt(_pp().x,_pp().y,h,'heal');DM.say('SYNTH BLOOD — transfusion!');}},
+  {id:'emergencyPatch',name:'Emergency Patch',icon:'🩹',desc:'Heal 60% HP if below 30%',mp:18,cd:0,maxCd:5,
+   effect(p){const low=p.hp/p.maxHp<0.3;const h=Math.floor(p.maxHp*(low?0.6:0.15));p.hp=Math.min(p.maxHp,p.hp+h);_pvfx('explode',low?GR:'#668866');UI.dmgNumAt(_pp().x,_pp().y,h,'heal');DM.say(low?'EMERGENCY PATCH — critical save!':'EMERGENCY PATCH — minor fix.');}},
+  {id:'cellReboot',name:'Cell Reboot',icon:'♻',desc:'Heal 30% HP + cleanse debuffs',mp:22,cd:0,maxCd:4,
+   effect(p){const h=Math.floor(p.maxHp*0.3);p.hp=Math.min(p.maxHp,p.hp+h);p.debuffs=[];_pvfx('explode','#44ffaa');UI.dmgNumAt(_pp().x,_pp().y,h,'heal');DM.say('CELL REBOOT — system clean!');}},
+  {id:'overcharge',name:'Overcharge',icon:'🔋',desc:'Restore 50% MP',mp:0,cd:0,maxCd:5,
+   effect(p){const r=Math.floor(p.maxMp*0.5);p.mp=Math.min(p.maxMp,p.mp+r);_pvfx('spark','#aa66ff');DM.say('OVERCHARGE — power restored!');}},
+
+  // ── Reflect & thorns ──
+  {id:'firewall',name:'Firewall',icon:'🔥',desc:'Reflect 30% damage 3 turns',mp:22,cd:0,maxCd:4,
+   effect(p){p.addBuff('reflect',{reflect:0.3,turns:3});_pvfx('explode',OR);DM.say('FIREWALL — damage reflected!');}},
+  {id:'thornsProtocol',name:'Thorns Protocol',icon:'🌵',desc:'Reflect 50% damage 2 turns',mp:24,cd:0,maxCd:4,
+   effect(p){p.addBuff('reflect',{reflect:0.5,turns:2});_pvfx('spark',GR);DM.say('THORNS PROTOCOL — touch and burn!');}},
+  {id:'voltSkin',name:'Volt Skin',icon:'⚡',desc:'Reflect 20% + stun attackers 2t',mp:22,cd:0,maxCd:4,
+   effect(p){p.addBuff('reflect',{reflect:0.2,turns:2});p.addBuff('counterStun',{turns:2});_pvfx('spark',CY);DM.say('VOLT SKIN — shocking touch!');}},
+  {id:'venomAura',name:'Venom Aura',icon:'☠',desc:'Poison attackers for 3 turns',mp:18,cd:0,maxCd:3,
+   effect(p){p.addBuff('venomAura',{poisonDmg:Math.floor(p.atk*0.5),turns:3});_pvfx('spark','#44ff00');DM.say('VENOM AURA — toxic field!');}},
+
+  // ── Crowd control ──
+  {id:'empPulse',name:'EMP Pulse',icon:'📡',desc:'Stun all enemies 1 turn',mp:25,cd:0,maxCd:5,
+   effect(p,en){en.forEach(e=>{if(e.hp>0)e.stunTurns=(e.stunTurns||0)+1;});_aoeVfx(en,'spark',CY);DM.say('EMP PULSE — systems jammed!');}},
+  {id:'flashbang',name:'Flashbang',icon:'💡',desc:'Stun all enemies 2 turns',mp:30,cd:0,maxCd:6,
+   effect(p,en){en.forEach(e=>{if(e.hp>0)e.stunTurns=(e.stunTurns||0)+2;});_aoeVfx(en,'explode','#ffffff');DM.say('FLASHBANG — blinded!');}},
+  {id:'iceWall',name:'Ice Wall',icon:'🧊',desc:'Stun 1 enemy + block 1 hit',mp:18,cd:0,maxCd:3,
+   effect(p,en){const t=_tgt(en);if(t)t.stunTurns=(t.stunTurns||0)+1;p.addBuff('dodge',{dodges:1,turns:2});_pvfx('explode','#88ddff');DM.say('ICE WALL — frozen barrier!');}},
+  {id:'smokeBomb',name:'Smoke Bomb',icon:'💨',desc:'Block 2 hits + stun 1 enemy',mp:20,cd:0,maxCd:4,
+   effect(p,en){p.addBuff('dodge',{dodges:2,turns:3});const t=_tgt(en);if(t)t.stunTurns=(t.stunTurns||0)+1;_pvfx('explode','#666688');DM.say('SMOKE BOMB — vanished!');}},
+  {id:'gravLock',name:'Grav Lock',icon:'🕳',desc:'Stun strongest enemy 2 turns',mp:22,cd:0,maxCd:4,
+   effect(p,en){const alive=en.filter(e=>e.hp>0);if(!alive.length)return;const t=alive.reduce((a,b)=>b.atk>a.atk?b:a);t.stunTurns=(t.stunTurns||0)+2;const pos=Arena.getEnemyPos(GameState.enemies.indexOf(t));Arena.spawnVFX('explode',pos.x,pos.y,PU);DM.say('GRAV LOCK — pinned down!');}},
+
+  // ── Stat buffs ──
+  {id:'adrenalineShot',name:'Adrenaline Shot',icon:'💉',desc:'+50% SPD for 3 turns',mp:16,cd:0,maxCd:3,
+   effect(p){p.addBuff('spdUp',{spd:Math.floor(p.baseSpd*0.5),turns:3});_pvfx('spark',GR);DM.say('ADRENALINE SHOT — lightning fast!');}},
+  {id:'chromePlating',name:'Chrome Plating',icon:'🪙',desc:'+40% DEF + 20% ATK 2 turns',mp:22,cd:0,maxCd:4,
+   effect(p){p.addBuff('defUp',{def:Math.floor(p.baseDef*0.4),turns:2});p.addBuff('atkUp',{atk:Math.floor(p.baseAtk*0.2),turns:2});_pvfx('spark',GD);DM.say('CHROME PLATING — upgraded!');}},
+  {id:'combatStim',name:'Combat Stim',icon:'💊',desc:'+30% ATK + SPD for 2 turns',mp:20,cd:0,maxCd:4,
+   effect(p){p.addBuff('atkUp',{atk:Math.floor(p.baseAtk*0.3),turns:2});p.addBuff('spdUp',{spd:Math.floor(p.baseSpd*0.3),turns:2});_pvfx('spark',OR);DM.say('COMBAT STIM — overdrive!');}},
+  {id:'fortressMode',name:'Fortress Mode',icon:'🏰',desc:'+100% DEF but -50% SPD 3t',mp:18,cd:0,maxCd:4,
+   effect(p){p.addBuff('defUp',{def:p.baseDef,turns:3});p.addBuff('spdDown',{spd:-Math.floor(p.baseSpd*0.5),turns:3});_pvfx('explode','#4466aa');DM.say('FORTRESS MODE — immovable!');}},
+  {id:'cloakField',name:'Cloak Field',icon:'🌫',desc:'70% dodge chance 2 turns',mp:24,cd:0,maxCd:5,
+   effect(p){p.addBuff('phaseShield',{dodgeChance:0.7,turns:2});_pvfx('spark',PU);DM.say('CLOAK FIELD — invisible!');}},
+  {id:'deadManSwitch',name:'Dead Man Switch',icon:'💀',desc:'If below 20% HP heal 50%+block 2',mp:20,cd:0,maxCd:5,
+   effect(p){const low=p.hp/p.maxHp<0.2;if(low){const h=Math.floor(p.maxHp*0.5);p.hp=Math.min(p.maxHp,p.hp+h);p.addBuff('dodge',{dodges:2,turns:2});UI.dmgNumAt(_pp().x,_pp().y,h,'heal');_pvfx('explode',RD);DM.say('DEAD MAN SWITCH — not today!');}else{const h=Math.floor(p.maxHp*0.1);p.hp=Math.min(p.maxHp,p.hp+h);UI.dmgNumAt(_pp().x,_pp().y,h,'heal');_pvfx('spark','#886666');DM.say('DEAD MAN SWITCH — standby.');}}},
 ];
 
 // Keep CLASSES as a lookup for legacy references (Arena accent, etc.)
@@ -4119,10 +4266,10 @@ const SaveSystem = {
         selectedGender:GameState.selectedGender||'man',
         selectedAccent:GameState.selectedAccent||CY,
         activeSkillIds:(GameState.player?.spells||[]).filter(s=>ACTIVE_SKILLS.some(a=>a.id===s.id)).map(s=>s.id),
-        defenseSkillIds:(GameState.player?.spells||[]).filter(s=>DEFENSIVE_SKILLS.some(d=>d.id===s.id)).map(s=>s.id),
+        potionIds:(GameState.player?.spells||[]).filter(s=>POTIONS.some(d=>d.id===s.id)).map(s=>s.id),
         passiveIds:GameState.player?.passiveIds||[],
         statAlloc:GameState.ccState?.statAlloc||{hp:0,atk:0,def:0,spd:0,mp:0},
-        gearItemIds:(GameState.player?.gearItems||[]).map(g=>g.id),
+        weaponIds:(GameState.player?.weapons||[]).map(w=>w.id),
         hp:p.hp,maxHp:p.maxHp,mp:p.mp,maxMp:p.maxMp,
         baseAtk:p.baseAtk,atk:p.atk,baseDef:p.baseDef,def:p.def,
         baseSpd:p.baseSpd,spd:p.spd,level:p.level||1,
@@ -4145,15 +4292,15 @@ const SaveSystem = {
       const d=JSON.parse(raw);
       GameState.selectedGender=d.selectedGender||'man';
       GameState.selectedAccent=d.selectedAccent||CY;
-      const gearItems=(d.gearItemIds||[d.selectedEquipId]).map(id=>EQUIP_POOL.find(e=>e.id===id)).filter(Boolean);
-      if(!gearItems.length)gearItems.push(EQUIP_POOL[0]);
+      const weapons=(d.weaponIds||d.gearItemIds||[d.selectedEquipId]).map(id=>WEAPONS.find(w=>w.id===id)||EQUIP_POOL.find(e=>e.id===id)).filter(Boolean);
+      if(!weapons.length)weapons.push(WEAPONS[0]);
       const activeSkills=(d.activeSkillIds||[d.activeSkillId||'plasmaStrike']).map(id=>ACTIVE_SKILLS.find(s=>s.id===id)).filter(Boolean);
       if(!activeSkills.length)activeSkills.push(ACTIVE_SKILLS[0]);
-      const defenseSkills=(d.defenseSkillIds||[]).map(id=>DEFENSIVE_SKILLS.find(s=>s.id===id)).filter(Boolean);
+      const potions=(d.potionIds||d.defenseSkillIds||[]).map(id=>POTIONS.find(s=>s.id===id)||DEFENSIVE_SKILLS.find(s=>s.id===id)).filter(Boolean);
       const passiveSkills=(d.passiveIds||[d.passiveId]).filter(Boolean).map(id=>PASSIVE_SKILLS.find(s=>s.id===id)).filter(Boolean);
-      const cfg={gender:d.selectedGender||'man',accent:d.selectedAccent||CY,statAlloc:d.statAlloc||{hp:0,atk:0,def:0,spd:0,mp:0},activeSkills,defenseSkills,passiveSkills,gearItems};
+      const cfg={gender:d.selectedGender||'man',accent:d.selectedAccent||CY,statAlloc:d.statAlloc||{hp:0,atk:0,def:0,spd:0,mp:0},activeSkills,potions,passiveSkills,weapons};
       const alloc=cfg.statAlloc;
-      GameState.ccState={gender:cfg.gender,accent:Object.entries(ACCENT_COLORS).find(([,v])=>v===cfg.accent)?.[0]||'cyan',statAlloc:alloc,pointsLeft:STAT_POINTS_TOTAL-Object.values(alloc).reduce((a,b)=>a+b,0),randActive:activeSkills,randPassive:passiveSkills,randDefense:defenseSkills,randGear:gearItems};
+      GameState.ccState={gender:cfg.gender,accent:Object.entries(ACCENT_COLORS).find(([,v])=>v===cfg.accent)?.[0]||'cyan',statAlloc:alloc,pointsLeft:STAT_POINTS_TOTAL-Object.values(alloc).reduce((a,b)=>a+b,0),randActive:activeSkills,randPassive:passiveSkills,randWeapons:weapons,randPotions:potions};
       const p=new Player(cfg);
       p.hp=d.hp;p.maxHp=d.maxHp;p.mp=d.mp;p.maxMp=d.maxMp;
       p.baseAtk=d.baseAtk;p.atk=d.atk;p.baseDef=d.baseDef;p.def=d.def;
@@ -4522,6 +4669,122 @@ const EQUIP_POOL = [
   {id:'nanoInjector',name:'Nano Injector',icon:'💉',bonus:{hp:0},desc:'CONSUMABLE: Restore 50% HP',consumable:true},
 ];
 
+// ── WEAPONS: 30 weapons organized by type — provide stat bonuses ──
+const WEAPONS = [
+  // ── Blades (6) ──
+  {id:'plasmaKatana',name:'Plasma Katana',icon:'⚔',type:'Blade',bonus:{atk:10,spd:2},desc:'+10 ATK +2 SPD'},
+  {id:'neonCleaver',name:'Neon Cleaver',icon:'🔪',type:'Blade',bonus:{atk:14},desc:'+14 ATK'},
+  {id:'voidEdge',name:'Void Edge',icon:'🗡',type:'Blade',bonus:{atk:12,lifesteal:10},desc:'+12 ATK 10% lifesteal'},
+  {id:'chromeSaber',name:'Chrome Saber',icon:'⚔',type:'Blade',bonus:{atk:8,def:4},desc:'+8 ATK +4 DEF'},
+  {id:'laserTanto',name:'Laser Tanto',icon:'🔪',type:'Blade',bonus:{atk:6,spd:4},desc:'+6 ATK +4 SPD'},
+  {id:'riotBlade',name:'Riot Blade',icon:'🗡',type:'Blade',bonus:{atk:16},desc:'+16 ATK'},
+
+  // ── Pistols (6) ──
+  {id:'burstPistol',name:'Burst Pistol',icon:'🔫',type:'Pistol',bonus:{atk:8,spd:3},desc:'+8 ATK +3 SPD'},
+  {id:'plasmaDerringer',name:'Plasma Derringer',icon:'🔫',type:'Pistol',bonus:{atk:10,stunChance:15},desc:'+10 ATK 15% stun'},
+  {id:'silencedAuto',name:'Silenced Auto',icon:'🔫',type:'Pistol',bonus:{atk:7,spd:5},desc:'+7 ATK +5 SPD'},
+  {id:'mercRevolver',name:'Merc Revolver',icon:'🔫',type:'Pistol',bonus:{atk:14},desc:'+14 ATK'},
+  {id:'shockPistol',name:'Shock Pistol',icon:'🔫',type:'Pistol',bonus:{atk:9,stunChance:20},desc:'+9 ATK 20% stun'},
+  {id:'dualSmgs',name:'Dual SMGs',icon:'🔫',type:'Pistol',bonus:{atk:6,spd:6},desc:'+6 ATK +6 SPD'},
+
+  // ── Heavy (6) ──
+  {id:'railCannon',name:'Rail Cannon',icon:'💥',type:'Heavy',bonus:{atk:18},desc:'+18 ATK'},
+  {id:'thermalLauncher',name:'Thermal Launcher',icon:'🚀',type:'Heavy',bonus:{atk:15,def:-3},desc:'+15 ATK -3 DEF'},
+  {id:'gaussRifle',name:'Gauss Rifle',icon:'💥',type:'Heavy',bonus:{atk:12,def:3},desc:'+12 ATK +3 DEF'},
+  {id:'minigun',name:'Minigun',icon:'💥',type:'Heavy',bonus:{atk:11,spd:-2},desc:'+11 ATK -2 SPD'},
+  {id:'rocketFist',name:'Rocket Fist',icon:'🤜',type:'Heavy',bonus:{atk:13,stunChance:25},desc:'+13 ATK 25% stun'},
+  {id:'gravHammer',name:'Grav Hammer',icon:'🔨',type:'Heavy',bonus:{atk:16,spd:-3},desc:'+16 ATK -3 SPD'},
+
+  // ── Energy (6) ──
+  {id:'ionRifle',name:'Ion Rifle',icon:'⚡',type:'Energy',bonus:{atk:10,mp:15},desc:'+10 ATK +15 MP'},
+  {id:'photonWhip',name:'Photon Whip',icon:'✴',type:'Energy',bonus:{atk:9,spd:3},desc:'+9 ATK +3 SPD'},
+  {id:'teslaGauntlet',name:'Tesla Gauntlet',icon:'⚡',type:'Energy',bonus:{atk:11,stunChance:15},desc:'+11 ATK 15% stun'},
+  {id:'arcCaster',name:'Arc Caster',icon:'⚡',type:'Energy',bonus:{atk:8,mp:20},desc:'+8 ATK +20 MP'},
+  {id:'novaBeam',name:'Nova Beam',icon:'☀',type:'Energy',bonus:{atk:14,mp:10},desc:'+14 ATK +10 MP'},
+  {id:'pulseRifle',name:'Pulse Rifle',icon:'⚡',type:'Energy',bonus:{atk:12,cdReduce:1},desc:'+12 ATK -1 CD'},
+
+  // ── Tech (6) ──
+  {id:'nanoBow',name:'Nano Bow',icon:'🏹',type:'Tech',bonus:{atk:10,dodge:10},desc:'+10 ATK 10% dodge'},
+  {id:'hackDrone',name:'Hack Drone',icon:'🤖',type:'Tech',bonus:{atk:7,def:5,spd:2},desc:'+7 ATK +5 DEF +2 SPD'},
+  {id:'smartGun',name:'Smart Gun',icon:'🎯',type:'Tech',bonus:{atk:11,cdReduce:1},desc:'+11 ATK -1 CD'},
+  {id:'toxinSprayer',name:'Toxin Sprayer',icon:'☣',type:'Tech',bonus:{atk:9,lifesteal:15},desc:'+9 ATK 15% lifesteal'},
+  {id:'monoWire',name:'Mono Wire',icon:'🪡',type:'Tech',bonus:{atk:13,spd:1},desc:'+13 ATK +1 SPD'},
+  {id:'gravBlade',name:'Grav Blade',icon:'🌀',type:'Tech',bonus:{atk:10,def:3,spd:1},desc:'+10 ATK +3 DEF +1 SPD'},
+];
+
+// ── POTIONS: 30 potions that activate buffs — added as usable spells ──
+const POTIONS = [
+  // ── Healing potions (6) ──
+  {id:'nanoVial',name:'Nano Vial',icon:'🧪',desc:'Heal 30% HP',mp:12,cd:0,maxCd:3,type:'Heal',
+   effect(p){const h=Math.floor(p.maxHp*0.3);p.hp=Math.min(p.maxHp,p.hp+h);_pvfx('explode','#00ff88');UI.dmgNumAt(_pp().x,_pp().y,h,'heal');DM.say('NANO VIAL — patched up!');}},
+  {id:'bioElixir',name:'Bio Elixir',icon:'🧪',desc:'Heal 50% HP',mp:20,cd:0,maxCd:4,type:'Heal',
+   effect(p){const h=Math.floor(p.maxHp*0.5);p.hp=Math.min(p.maxHp,p.hp+h);_pvfx('explode','#44ff88');UI.dmgNumAt(_pp().x,_pp().y,h,'heal');DM.say('BIO ELIXIR — fully restored!');}},
+  {id:'synthSerum',name:'Synth Serum',icon:'💉',desc:'Heal 20% + regen 10% x3',mp:16,cd:0,maxCd:3,type:'Heal',
+   effect(p){const h=Math.floor(p.maxHp*0.2);p.hp=Math.min(p.maxHp,p.hp+h);p.addBuff('regen',{regen:Math.floor(p.maxHp*0.1),turns:3});_pvfx('spark',GR);UI.dmgNumAt(_pp().x,_pp().y,h,'heal');DM.say('SYNTH SERUM — regenerating!');}},
+  {id:'reviveDose',name:'Revive Dose',icon:'💊',desc:'If below 25% heal 60%',mp:14,cd:0,maxCd:5,type:'Heal',
+   effect(p){const low=p.hp/p.maxHp<0.25;const h=Math.floor(p.maxHp*(low?0.6:0.15));p.hp=Math.min(p.maxHp,p.hp+h);_pvfx('explode',low?GR:'#668866');UI.dmgNumAt(_pp().x,_pp().y,h,'heal');DM.say(low?'REVIVE DOSE — back from the edge!':'REVIVE DOSE — small boost.');}},
+  {id:'bloodPack',name:'Blood Pack',icon:'🩸',desc:'Heal 40% + cleanse debuffs',mp:18,cd:0,maxCd:4,type:'Heal',
+   effect(p){const h=Math.floor(p.maxHp*0.4);p.hp=Math.min(p.maxHp,p.hp+h);p.debuffs=[];_pvfx('explode','#ff4466');UI.dmgNumAt(_pp().x,_pp().y,h,'heal');DM.say('BLOOD PACK — system purge!');}},
+  {id:'quickPatch',name:'Quick Patch',icon:'🩹',desc:'Heal 15% HP (low cost)',mp:8,cd:0,maxCd:2,type:'Heal',
+   effect(p){const h=Math.floor(p.maxHp*0.15);p.hp=Math.min(p.maxHp,p.hp+h);_pvfx('spark','#88ffaa');UI.dmgNumAt(_pp().x,_pp().y,h,'heal');DM.say('QUICK PATCH — minor fix!');}},
+
+  // ── Power potions (6) ──
+  {id:'berserkerShot',name:'Berserker Shot',icon:'🔴',desc:'+60% ATK for 3 turns',mp:18,cd:0,maxCd:4,type:'Power',
+   effect(p){p.addBuff('atkUp',{atk:Math.floor(p.baseAtk*0.6),turns:3});_pvfx('explode',RD);DM.say('BERSERKER SHOT — rage unleashed!');}},
+  {id:'precisionDrop',name:'Precision Drop',icon:'🎯',desc:'+40% ATK + crit 3 turns',mp:16,cd:0,maxCd:3,type:'Power',
+   effect(p){p.addBuff('atkUp',{atk:Math.floor(p.baseAtk*0.4),turns:3});p.critBonus+=0.15;_pvfx('spark',GD);DM.say('PRECISION DROP — locked on!');}},
+  {id:'overloadTonic',name:'Overload Tonic',icon:'⚡',desc:'+80% ATK for 2 turns',mp:22,cd:0,maxCd:5,type:'Power',
+   effect(p){p.addBuff('atkUp',{atk:Math.floor(p.baseAtk*0.8),turns:2});_pvfx('explode',OR);DM.say('OVERLOAD TONIC — maximum power!');}},
+  {id:'venomCoat',name:'Venom Coat',icon:'☠',desc:'Poison all enemies 3 turns',mp:16,cd:0,maxCd:3,type:'Power',
+   effect(p,en){en.forEach(e=>{if(e.hp>0)e.poison=(e.poison||0)+Math.floor(p.atk*0.4);});_aoeVfx(en,'spark','#44ff00');DM.say('VENOM COAT — toxic spread!');}},
+  {id:'critElixir',name:'Crit Elixir',icon:'💎',desc:'+30% crit chance 4 turns',mp:14,cd:0,maxCd:4,type:'Power',
+   effect(p){p.critBonus+=0.3;_pvfx('spark',MG);DM.say('CRIT ELIXIR — sharpened senses!');}},
+  {id:'blitzDose',name:'Blitz Dose',icon:'💨',desc:'+50% SPD + ATK for 2 turns',mp:18,cd:0,maxCd:4,type:'Power',
+   effect(p){p.addBuff('spdUp',{spd:Math.floor(p.baseSpd*0.5),turns:2});p.addBuff('atkUp',{atk:Math.floor(p.baseAtk*0.5),turns:2});_pvfx('spark',CY);DM.say('BLITZ DOSE — hyperspeed!');}},
+
+  // ── Shield potions (6) ──
+  {id:'ironBrew',name:'Iron Brew',icon:'🛡',desc:'+60% DEF for 3 turns',mp:16,cd:0,maxCd:3,type:'Shield',
+   effect(p){p.addBuff('defUp',{def:Math.floor(p.baseDef*0.6),turns:3});_pvfx('spark','#4488ff');DM.say('IRON BREW — armor hardened!');}},
+  {id:'ghostDraft',name:'Ghost Draft',icon:'👻',desc:'Block next 2 hits',mp:14,cd:0,maxCd:3,type:'Shield',
+   effect(p){p.addBuff('dodge',{dodges:2,turns:3});_pvfx('spark',PU);DM.say('GHOST DRAFT — phasing!');}},
+  {id:'mirrorDraught',name:'Mirror Draught',icon:'🪞',desc:'Reflect 40% damage 3 turns',mp:18,cd:0,maxCd:4,type:'Shield',
+   effect(p){p.addBuff('reflect',{reflect:0.4,turns:3});_pvfx('explode',CY);DM.say('MIRROR DRAUGHT — send it back!');}},
+  {id:'stoneFlask',name:'Stone Flask',icon:'🪨',desc:'+100% DEF for 1 turn',mp:12,cd:0,maxCd:3,type:'Shield',
+   effect(p){p.addBuff('defUp',{def:p.baseDef,turns:1});_pvfx('explode','#aaaacc');DM.say('STONE FLASK — immovable!');}},
+  {id:'voidInk',name:'Void Ink',icon:'🌑',desc:'60% dodge chance 2 turns',mp:18,cd:0,maxCd:4,type:'Shield',
+   effect(p){p.addBuff('phaseShield',{dodgeChance:0.6,turns:2});_pvfx('spark','#6600cc');DM.say('VOID INK — invisible!');}},
+  {id:'absorbGel',name:'Absorb Gel',icon:'🫧',desc:'Block 3 hits',mp:20,cd:0,maxCd:5,type:'Shield',
+   effect(p){p.addBuff('dodge',{dodges:3,turns:4});_pvfx('explode','#88ddff');DM.say('ABSORB GEL — shielded!');}},
+
+  // ── Utility potions (6) ──
+  {id:'hackTonic',name:'Hack Tonic',icon:'💾',desc:'Restore 40% MP',mp:0,cd:0,maxCd:4,type:'Utility',
+   effect(p){const r=Math.floor(p.maxMp*0.4);p.mp=Math.min(p.maxMp,p.mp+r);_pvfx('spark','#aa66ff');DM.say('HACK TONIC — power restored!');}},
+  {id:'stunBomb',name:'Stun Bomb',icon:'💡',desc:'Stun all enemies 1 turn',mp:16,cd:0,maxCd:4,type:'Utility',
+   effect(p,en){en.forEach(e=>{if(e.hp>0)e.stunTurns=(e.stunTurns||0)+1;});_aoeVfx(en,'spark','#ffffff');DM.say('STUN BOMB — blinded!');}},
+  {id:'cleanseDraft',name:'Cleanse Draft',icon:'♻',desc:'Remove all debuffs + 10% HP',mp:10,cd:0,maxCd:3,type:'Utility',
+   effect(p){p.debuffs=[];const h=Math.floor(p.maxHp*0.1);p.hp=Math.min(p.maxHp,p.hp+h);_pvfx('spark','#44ffaa');UI.dmgNumAt(_pp().x,_pp().y,h,'heal');DM.say('CLEANSE DRAFT — purified!');}},
+  {id:'timeDilate',name:'Time Dilate',icon:'⏳',desc:'+80% SPD for 2 turns',mp:14,cd:0,maxCd:4,type:'Utility',
+   effect(p){p.addBuff('spdUp',{spd:Math.floor(p.baseSpd*0.8),turns:2});_pvfx('spark',GR);DM.say('TIME DILATE — slowing time!');}},
+  {id:'gravFlask',name:'Grav Flask',icon:'🕳',desc:'Stun strongest enemy 2 turns',mp:16,cd:0,maxCd:4,type:'Utility',
+   effect(p,en){const alive=en.filter(e=>e.hp>0);if(!alive.length)return;const t=alive.reduce((a,b)=>b.atk>a.atk?b:a);t.stunTurns=(t.stunTurns||0)+2;const pos=Arena.getEnemyPos(GameState.enemies.indexOf(t));Arena.spawnVFX('explode',pos.x,pos.y,PU);DM.say('GRAV FLASK — pinned!');}},
+  {id:'adrenalineVial',name:'Adrenaline Vial',icon:'💉',desc:'+30% ATK SPD DEF 2 turns',mp:20,cd:0,maxCd:5,type:'Utility',
+   effect(p){p.addBuff('atkUp',{atk:Math.floor(p.baseAtk*0.3),turns:2});p.addBuff('spdUp',{spd:Math.floor(p.baseSpd*0.3),turns:2});p.addBuff('defUp',{def:Math.floor(p.baseDef*0.3),turns:2});_pvfx('explode',GD);DM.say('ADRENALINE VIAL — full boost!');}},
+
+  // ── Exotic potions (6) ──
+  {id:'chaosFlask',name:'Chaos Flask',icon:'🌀',desc:'Random: heal, buff ATK, or shield',mp:14,cd:0,maxCd:3,type:'Exotic',
+   effect(p){const r=Math.floor(Math.random()*3);if(r===0){const h=Math.floor(p.maxHp*0.35);p.hp=Math.min(p.maxHp,p.hp+h);UI.dmgNumAt(_pp().x,_pp().y,h,'heal');_pvfx('explode',GR);DM.say('CHAOS FLASK — healed!');}else if(r===1){p.addBuff('atkUp',{atk:Math.floor(p.baseAtk*0.5),turns:3});_pvfx('explode',OR);DM.say('CHAOS FLASK — power surge!');}else{p.addBuff('dodge',{dodges:2,turns:3});_pvfx('explode',PU);DM.say('CHAOS FLASK — shielded!');}}},
+  {id:'glitchBrew',name:'Glitch Brew',icon:'👾',desc:'Random buff: mega ATK or mega DEF',mp:16,cd:0,maxCd:4,type:'Exotic',
+   effect(p){if(Math.random()<0.5){p.addBuff('atkUp',{atk:Math.floor(p.baseAtk*0.8),turns:2});_pvfx('explode',RD);DM.say('GLITCH BREW — attack overload!');}else{p.addBuff('defUp',{def:Math.floor(p.baseDef*0.8),turns:2});_pvfx('explode','#4488ff');DM.say('GLITCH BREW — defense overload!');}}},
+  {id:'quantumDrop',name:'Quantum Drop',icon:'🌌',desc:'Heal 20% + random mega buff',mp:18,cd:0,maxCd:4,type:'Exotic',
+   effect(p){const h=Math.floor(p.maxHp*0.2);p.hp=Math.min(p.maxHp,p.hp+h);UI.dmgNumAt(_pp().x,_pp().y,h,'heal');const buffs=[['atkUp',{atk:Math.floor(p.baseAtk*0.6),turns:2}],['spdUp',{spd:Math.floor(p.baseSpd*0.6),turns:2}],['defUp',{def:Math.floor(p.baseDef*0.6),turns:2}]];const b=buffs[Math.floor(Math.random()*buffs.length)];p.addBuff(b[0],b[1]);_pvfx('explode',MG);DM.say('QUANTUM DROP — reality shifted!');}},
+  {id:'dataDrink',name:'Data Drink',icon:'💾',desc:'Restore 30% HP + 30% MP',mp:0,cd:0,maxCd:4,type:'Exotic',
+   effect(p){const h=Math.floor(p.maxHp*0.3);p.hp=Math.min(p.maxHp,p.hp+h);const m=Math.floor(p.maxMp*0.3);p.mp=Math.min(p.maxMp,p.mp+m);_pvfx('explode','#aa88ff');UI.dmgNumAt(_pp().x,_pp().y,h,'heal');DM.say('DATA DRINK — dual restore!');}},
+  {id:'neonShake',name:'Neon Shake',icon:'🥤',desc:'All stats +20% for 3 turns',mp:20,cd:0,maxCd:5,type:'Exotic',
+   effect(p){p.addBuff('atkUp',{atk:Math.floor(p.baseAtk*0.2),turns:3});p.addBuff('defUp',{def:Math.floor(p.baseDef*0.2),turns:3});p.addBuff('spdUp',{spd:Math.floor(p.baseSpd*0.2),turns:3});_pvfx('explode',CY);DM.say('NEON SHAKE — balanced boost!');}},
+  {id:'voidDrops',name:'Void Drops',icon:'🖤',desc:'Damage self 15% but +100% ATK 2t',mp:10,cd:0,maxCd:4,type:'Exotic',
+   effect(p){const d=Math.floor(p.maxHp*0.15);p.hp=Math.max(1,p.hp-d);p.addBuff('atkUp',{atk:p.baseAtk,turns:2});_pvfx('explode',RD);DM.say('VOID DROPS — pain is power!');}},
+];
+
 const QUEST_POOL = [
   {id:'q1',title:'SPELL ABSTAINER',desc:'5 kills no spells',max:5,stat:'noSpellKills',reward:{atk:15},rTxt:'+15 ATK'},
   {id:'q2',title:'IRON WILL',desc:'3 floors no heal',max:3,stat:'floorsNoHeal',reward:{maxHp:30},rTxt:'+30 MaxHP'},
@@ -4580,44 +4843,44 @@ const GameState = {
 };
 
 class Player {
-  // Constructor: takes character creation config with random skill/gear arrays
+  // Constructor: takes character creation config with random skill/weapon/potion arrays
   constructor(cfg) {
     const gender = GENDERS[cfg.gender] || GENDERS.man;
     this.className = gender.name;
     this.accent = cfg.accent || CY;
     this.sprite = gender.sprite;
     this.gender = cfg.gender;
-    // Combine bonuses from all gear items
-    const gearItems = cfg.gearItems || [];
-    const gearBonus = {hp:0,atk:0,def:0,spd:0,mp:0,cdReduce:0,lifesteal:0,dodge:0,stunChance:0};
-    gearItems.forEach(eq=>{if(eq.bonus)Object.keys(eq.bonus).forEach(k=>gearBonus[k]=(gearBonus[k]||0)+(eq.bonus[k]||0));});
-    // Stats from base + allocation + combined gear
+    // Combine bonuses from all weapons
+    const weapons = cfg.weapons || [];
+    const weaponBonus = {hp:0,atk:0,def:0,spd:0,mp:0,cdReduce:0,lifesteal:0,dodge:0,stunChance:0};
+    weapons.forEach(w=>{if(w.bonus)Object.keys(w.bonus).forEach(k=>weaponBonus[k]=(weaponBonus[k]||0)+(w.bonus[k]||0));});
+    // Stats from base + allocation + combined weapons
     const alloc = cfg.statAlloc || {hp:0,atk:0,def:0,spd:0,mp:0};
-    this.baseHp = BASE_STATS.hp + alloc.hp*STAT_PER_POINT.hp + gearBonus.hp;
+    this.baseHp = BASE_STATS.hp + alloc.hp*STAT_PER_POINT.hp + weaponBonus.hp;
     this.maxHp = this.baseHp; this.hp = this.maxHp;
-    this.maxMp = BASE_STATS.mp + alloc.mp*STAT_PER_POINT.mp + gearBonus.mp;
+    this.maxMp = BASE_STATS.mp + alloc.mp*STAT_PER_POINT.mp + weaponBonus.mp;
     this.mp = this.maxMp;
-    this.baseAtk = BASE_STATS.atk + alloc.atk*STAT_PER_POINT.atk + gearBonus.atk;
+    this.baseAtk = BASE_STATS.atk + alloc.atk*STAT_PER_POINT.atk + weaponBonus.atk;
     this.atk = this.baseAtk;
-    this.baseDef = BASE_STATS.def + alloc.def*STAT_PER_POINT.def + gearBonus.def;
+    this.baseDef = BASE_STATS.def + alloc.def*STAT_PER_POINT.def + weaponBonus.def;
     this.def = this.baseDef;
-    this.baseSpd = BASE_STATS.spd + alloc.spd*STAT_PER_POINT.spd + gearBonus.spd;
+    this.baseSpd = BASE_STATS.spd + alloc.spd*STAT_PER_POINT.spd + weaponBonus.spd;
     this.spd = this.baseSpd;
     this.actionCounter=0; this.buffs=[]; this.debuffs=[];
-    this.equip=gearItems[0]||null; this.gearItems=gearItems; this.animState='idle.base'; this.animTimer=0;
-    // Active skills (2) + Defensive skills (2) = 4 spells
+    this.equip=weapons[0]||null; this.weapons=weapons; this.animState='idle.base'; this.animTimer=0;
+    // Active skills (2) + Potions (2) = 4 spells
     const actives = cfg.activeSkills || [ACTIVE_SKILLS[0]];
-    const defensives = cfg.defenseSkills || [];
-    this.spells=[...actives,...defensives].map(sk=>({...sk, effect:sk.effect, cd:0, hackedTurns:0}));
-    if(gearBonus.cdReduce) this.spells.forEach(s=>s.maxCd=Math.max(1,s.maxCd-gearBonus.cdReduce));
+    const potions = cfg.potions || [];
+    this.spells=[...actives,...potions].map(sk=>({...sk, effect:sk.effect, cd:0, hackedTurns:0}));
+    if(weaponBonus.cdReduce) this.spells.forEach(s=>s.maxCd=Math.max(1,s.maxCd-weaponBonus.cdReduce));
     this.spellsCast=new Set(); this.healedThisFloor=false;
     this.level=1; this.xp=0; this.xpToNext=50; this.critBonus=0;
     // Passive skills (apply all)
-    this.lifesteal=gearBonus.lifesteal?gearBonus.lifesteal/100:0; this.dodgeChance=gearBonus.dodge?gearBonus.dodge/100:0; this.blockDR=0.5;
+    this.lifesteal=weaponBonus.lifesteal?weaponBonus.lifesteal/100:0; this.dodgeChance=weaponBonus.dodge?weaponBonus.dodge/100:0; this.blockDR=0.5;
     this.passiveIds=[];
     const passives = cfg.passiveSkills || [];
     passives.forEach(p=>{if(p&&p.apply){p.apply(this);this.passiveIds.push(p.id);}});
-    if(gearBonus.stunChance) this.stunChance=gearBonus.stunChance/100;
+    if(weaponBonus.stunChance) this.stunChance=weaponBonus.stunChance/100;
   }
   addBuff(id,p){this.buffs=this.buffs.filter(b=>b.id!==id);this.buffs.push({id,...p});this.recalc();}
   addDebuff(id,p){this.debuffs=this.debuffs.filter(d=>d.id!==id);this.debuffs.push({id,...p});}
@@ -6430,10 +6693,10 @@ const Game={
         gender:'man', accent:'cyan',
         statAlloc:{hp:0,atk:0,def:0,spd:0,mp:0}, pointsLeft:STAT_POINTS_TOTAL,
         portraitIdx:0, runnerName:'', difficulty:'normal',
-        randActive:shuffle(ACTIVE_SKILLS).slice(0,2),
-        randPassive:shuffle(PASSIVE_SKILLS).slice(0,2),
-        randDefense:shuffle(DEFENSIVE_SKILLS).slice(0,2),
-        randGear:shuffle(EQUIP_POOL).slice(0,2)
+        randActive:shuffle(ACTIVE_SKILLS).slice(0,2), selActive:0,
+        randPassive:shuffle(PASSIVE_SKILLS).slice(0,2), selPassive:0,
+        randWeapons:shuffle(WEAPONS).slice(0,2), selWeapon:0,
+        randPotions:shuffle(POTIONS).slice(0,2), selPotion:0
       };
     }
     const cc=GameState.ccState;
@@ -6552,24 +6815,25 @@ const Game={
     const midRow=document.createElement('div');
     midRow.style.cssText='display:flex;gap:clamp(8px,1.2vw,16px);flex:1;min-height:0;';
 
-    const buildPanel=(label,items,showMp)=>{
-      const box=document.createElement('div');box.className='cc-panel';box.style.cssText='flex:1;display:flex;flex-direction:column;overflow-y:auto;';
-      box.innerHTML=`<div class="slbl">${label}</div>`;
-      const col=document.createElement('div');col.style.cssText='display:flex;flex-direction:column;gap:clamp(4px,0.5vh,6px);';
-      items.forEach(sk=>{
-        const c=document.createElement('div');c.className='spc sel';
-        c.style.cssText='padding:clamp(8px,1vh,12px) clamp(8px,1vw,14px);display:flex;align-items:center;gap:clamp(8px,1vw,14px);';
-        const mpInfo=showMp&&sk.mp!=null?`<div style="${F}font-size:clamp(7px,0.7vw,9px);color:#776;text-align:right;flex-shrink:0;line-height:1.6;">MP:${sk.mp}<br>CD:${sk.maxCd}</div>`:'';
-        c.innerHTML=`<div style="${F}font-size:clamp(18px,2.2vw,28px);flex-shrink:0;width:clamp(28px,3vw,40px);text-align:center;">${sk.icon}</div><div style="flex:1;min-width:0;"><div style="${F}font-size:clamp(9px,1vw,13px);color:#ffe100;margin-bottom:3px;">${sk.name}</div><div style="${F}font-size:clamp(7px,0.75vw,10px);color:#99a;line-height:1.5;">${sk.desc}</div></div>${mpInfo}`;
+    const buildPanel=(label,items,showMp,selKey)=>{
+      const box=document.createElement('div');box.className='cc-panel';box.style.cssText='flex:1;display:flex;flex-direction:column;overflow-y:hidden;';
+      box.innerHTML=`<div class="slbl" style="flex-shrink:0;">${label}</div>`;
+      const col=document.createElement('div');col.style.cssText='display:flex;flex-direction:column;gap:clamp(6px,0.8vh,10px);flex:1;min-height:0;';
+      items.forEach((sk,i)=>{
+        const c=document.createElement('div');c.className='spc'+(cc[selKey]===i?' sel':'');
+        c.style.cssText='cursor:pointer;flex:1;display:flex;align-items:center;gap:clamp(8px,1vw,14px);padding:clamp(10px,1.2vh,16px) clamp(10px,1.2vw,16px);box-sizing:border-box;min-height:0;';
+        const mpInfo=showMp&&sk.mp!=null?`<div style="${F}font-size:clamp(8px,0.8vw,11px);color:#776;text-align:right;flex-shrink:0;line-height:1.6;white-space:nowrap;">MP:${sk.mp}<br>CD:${sk.maxCd}</div>`:'';
+        c.innerHTML=`<div style="${F}font-size:clamp(20px,2.5vw,32px);flex-shrink:0;width:clamp(32px,3.5vw,44px);text-align:center;">${sk.icon}</div><div style="flex:1;min-width:0;overflow:hidden;"><div style="${F}font-size:clamp(10px,1.1vw,14px);color:#ffe100;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${sk.name}</div><div style="${F}font-size:clamp(8px,0.85vw,11px);color:#99a;line-height:1.4;">${sk.desc}</div></div>${mpInfo}`;
+        c.addEventListener('click',()=>{cc[selKey]=i;col.querySelectorAll('.spc').forEach(x=>x.classList.remove('sel'));c.classList.add('sel');});
         col.appendChild(c);
       });
       box.appendChild(col);return box;
     };
 
-    midRow.appendChild(buildPanel('◆ ACTIVE SKILLS',cc.randActive,true));
-    midRow.appendChild(buildPanel('◆ PASSIVE SKILLS',cc.randPassive,false));
-    midRow.appendChild(buildPanel('◆ DEFENSIVE SKILLS',cc.randDefense,true));
-    midRow.appendChild(buildPanel('◆ STARTING GEAR',cc.randGear,false));
+    midRow.appendChild(buildPanel('◆ ACTIVE SKILL',cc.randActive,true,'selActive'));
+    midRow.appendChild(buildPanel('◆ PASSIVE SKILL',cc.randPassive,false,'selPassive'));
+    midRow.appendChild(buildPanel('◆ WEAPON',cc.randWeapons,false,'selWeapon'));
+    midRow.appendChild(buildPanel('◆ POTION',cc.randPotions,true,'selPotion'));
 
     grid.appendChild(midRow);
     setTimeout(()=>this._updatePreview(),100);
@@ -6680,10 +6944,10 @@ const Game={
       gender: cc.gender,
       accent: ACCENT_COLORS[cc.accent]||CY,
       statAlloc: cc.statAlloc,
-      activeSkills: cc.randActive||[ACTIVE_SKILLS[0]],
-      passiveSkills: cc.randPassive||[PASSIVE_SKILLS[0]],
-      defenseSkills: cc.randDefense||[DEFENSIVE_SKILLS[0]],
-      gearItems: cc.randGear||[EQUIP_POOL[0]]
+      activeSkills: [cc.randActive[cc.selActive||0]||ACTIVE_SKILLS[0]],
+      passiveSkills: [cc.randPassive[cc.selPassive||0]||PASSIVE_SKILLS[0]],
+      weapons: [cc.randWeapons[cc.selWeapon||0]||WEAPONS[0]],
+      potions: [cc.randPotions[cc.selPotion||0]||POTIONS[0]]
     };
     GameState.selectedGender=cc.gender;
     GameState.selectedPortrait=cc.portraitIdx||0;
@@ -6734,7 +6998,7 @@ const Game={
       passEl.textContent=names.join(' | ');passEl.title=p.passiveIds.map(id=>{const ps=PASSIVE_SKILLS.find(s=>s.id===id);return ps?ps.desc:'';}).filter(Boolean).join(', ');passEl.style.color=p.accent;
     }
     const eqBadge=document.getElementById('eqbadge');
-    if(eqBadge&&p.gearItems&&p.gearItems.length){eqBadge.textContent=p.gearItems.map(g=>g.icon+' '+g.name).join(' | ');}
+    if(eqBadge&&p.weapons&&p.weapons.length){eqBadge.textContent=p.weapons.map(w=>w.icon+' '+w.name).join(' | ');}
     else if(eqBadge&&p.equip){eqBadge.textContent=p.equip.icon+' '+p.equip.name;}
     const dmc=document.getElementById('dmcv');
     const dmctx=dmc.getContext('2d');
@@ -8245,9 +8509,146 @@ const VictoryScreen = {
 };
 
 document.getElementById('ebtn').addEventListener('click',()=>Game.enterDungeon());
-// Single init on load
-if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',()=>Game.init());}
-else{Game.init();}
+
+// ── BOOT SEQUENCE: Apple II style preloader ──
+const BootScreen = {
+  lines: document.getElementById('bootLines'),
+  bar: document.getElementById('bootBar'),
+  fill: document.getElementById('bootFill'),
+  lineQueue: [],
+  currentLine: 0,
+
+  async run() {
+    // Wait for Press Start 2P font to load first
+    try { await document.fonts.load("16px 'Press Start 2P'"); } catch(e){}
+
+    // ── Apple ][ boot sequence with typewriter delays ──
+    await this.typeSlow('APPLE ][  NEON DUNGEON SYSTEM',30);
+    await this.delay(150);
+    await this.typeSlow('COPYRIGHT 20XX GRID CORP.',25);
+    await this.delay(300);
+    this.type('');
+    await this.typeSlow('*MEMORY CHECK...',20);
+    await this.delay(400);
+    this.type('  48K RAM  - OK');
+    await this.delay(150);
+    this.type('  16K ROM  - OK');
+    await this.delay(150);
+    this.type('  64K TOTAL - SYSTEM READY');
+    await this.delay(400);
+    this.type('');
+
+    await this.typeSlow('] LOAD "NEON.DUNGEON",8,1',35);
+    await this.delay(500);
+    this.type('');
+    await this.typeSlow('SEARCHING FOR NEON.DUNGEON...',20);
+    await this.delay(600);
+    this.type('FOUND. LOADING ASSETS...');
+    await this.delay(200);
+    this.type('');
+
+    // Show progress bar
+    this.bar.style.display='block';
+
+    // ── Preload all assets with progress (min 2s so boot text is readable) ──
+    const bootMinTime = this.delay(2000);
+    const assets = [];
+    let loaded = 0;
+    const imgSrcs = [
+      'sprites.png',
+      'hero_man.png','hero_woman.png','hero_sage.png','hero_robot.png','hero_shadow.png',
+      'lootbg.png','newmap.jpg',
+      'zone1-1.png','zone1-2.png'
+    ];
+    const jsonSrcs = ['dialog_db.json','dungeon_gen.json'];
+    const total = imgSrcs.length + jsonSrcs.length + 2; // +2 for fonts
+    const logLines = [];
+
+    const updateProgress = (label) => {
+      loaded++;
+      const pct = Math.floor((loaded/total)*100);
+      this.fill.style.width = pct+'%';
+      logLines.push(label);
+    };
+
+    // Preload images
+    imgSrcs.forEach(src => {
+      assets.push(new Promise(res => {
+        const img = new Image();
+        img.onload = () => { updateProgress('  LOADED: '+src.toUpperCase()); res(); };
+        img.onerror = () => { updateProgress('  SKIP:   '+src.toUpperCase()); res(); };
+        img.src = src;
+      }));
+    });
+
+    // Preload JSON
+    jsonSrcs.forEach(src => {
+      assets.push(
+        fetch(src).then(r=>r.json()).then(()=>updateProgress('  LOADED: '+src.toUpperCase())).catch(()=>updateProgress('  SKIP:   '+src.toUpperCase()))
+      );
+    });
+
+    // Preload fonts
+    assets.push(
+      document.fonts.load("16px 'Press Start 2P'").then(()=>updateProgress('  LOADED: FONT.PRESS-START')).catch(()=>updateProgress('  SKIP:   FONT.PRESS-START'))
+    );
+    assets.push(
+      document.fonts.load("16px 'Share Tech Mono'").then(()=>updateProgress('  LOADED: FONT.SHARE-TECH')).catch(()=>updateProgress('  SKIP:   FONT.SHARE-TECH'))
+    );
+
+    await Promise.all([...assets, bootMinTime]);
+
+    // Print load log with staggered delays
+    for(const line of logLines){
+      this.type(line);
+      await this.delay(60);
+    }
+
+    await this.delay(300);
+    this.type('');
+    this.type('────────────────────────────');
+    await this.delay(200);
+    await this.typeSlow('ALL SYSTEMS NOMINAL.',30);
+    await this.delay(400);
+    this.type('');
+    await this.typeSlow('] RUN',60);
+    await this.delay(700);
+
+    // ── Fade out boot → show main menu ──
+    const boot = document.getElementById('sBOOT');
+    boot.style.transition = 'opacity 0.8s';
+    boot.style.opacity = '0';
+    await this.delay(800);
+    boot.classList.remove('on');
+    boot.style.display = 'none';
+    document.getElementById('sMM').classList.add('on');
+    Game.init();
+  },
+
+  type(text) {
+    const line = document.createElement('div');
+    line.textContent = text || '\u00A0';
+    this.lines.appendChild(line);
+    this.lines.scrollTop = this.lines.scrollHeight;
+  },
+
+  async typeSlow(text, charDelay=30) {
+    const line = document.createElement('div');
+    line.textContent = '';
+    this.lines.appendChild(line);
+    for(let i=0;i<text.length;i++){
+      line.textContent += text[i];
+      this.lines.scrollTop = this.lines.scrollHeight;
+      await this.delay(charDelay);
+    }
+  },
+
+  delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+};
+
+// Single init on load — boot first, then Game.init
+if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',()=>BootScreen.run());}
+else{BootScreen.run();}
 
 </script>
 </body>
