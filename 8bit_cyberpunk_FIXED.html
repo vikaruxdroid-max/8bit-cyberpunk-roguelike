@@ -5295,6 +5295,9 @@ function resolveReactionPhase(spell){
         case 'reflect_damage':grade='nullify';damageMultiplier=0;break;
       }
       applyCounterBonus(counterResult,enemy,p);
+      if(grade==='nullify'||grade==='silence'){
+        if(GameState.runStats)GameState.runStats.successfulCounters=(GameState.runStats.successfulCounters||0)+1;
+      }
       // Cast the spell effect too
       p.mp-=spell.mp;spell.cd=spell.maxCd;
       if(spell.effect)spell.effect(p,GameState.enemies.filter(e=>e.hp>0));
@@ -5311,6 +5314,7 @@ function resolveReactionPhase(spell){
         Arena.spawnText(`-${clashDmg}`,ePos.x,ePos.y-20,MG,12);
       }else if(isDefense&&isPhysical){
         grade='absorb';damageMultiplier=0.30;
+        if(GameState.runStats)GameState.runStats.successfulCounters=(GameState.runStats.successfulCounters||0)+1;
       }else if(isDefense){
         grade='resist';damageMultiplier=0.60;
       }else{
@@ -7028,6 +7032,11 @@ const Combat = {
     UI.flash();
     SaveSystem.save();
     if(room?.type==='boss'){
+      // 4.3 — record boss performance and fetch difficulty tuning for next zone
+      const defeatedBoss=GameState.enemies?.[0]||{id:'unknown'};
+      recordBossPerformance(defeatedBoss,GameState.floorTurns,GameState._bossHpOnEntry||p.hp);
+      if(GameState.runStats)GameState.runStats.zonesCleared=(GameState.runStats.zonesCleared||0)+1;
+      fetchDifficultyTuning(GameState.runStats?.bossPerformance?.slice(-1)?.[0]); // fire-and-forget
       const zoneName=ZONES[GameState.currentZoneId]?.name||'ZONE';
       DM.say(`${zoneName} BOSS DEFEATED! Zone cleared!`);
       setTimeout(()=>VictoryScreen.show(true,()=>WorldMap.show()),900);
@@ -7381,6 +7390,61 @@ async function fetchRunCoaching() {
             .map(l => `<div style="color:${l.startsWith('▸')?'#00ffff':'#aaaaaa'};margin:2px 0;">${l}</div>`)
             .join('');
     }
+}
+
+// ── Block 4.3 — AI Difficulty Tuning helpers ──
+function calculateCounterMissRate() {
+    const stats = GameState.runStats || {};
+    const total = (stats.missedCounters || 0) + (stats.successfulCounters || 0);
+    if (total === 0) return 0;
+    return Math.round((stats.missedCounters / total) * 100);
+}
+
+function recordBossPerformance(boss, turnsToKill, hpOnEntry) {
+    if (!GameState.runStats) return;
+    GameState.runStats.bossPerformance = GameState.runStats.bossPerformance || [];
+    GameState.runStats.bossPerformance.push({
+        bossId:          boss.id || 'unknown',
+        zone:            GameState.currentZoneId,
+        hpPct:           Math.round((hpOnEntry / (GameState.player?.maxHp || 1)) * 100),
+        bossTurns:       turnsToKill,
+        counterMissRate: calculateCounterMissRate()
+    });
+}
+
+async function fetchDifficultyTuning(bossPerf) {
+    if (!bossPerf) return;
+    const payload = {
+        hpPct:           bossPerf.hpPct,
+        bossTurns:       bossPerf.bossTurns,
+        counterMissRate: bossPerf.counterMissRate
+    };
+    const result = await AIService.call('difficulty_tuning', payload);
+    if (!result) return; // no AI response — keep current multiplier
+    try {
+        const tuning = typeof result === 'string' ? JSON.parse(result) : result;
+        const statMult = Math.max(0.7, Math.min(1.5, parseFloat(tuning.enemyStatMultiplier) || 1.0));
+        const abilProb = Math.max(0.7, Math.min(1.5, parseFloat(tuning.abilityProbability) || 1.0));
+        GameState.difficultyMod.enemyStatMultiplier = statMult;
+        GameState.difficultyMod.abilityProbability  = abilProb;
+        GameState.difficultyMod.lastReasoning       = tuning.reasoning || '';
+        console.log('[AI Difficulty]', statMult, abilProb, tuning.reasoning);
+    } catch (e) {
+        console.warn('[AI Difficulty] Failed to parse tuning response:', e.message);
+    }
+}
+
+function applyDifficultyMod(enemy) {
+    if (!enemy) return;
+    // Exempt secret bosses and fixed final bosses
+    if (enemy.isSecretBoss) return;
+    if (enemy.id === 'quantumBoss' || enemy.id === 'theArchitect') return;
+    const mod = GameState.difficultyMod;
+    if (!mod || mod.enemyStatMultiplier === 1.0) return;
+    enemy.maxHp = Math.round(enemy.maxHp * mod.enemyStatMultiplier);
+    enemy.hp    = enemy.maxHp;
+    enemy.atk   = Math.round(enemy.atk  * mod.enemyStatMultiplier);
+    enemy.baseAtk = enemy.atk;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -8954,8 +9018,9 @@ const Game={
     GameState.zonesUnlocked=['neonNexus'];
     GameState.currentZoneId=null;
     GameState.runRelics=[];
-    GameState.runStats={missedCounters:0,damageDealt:0,damageTaken:0,zonesCleared:0,outcome:'defeat'};
+    GameState.runStats={missedCounters:0,successfulCounters:0,damageDealt:0,damageTaken:0,zonesCleared:0,outcome:'defeat',bossPerformance:[]};
     GameState.aiCoaching={text:null,loading:false,dots:0,dotsTimer:0};
+    GameState.difficultyMod={enemyStatMultiplier:1.0,abilityProbability:1.0,lastReasoning:null};
     QM.init();Inventory.init();LootScreen.reset();
     GameState.ccState=null; // reset so next creation gets fresh randoms
     SaveSystem.save();
@@ -9064,6 +9129,7 @@ const Game={
         if(isBoss&&GameState.enemies[0]){
           // Stop any lingering combat before boss intro
           clearInterval(GameState.combatInterval);GameState.combatInterval=null;GameState.combatRunning=false;Combat._endingCombat=false;
+          GameState._bossHpOnEntry=p.hp; // 4.3 — record player HP at boss fight start
           // Boss cinematic intro — walls close, motorcycle entrance, then combat
           const boss=GameState.enemies[0];
           DM.say('⚠ BOSS CHAMBER! PREPARE FOR TRIAL!');
@@ -9205,6 +9271,7 @@ const Game={
       en.maxHp=Math.max(en.maxHp,800);en.hp=en.maxHp;
       en.atk=Math.floor(bossType.atk*2.2);en.baseAtk=en.atk;
     }
+    applyDifficultyMod(en); // 4.3 — skips quantumBoss/theArchitect internally
     return [en];
   },
 
@@ -9226,7 +9293,9 @@ const Game={
     const src=pool.length?pool:fallback;
     return Array.from({length:maxEn},()=>{
       const type=src[Math.floor(Math.random()*src.length)];
-      return new Enemy(type,level);
+      const en=new Enemy(type,level);
+      applyDifficultyMod(en);
+      return en;
     });
   },
 
