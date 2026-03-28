@@ -1113,6 +1113,7 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
         <div class="mm-row">
           <button class="mm-btn mm-small" id="mmSettings" onclick="document.getElementById('settingsModal').classList.add('show');">SETTINGS</button>
           <button class="mm-btn mm-small" id="mmRecords" onclick="Records.showPanel();">RECORDS</button>
+          <button class="mm-btn mm-small" id="mmRunLog" onclick="RunHistoryScreen.open();">RUN LOG</button>
         </div>
       </div>
       <div class="mm-footer">NEON DUNGEON ROGUELIKE</div>
@@ -1333,6 +1334,9 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
     <div class="wnstats" id="wnstats"></div>
     <button class="rbtn gold" onclick="Game.restart()">NEW RUN</button>
   </div>
+
+  <!-- RUN HISTORY SCREEN (canvas-rendered) -->
+  <div class="scr" id="sRH"></div>
 
   <!-- LOOT SCREEN -->
   <div class="scr" id="sLT">
@@ -1696,6 +1700,17 @@ const Arena = {
     requestAnimationFrame(ts=>this.loop(ts));
     this.cv.addEventListener('click',e=>{
       if(NarrationBox.active){NarrationBox.skip();return;} // Phase 4.1 — click to skip/dismiss
+      // 5.1 — Run history screen scroll + back
+      if(GameState.currentScreen==='sRH'){
+        const rect=this.cv.getBoundingClientRect();
+        const cy=e.clientY-rect.top;
+        const history=loadRunHistory();
+        const maxOffset=Math.max(0,history.length-8);
+        if(cy>this.H-40){UI.show('sMM');return;} // BACK zone
+        else if(cy<this.H/2){RunHistoryScreen.scrollOffset=Math.max(0,RunHistoryScreen.scrollOffset-1);}
+        else{RunHistoryScreen.scrollOffset=Math.min(maxOffset,RunHistoryScreen.scrollOffset+1);}
+        return;
+      }
       if(GameState.miniGame&&GameState.miniGame.active&&GameState.miniGame.phase==='playing'){
         const rect=this.cv.getBoundingClientRect();
         handleMiniGameClick(e,e.clientX-rect.left,e.clientY-rect.top);
@@ -1767,6 +1782,7 @@ const Arena = {
     this.drawBg(ctx, W, H, t);
     this.drawFloor(ctx, W, H);
     if (GameState.currentScreen !== 'sCM') {
+      if (GameState.currentScreen === 'sRH') renderRunHistory(ctx, W, H); // 5.1
       GlitchTransition.render(ctx,W,H);
       return;
     }
@@ -6674,6 +6690,7 @@ const Combat = {
   killEnemy(en,wasCrit=false,lastDmg=0){
     Audio.play('death');
     GameState.totalKills++;
+    if(GameState.runStats){GameState.runStats.enemiesKilled=(GameState.runStats.enemiesKilled||0)+1;if(en.isBoss)GameState.runStats.bossesKilled=(GameState.runStats.bossesKilled||0)+1;}
     Achievements.check();
     QM.track('totalKills',1);QM.track('killBlows',1);
     if(GameState.player.spellsCast.size===0)QM.track('noSpellKills',1);
@@ -6982,6 +6999,7 @@ const Combat = {
     const p=GameState.player;
     if(!won){
       if(GameState.runStats)GameState.runStats.outcome='defeat';
+      saveRunToHistory('defeat'); // 5.1 — persist to run log
       UI.flash();
       fetchRunCoaching(); // fire-and-forget — result injected into #aiCoachingText when ready
       setTimeout(()=>{
@@ -7801,6 +7819,8 @@ const UI={
   },
   renderWin(){
     document.getElementById('wnstats').innerHTML=`<div>ALL 10 FLOORS CONQUERED!</div><div>KILLS:${GameState.totalKills}</div><div>DMG:${GameState.totalDmg}</div><div>QUESTS:${GameState.questsDone}</div><div style="color:${GD};margin-top:6px">LEGENDARY CHAMPION!</div>`;
+    if(GameState.runStats)GameState.runStats.outcome='victory';
+    saveRunToHistory('victory'); // 5.1 — persist to run log
     Records.saveRun();
   },
   updateFloor(){
@@ -8503,6 +8523,146 @@ const Records = {
 };
 
 // ═══════════════════════════════════════════════════════════════
+// RUN HISTORY — Phase 5.1
+// ═══════════════════════════════════════════════════════════════
+const RUN_HISTORY_KEY = 'neonDungeon_runHistory';
+const MAX_RUN_HISTORY = 50;
+
+function buildRunRecord(outcome) {
+    const stats  = GameState.runStats || {};
+    const player = GameState.player;
+    const now    = Date.now();
+    return {
+        id:           now,
+        date:         new Date(now).toLocaleDateString(),
+        outcome:      outcome,
+        playerClass:  player ? (player.className || player.type || 'Runner') : 'Runner',
+        zonesCleared: stats.zonesCleared || 0,
+        finalZone:    GameState.currentZoneId || 'unknown',
+        duration:     stats.startTime ? Math.floor((now - stats.startTime) / 1000) : 0,
+        finalLoadout: (player?.spells || []).map(s => s.name).filter(Boolean),
+        relicsHeld:   (GameState.runRelics || []).slice(),
+        stats: {
+            damageDealt:        stats.damageDealt        || 0,
+            damageTaken:        stats.damageTaken        || 0,
+            enemiesKilled:      stats.enemiesKilled      || GameState.totalKills || 0,
+            bossesKilled:       stats.bossesKilled       || 0,
+            missedCounters:     stats.missedCounters     || 0,
+            successfulCounters: stats.successfulCounters || 0,
+            goldEarned:         stats.goldEarned         || 0,
+            miniGamesPlayed:    stats.miniGamesPlayed    || 0,
+            secretRoomsCleared: stats.secretRoomsCleared || 0
+        },
+        dailyChallenge: GameState.isDailyChallenge || false,
+        dailySeed:      GameState.dailySeed        || null
+    };
+}
+
+function saveRunToHistory(outcome) {
+    const record = buildRunRecord(outcome);
+    let history = loadRunHistory();
+    history.unshift(record);
+    if (history.length > MAX_RUN_HISTORY) history = history.slice(0, MAX_RUN_HISTORY);
+    try { localStorage.setItem(RUN_HISTORY_KEY, JSON.stringify(history)); } catch(e) { console.warn('[RunHistory] Failed to save:', e.message); }
+    return record;
+}
+
+function loadRunHistory() {
+    try { const raw = localStorage.getItem(RUN_HISTORY_KEY); return raw ? JSON.parse(raw) : []; }
+    catch(e) { console.warn('[RunHistory] Failed to load:', e.message); return []; }
+}
+
+function clearRunHistory() { localStorage.removeItem(RUN_HISTORY_KEY); }
+
+function formatDuration(seconds) {
+    if (!seconds) return '--:--';
+    const m = Math.floor(seconds / 60), s = seconds % 60;
+    return `${m}:${s.toString().padStart(2,'0')}`;
+}
+
+function _rhRenderBackButton(ctx, cw, ch) {
+    ctx.font = '7px "Press Start 2P"';
+    ctx.fillStyle = '#555577';
+    ctx.textAlign = 'left';
+    ctx.fillText('[ BACK ]', 20, ch - 20);
+}
+
+function renderRunHistory(ctx, cw, ch) {
+    const history = loadRunHistory();
+    ctx.fillStyle = '#050510';
+    ctx.fillRect(0, 0, cw, ch);
+
+    ctx.font = '10px "Press Start 2P"';
+    ctx.fillStyle = '#00ffff';
+    ctx.textAlign = 'center';
+    ctx.fillText('RUN RECORDS', cw / 2, 40);
+    ctx.textAlign = 'left';
+
+    if (history.length === 0) {
+        ctx.font = '8px "Press Start 2P"';
+        ctx.fillStyle = '#555577';
+        ctx.textAlign = 'center';
+        ctx.fillText('NO RUNS RECORDED YET.', cw / 2, ch / 2);
+        ctx.textAlign = 'left';
+        _rhRenderBackButton(ctx, cw, ch);
+        return;
+    }
+
+    const pageSize = 8;
+    const startIdx = RunHistoryScreen.scrollOffset;
+    const visible  = history.slice(startIdx, startIdx + pageSize);
+    const rowH     = 52, startY = 70;
+
+    visible.forEach((run, i) => {
+        const y = startY + i * rowH;
+        const isWin = run.outcome === 'victory';
+        const accent = isWin ? '#00ff41' : '#ff4444';
+        ctx.fillStyle = i % 2 === 0 ? 'rgba(0,255,255,0.03)' : 'transparent';
+        ctx.fillRect(20, y, cw - 40, rowH - 4);
+
+        ctx.font = '7px "Press Start 2P"';
+        ctx.fillStyle = accent;
+        ctx.fillText(isWin ? 'WIN' : 'LOSS', 28, y + 14);
+
+        ctx.fillStyle = '#aaaaaa';
+        ctx.fillText(`${(run.playerClass||'?').toUpperCase()} · ${run.date}`, 80, y + 14);
+
+        ctx.fillStyle = '#555577';
+        ctx.fillText(`ZONES: ${run.zonesCleared}/8  TIME: ${formatDuration(run.duration)}`, 28, y + 28);
+
+        ctx.font = '6px "Share Tech Mono"';
+        ctx.fillStyle = '#444466';
+        const sc = run.stats || {};
+        const counterTotal = (sc.successfulCounters||0) + (sc.missedCounters||0);
+        ctx.fillText(`DMG: ${sc.damageDealt||0}  TAKEN: ${sc.damageTaken||0}  KILLS: ${sc.enemiesKilled||0}  COUNTERS: ${sc.successfulCounters||0}/${counterTotal}`, 28, y + 42);
+
+        if (run.dailyChallenge) {
+            ctx.font = '6px "Press Start 2P"';
+            ctx.fillStyle = '#ffd700';
+            ctx.textAlign = 'right';
+            ctx.fillText('★ DAILY', cw - 28, y + 14);
+            ctx.textAlign = 'left';
+        }
+    });
+
+    ctx.font = '7px "Press Start 2P"';
+    ctx.fillStyle = '#555577';
+    ctx.textAlign = 'center';
+    if (startIdx > 0)                           ctx.fillText('▲ SCROLL UP',   cw / 2, 62);
+    if (startIdx + pageSize < history.length)   ctx.fillText('▼ SCROLL DOWN', cw / 2, ch - 50);
+    ctx.textAlign = 'left';
+    _rhRenderBackButton(ctx, cw, ch);
+}
+
+const RunHistoryScreen = {
+    scrollOffset: 0,
+    open() {
+        this.scrollOffset = 0;
+        UI.show('sRH');
+    }
+};
+
+// ═══════════════════════════════════════════════════════════════
 // ACHIEVEMENTS — persistent unlock tracking
 // ═══════════════════════════════════════════════════════════════
 const Achievements={
@@ -9047,7 +9207,7 @@ const Game={
     GameState.zonesUnlocked=['neonNexus'];
     GameState.currentZoneId=null;
     GameState.runRelics=[];
-    GameState.runStats={missedCounters:0,successfulCounters:0,damageDealt:0,damageTaken:0,zonesCleared:0,outcome:'defeat',bossPerformance:[]};
+    GameState.runStats={missedCounters:0,successfulCounters:0,damageDealt:0,damageTaken:0,zonesCleared:0,outcome:'defeat',bossPerformance:[],startTime:Date.now(),enemiesKilled:0,bossesKilled:0,goldEarned:0,miniGamesPlayed:0,secretRoomsCleared:0};
     GameState.aiCoaching={text:null,loading:false,dots:0,dotsTimer:0};
     GameState.difficultyMod={enemyStatMultiplier:1.0,abilityProbability:1.0,lastReasoning:null};
     QM.init();Inventory.init();LootScreen.reset();
