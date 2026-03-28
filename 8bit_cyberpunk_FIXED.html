@@ -233,7 +233,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#060618;font-family:
 .bico{font-size:clamp(8px,0.9vw,12px);background:rgba(12,12,32,.9);border:1px solid var(--CY);padding:2px 6px;color:var(--CY);}
 .bico.neg{border-color:var(--RD);color:var(--RD);}
 .phud-right{display:flex;flex-direction:column;align-items:flex-end;gap:clamp(5px,0.6vh,9px);}
-.spbar{display:flex;gap:clamp(3px,0.4vw,6px);flex-wrap:nowrap;}
+.spbar{display:none;} /* COMBAT-UI-2: spell bar moved to canvas */
 .spbtn{
   width:clamp(36px,3.8vw,56px);height:clamp(36px,3.8vw,56px);
   background:rgba(12,8,30,.92);
@@ -1776,6 +1776,24 @@ const Arena = {
       if(GameState.miniGame&&GameState.miniGame.active&&GameState.miniGame.phase==='playing'){
         const rect=this.cv.getBoundingClientRect();
         handleMiniGameClick(e,e.clientX-rect.left,e.clientY-rect.top);
+        return;
+      }
+      // COMBAT-UI-2 — canvas spell bar click detection
+      if(GameState.currentScreen==='sCM'&&GameState.player){
+        const rect=this.cv.getBoundingClientRect();
+        const mx=e.clientX-rect.left, my=e.clientY-rect.top;
+        const slot=getSpellSlotAt(mx,my,this.W,this.H);
+        if(slot>=0){
+          const sp=GameState.player.spells[slot];
+          if(sp){
+            if(GameState._reactionPhase&&GameState._reactionPhase.active&&!GameState._reactionPhase.playerResponded){
+              handleReactionSpellClick(sp);
+            } else if(GameState.combatRunning){
+              Combat.castSpell(GameState.player,sp,GameState.enemies);
+            }
+          }
+          return;
+        }
       }
     });
   },
@@ -2346,23 +2364,8 @@ const Arena = {
       ctx.restore();
       if (enWasHurt) ctx.restore();
 
-      // HP bar — bigger with colored fill
-      this.hpBar(ctx, ex-4, ey - 16, sz.w+8, en.hp, en.maxHp, en.color || RD, en.isBoss?en.phase:null);
-      // Name label with dark background
-      ctx.save();
-      const eName = en.name.slice(0,12);
-      ctx.font = `bold ${Math.max(8,P+2)}px 'Share Tech Mono',monospace`;
-      ctx.textAlign = 'center';
-      const eNameW = ctx.measureText(eName).width;
-      ctx.fillStyle = 'rgba(0,0,0,0.6)';
-      ctx.fillRect(ex+sz.w/2-eNameW/2-4, ey-28, eNameW+8, 12);
-      ctx.fillStyle = en.color || MG;
-      ctx.fillText(eName, ex+sz.w/2, ey-18);
-      if (en.isBoss) {
-        const pc = ['','#39FF14','#FFD700','#FF2244'][en.phase||1];
-        ctx.fillStyle = pc; ctx.fillText(`PHASE ${en.phase}`, ex+sz.w/2, ey-6);
-      }
-      ctx.restore();
+      // COMBAT-UI-2: upgraded HP bar (thicker, named, shield/phase aware)
+      renderEnemyHPBar(ctx, en, ex, ey, sz.w);
       // Stun indicator
       if (en.isStunned && en.isStunned()) {
         ctx.fillStyle = '#ffff00'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign='center';
@@ -2725,6 +2728,10 @@ const Arena = {
     renderAIStatusDot(ctx,W,H);   // Phase 4.4 — AI live indicator dot
     AchToast.render(ctx,W,H);     // Phase 5.3 — achievement toast
     renderSeedDisplay(ctx,W,H); // Phase 5.5 — seed display
+    // COMBAT-UI-2 — canvas spell bar (bottom of arena)
+    if(GameState.currentScreen==='sCM'&&GameState.player){
+      renderSpellBar(ctx,GameState.player.spells,W,H);
+    }
     // Phase 5.4 — endless floor HUD
     if(GameState.endlessMode&&GameState.currentScreen==='sCM'){
       ctx.save();ctx.font='7px "Press Start 2P"';ctx.fillStyle='#00ff41';
@@ -5289,6 +5296,18 @@ if(!GameState._reactionPhase) GameState._reactionPhase={
 };
 
 // Comedy text pools
+// COMBAT-UI-2: Kill callout pool (static, no API)
+const KILL_CALLOUTS=[
+  'TARGET ELIMINATED.','SYSTEM OFFLINE.','THREAT NEUTRALIZED.',
+  'PROCESS TERMINATED.','DELETED.','SIGNAL LOST.','FLATLINED.',
+  'NULL POINTER.','STACK OVERFLOW: ENEMY.EXE','GARBAGE COLLECTED.',
+  'FATAL EXCEPTION.','CONNECTION CLOSED.','CORE DUMP COMPLETE.',
+  'ACCESS REVOKED.','UNSUBSCRIBED FROM LIFE.','MEMORY FREED.',
+  'TASK KILLED.','SEGMENTATION FAULT.','404: ENEMY NOT FOUND.',
+  'EXIT CODE: 0 (DEAD)',
+];
+function getKillCallout(){return KILL_CALLOUTS[Math.floor(Math.random()*KILL_CALLOUTS.length)];}
+
 const ENEMY_TAUNTS={
   generic:['THIS WILL HURT.','YOUR FIREWALL IS GARBAGE.','FEEL THE BYTE.','DELETING YOU NOW.','FATAL ERROR: YOU.','INITIATING PAIN PROTOCOL.','SKILL CHECK: FAILED.','YOU ARE NOT PREPARED.','NO INSURANCE WHERE YOU\'RE GOING.','THIS IS GOING ON YOUR PERMANENT RECORD.'],
   boss:['I HAVE BEEN WAITING FOR THIS.','YOUR SUFFERING IS SCHEDULED.','THREAT LEVEL: YOU. RESPONSE: MAXIMUM.','I HAVE KILLED BETTER.','YOU ARE AN ACCEPTABLE CASUALTY.','THIS ZONE BELONGS TO ME. SO DO YOUR HP.','OVERRIDE COMPLETE. YOU\'RE NEXT.','SCANNING... TARGET ACQUIRED. GOODBYE.'],
@@ -5314,6 +5333,24 @@ function getEnemyTaunt(enemy){
   if(n.includes('virus')||n.includes('corrupt'))return randomFrom(ENEMY_TAUNTS.virus);
   if(n.includes('corp')||n.includes('exec')||n.includes('suit'))return randomFrom(ENEMY_TAUNTS.corporate);
   return randomFrom(ENEMY_TAUNTS.generic);
+}
+
+// COMBAT-UI-2: enemy reacts when taking heavy damage (>30% maxHp in one hit)
+function checkEnemyDamageReaction(enemy,damage){
+  if(damage<enemy.maxHp*0.30)return;
+  if(enemy.hp<=0)return;
+  if(Math.random()>0.40)return;
+  const staticTaunts=['THAT... ACTUALLY HURT.','IMPRESSIVE. IRRELEVANT.',
+    'YOU GOT LUCKY.','SYSTEMS DAMAGED. ANGER RISING.',
+    'THIS CHANGES NOTHING.','NOTED. RETALIATION QUEUED.',
+    '... FINE. YOU HAVE MY ATTENTION.'];
+  let taunt;
+  if(enemy.isBoss&&enemy.tauntPool&&enemy.tauntPool.length){
+    taunt=enemy.tauntPool[Math.floor(Math.random()*enemy.tauntPool.length)];
+  }else{
+    taunt=staticTaunts[Math.floor(Math.random()*staticTaunts.length)];
+  }
+  DM.say(`${enemy.name}: ${taunt}`);
 }
 
 // Time limits per tier (ms)
@@ -5421,7 +5458,25 @@ function resolveReactionPhase(spell){
   }
   rp.responseGrade=grade;
   if(!rp.resultText)rp.resultText=randomFrom(REACTION_RESULT_TEXT[grade]||REACTION_RESULT_TEXT.direct_hit);
+  // COMBAT-UI-2: tactical hint after 3 consecutive direct hits
+  GameState.combatStats=GameState.combatStats||{};
+  if(grade==='direct_hit'){
+    GameState.combatStats.consecutiveDirectHits=(GameState.combatStats.consecutiveDirectHits||0)+1;
+    if(GameState.combatStats.consecutiveDirectHits>=3){
+      GameState.combatStats.consecutiveDirectHits=0;
+      fetchCombatTacticalHint();
+    }
+  }else{
+    GameState.combatStats.consecutiveDirectHits=0;
+  }
   _finalizeReaction(grade,damageMultiplier,telegraph,enemy,p);
+}
+
+async function fetchCombatTacticalHint(){
+  const player=GameState.player;
+  const spells=(player.spells||[]).map(s=>s.name).filter(Boolean);
+  const hint=await AIService.call('spell_commentary',{spells})||'ADJUST YOUR STRATEGY. YOU ARE LOSING.';
+  DM.say(`TACTICAL: ${hint}`);
 }
 
 function _finalizeReaction(grade,damageMultiplier,telegraph,enemy,player){
@@ -5845,6 +5900,136 @@ function renderSpellAnimations(ctx) {
     ExSpellFlash.render(ctx, Arena.W, Arena.H);
     renderHealParticles(ctx);
     renderDeathAnimations(ctx);
+}
+
+// ============================================================
+// COMBAT-UI-2: CANVAS SPELL BAR
+// ============================================================
+function renderSpellBar(ctx, spells, cw, ch) {
+  if (!spells || !spells.length) return;
+  const slotW = 90, slotH = 72, gap = 10;
+  const totalW = 4 * slotW + 3 * gap;
+  const startX = cw/2 - totalW/2;
+  const startY = ch - slotH - 8;
+
+  spells.forEach((spell, i) => {
+    if (!spell) return;
+    const x = startX + i * (slotW + gap);
+    const y = startY;
+    const onCD = (spell.cd || 0) > 0;
+    const isEX = spell.evolved;
+
+    ctx.fillStyle = onCD ? 'rgba(10,5,5,0.92)' : 'rgba(5,5,20,0.94)';
+    ctx.fillRect(x, y, slotW, slotH);
+
+    const borderColor = onCD ? '#221122' :
+      isEX ? '#ffd700' :
+      spell.tags && spell.tags.includes('attack')  ? '#ff4444' :
+      spell.tags && spell.tags.includes('defense') ? '#00aaff' :
+      spell.tags && spell.tags.includes('potion')  ? '#00ff41' : '#555577';
+
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = isEX ? 2 : 1;
+    ctx.strokeRect(x, y, slotW, slotH);
+
+    if (isEX) {
+      ctx.save(); ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 8;
+      ctx.strokeRect(x, y, slotW, slotH);
+      ctx.shadowBlur = 0; ctx.restore();
+    }
+
+    const name = (spell.name || '').toUpperCase();
+    const displayName = name.length > 10 ? name.substring(0, 9) + '.' : name;
+    ctx.font = '7px "Press Start 2P"';
+    ctx.fillStyle = onCD ? '#333344' : '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.fillText(displayName, x + slotW/2, y + 18);
+
+    ctx.font = '7px "Share Tech Mono"';
+    ctx.fillStyle = onCD ? '#223' : '#4488ff';
+    ctx.fillText(`MP:${spell.mp || 0}`, x + slotW/2, y + 34);
+
+    if (onCD) {
+      ctx.font = '14px "Press Start 2P"';
+      ctx.fillStyle = '#ff4444';
+      ctx.fillText(spell.cd, x + slotW/2, y + slotH/2 + 6);
+    } else {
+      ctx.font = '6px "Share Tech Mono"';
+      ctx.fillStyle = '#334455';
+      ctx.fillText(`CD:${spell.maxCd || 0}`, x + slotW/2, y + 50);
+    }
+
+    ctx.font = '5px "Share Tech Mono"';
+    ctx.fillStyle = '#222233';
+    ctx.fillText(`[${i+1}]`, x + 4, y + slotH - 4);
+
+    if (isEX) {
+      ctx.font = '6px "Press Start 2P"';
+      ctx.fillStyle = '#ffd700';
+      ctx.fillText('EX', x + slotW - 18, y + 10);
+    }
+    ctx.textAlign = 'left';
+  });
+}
+
+function getSpellSlotAt(mx, my, cw, ch) {
+  const slotW = 90, slotH = 72, gap = 10;
+  const totalW = 4 * slotW + 3 * gap;
+  const startX = cw/2 - totalW/2;
+  const startY = ch - slotH - 8;
+  for (let i = 0; i < 4; i++) {
+    const x = startX + i * (slotW + gap);
+    if (mx >= x && mx <= x + slotW && my >= startY && my <= startY + slotH) return i;
+  }
+  return -1;
+}
+
+// ============================================================
+// COMBAT-UI-2: ENEMY HP BAR (thicker, with shield + phase)
+// ============================================================
+function renderEnemyHPBar(ctx, enemy, spriteX, spriteY, spriteW) {
+  const barW = Math.max(spriteW, 80);
+  const barH = 10;
+  const barX = spriteX + spriteW/2 - barW/2;
+  const barY = spriteY - 22;
+  const pct  = Math.max(0, enemy.hp / enemy.maxHp);
+  const color = pct > 0.6 ? '#00ff41' : pct > 0.3 ? '#ffaa00' : '#ff4444';
+
+  ctx.fillStyle = 'rgba(0,0,0,0.7)';
+  ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
+  ctx.fillStyle = '#0a0a14';
+  ctx.fillRect(barX, barY, barW, barH);
+  ctx.fillStyle = color;
+  ctx.fillRect(barX, barY, Math.floor(barW * pct), barH);
+  ctx.strokeStyle = '#334455'; ctx.lineWidth = 1;
+  ctx.strokeRect(barX, barY, barW, barH);
+
+  // Enemy name above bar
+  ctx.font = '6px "Press Start 2P"';
+  ctx.fillStyle = '#aaaaaa';
+  ctx.textAlign = 'center';
+  ctx.fillText((enemy.name || '???').slice(0, 14), spriteX + spriteW/2, barY - 4);
+  ctx.textAlign = 'left';
+
+  // Shield overlay
+  if (enemy.shieldActive && enemy.shieldHp > 0) {
+    const shieldPct = Math.min(1, enemy.shieldHp / (enemy.maxHp * 0.15));
+    ctx.fillStyle = '#00aaff';
+    ctx.fillRect(barX, barY, Math.floor(barW * shieldPct), barH);
+    ctx.font = '5px "Share Tech Mono"'; ctx.textAlign = 'center';
+    ctx.fillStyle = '#00aaff';
+    ctx.fillText('SHIELD', spriteX + spriteW/2, barY + barH + 8);
+    ctx.textAlign = 'left';
+  }
+
+  // Boss phase indicator
+  if (enemy.isBoss && (enemy.phase || 0) > 1) {
+    ctx.font = '5px "Share Tech Mono"';
+    ctx.fillStyle = enemy.phase === 3 ? '#ff4444' : '#ff8800';
+    ctx.textAlign = 'right';
+    ctx.fillText(`PH${enemy.phase}`, barX + barW, barY - 4);
+    ctx.textAlign = 'left';
+  }
 }
 
 // ============================================================
@@ -6743,6 +6928,8 @@ const Combat = {
       if(isCrit){Arena.triggerShake(6,8);Arena.triggerScreenFlash(GameState.selectedAccent||CY,0.3);}
       if(GameState.combo>=5&&pq==='high')Arena.spawnBurst(pos.x,pos.y,GD,6,0.5);
     }
+    // COMBAT-UI-2: enemy damage reaction taunt
+    checkEnemyDamageReaction(enemy,dmg);
     // Increment combo
     this.incrementCombo();
     if(enemy.hp<=0&&!enemy._killed){
@@ -6786,6 +6973,8 @@ const Combat = {
       }
     }
     DM.say(`${en.name} destroyed!`);
+    // COMBAT-UI-2: kill callout floating text
+    if(idx>=0){const pos=Arena.getEnemyPos(idx);Arena.spawnText(getKillCallout(),pos.x,pos.y-30,'#00ff41',9);}
     DialogEngine.showDeath(en);
     // Loot collection
     const drops=LootSystem.genLoot(en,GameState.floor);
