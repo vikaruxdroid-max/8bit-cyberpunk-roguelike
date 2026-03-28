@@ -2640,6 +2640,7 @@ const Arena = {
     }
     ctx.restore();
     NarrationBox.render(ctx,W,H); // Phase 4.1 — AI narration overlay
+    renderAIStatusDot(ctx,W,H);   // Phase 4.4 — AI live indicator dot
     GlitchTransition.render(ctx,W,H);
   },
 
@@ -4720,7 +4721,7 @@ const WorldMap = {
       ${unlocked&&!cleared?`<button class="wm-enter-btn" id="wmEnterBtn">▶ ENTER ZONE ◀</button>`:''}
       ${!unlocked?'<div class="wm-locked">🔒 ZONE LOCKED</div>':''}
     `;
-    fetchZoneLore(zoneId); // Phase 4.1 — fire-and-forget, populates wmAiLore when ready
+    if(canCallAI('zone_lore_'+zoneId,30000))fetchZoneLore(zoneId); // Phase 4.1+4.4 — 30s cooldown per zone
     const btn=document.getElementById('wmEnterBtn');
     if(btn)btn.onclick=()=>{ this.hide(); Game.enterZone(zoneId); };
   },
@@ -7201,6 +7202,32 @@ const ZONE_DISPLAY_NAMES = {
     dataHighway:    'Data Highway',
     theCore:        'The Core'
 };
+
+// ── Block 4.4 — Rate limit guard + AI status dot ──
+const _aiCallTimestamps = {};
+function canCallAI(feature, cooldownMs) {
+    const now = Date.now();
+    const last = _aiCallTimestamps[feature] || 0;
+    if (now - last < cooldownMs) return false;
+    _aiCallTimestamps[feature] = now;
+    return true;
+}
+
+function renderAIStatusDot(ctx, cw, ch) {
+    if (!AIService.enabled) return;
+    const dotColor = '#00ff41';
+    const x = cw - 12;
+    const y = 12;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(x, y, 3, 0, Math.PI * 2);
+    ctx.fillStyle = dotColor;
+    ctx.shadowColor = dotColor;
+    ctx.shadowBlur = 6;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.restore();
+}
 
 // ── NarrationBox — canvas typewriter overlay for boss intros and zone lore ──
 const NarrationBox = {
@@ -9925,10 +9952,10 @@ const VictoryScreen = {
       commentEl.style.cssText = 'font-family:"Share Tech Mono",monospace;font-size:10px;color:#557755;text-align:center;padding:2px 16px 4px;opacity:0.85;';
       const statsEl = document.getElementById('vicStatsLine');
       if (statsEl && statsEl.parentNode) statsEl.parentNode.insertBefore(commentEl, statsEl.nextSibling);
-      fetchSpellCommentary(GameState.player?.spells).then(text => {
+      if(canCallAI('spell_commentary',5000)){fetchSpellCommentary(GameState.player?.spells).then(text => {
         const el = document.getElementById('vicAiComment');
         if (el && text) el.textContent = text;
-      });
+      });}
     }
   },
 
