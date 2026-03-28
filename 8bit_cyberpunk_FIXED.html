@@ -5273,6 +5273,8 @@ function resolveReactionPhase(spell){
 
   if(!spell){
     grade='direct_hit';damageMultiplier=1.0;
+    GameState.runStats=GameState.runStats||{};
+    GameState.runStats.missedCounters=(GameState.runStats.missedCounters||0)+1;
   }else if(spell.tags&&spell.tags.includes('potion')){
     grade='resist';damageMultiplier=1.0;
     rp.resultText=randomFrom(REACTION_RESULT_TEXT.potion_during_attack);
@@ -6622,6 +6624,7 @@ const Combat = {
     // Ghost Hacker: ability fn uses raw enemy atk ignoring DEF
     enemy.hp=Math.max(0,enemy.hp-dmg);
     GameState.totalDmg+=dmg;
+    if(GameState.runStats)GameState.runStats.damageDealt=(GameState.runStats.damageDealt||0)+dmg;
     this._trackDPS(dmg);
     QM.track('totalDmg',dmg); QM.track('dmgBlocked',blocked);
     Audio.play(isCrit?'crit':'hit');
@@ -6789,6 +6792,7 @@ const Combat = {
     if(relicCtx.negated){UI.dmgNumPlayer(0,'miss');DM.say('GHOST CHIP — hit negated!','system');return;}
     p.hp=Math.max(0,p.hp-rawDmg);
     triggerRelicEvent('damage_taken',{damage:rawDmg}); // Hook 7
+    if(GameState.runStats)GameState.runStats.damageTaken=(GameState.runStats.damageTaken||0)+rawDmg;
     const pHurtSev=(rawDmg/p.maxHp>0.15)?'knockback':'flinch';
     Arena.triggerHurt(true,null,pHurtSev);Arena.triggerAttack(false,en);
     UI.dmgNumPlayer(rawDmg,'phit');
@@ -6970,7 +6974,9 @@ const Combat = {
     clearInterval(GameState.combatInterval);GameState.combatInterval=null;GameState.combatRunning=false;
     const p=GameState.player;
     if(!won){
+      if(GameState.runStats)GameState.runStats.outcome='defeat';
       UI.flash();
+      fetchRunCoaching(); // fire-and-forget — result injected into #aiCoachingText when ready
       setTimeout(()=>{
         // Show death screen with progress and options
         const zoneName=ZONES[GameState.currentZoneId]?.name||'ZONE';
@@ -6994,6 +7000,12 @@ const Combat = {
               <div style="display:flex;flex-direction:column;gap:clamp(8px,1.2vh,14px);align-items:center;">
                 <button class="mm-btn mm-connect" style="font-size:clamp(12px,1.5vw,18px);padding:clamp(12px,1.8vh,20px) clamp(30px,4vw,50px);width:100%;max-width:350px;" onclick="Game._retryZone()">RETRY ZONE</button>
                 <button class="mm-btn mm-secondary" style="font-size:clamp(10px,1.2vw,14px);padding:clamp(8px,1.2vh,14px) clamp(20px,3vw,40px);width:100%;max-width:350px;" onclick="SaveSystem.save();Game.restart();">SAVE & QUIT</button>
+              </div>
+              <div id="aiCoachingBlock" style="margin-top:clamp(14px,2vh,24px);text-align:left;max-width:450px;width:100%;border-top:1px solid #222244;padding-top:12px;">
+                <div style="font-family:'Press Start 2P',monospace;font-size:7px;color:#ff00ff;margin-bottom:8px;">&gt; AI DEBRIEF:</div>
+                <div id="aiCoachingText" style="font-family:'Share Tech Mono',monospace;font-size:11px;line-height:1.8;color:#555577;">
+                  <div>ANALYZING RUN DATA...</div>
+                </div>
               </div>
             </div>`;
           deathEl.style.display='flex';
@@ -7338,6 +7350,37 @@ async function fetchSpellCommentary(spells) {
     if (spellNames.length === 0) return null;
     return await AIService.call('spell_commentary', { spells: spellNames })
         || getAIFallback('spell_commentary', null);
+}
+
+// ── Post-run coaching — fires fire-and-forget on death/win ──
+async function fetchRunCoaching() {
+    const stats = GameState.runStats || {};
+    if (!GameState.aiCoaching) GameState.aiCoaching = {text:null,loading:false,dots:0,dotsTimer:0};
+    GameState.aiCoaching.loading = true;
+    GameState.aiCoaching.text = null;
+
+    const payload = {
+        outcome:        stats.outcome || 'defeat',
+        zonesCleared:   stats.zonesCleared || (GameState.zonesCleared ? GameState.zonesCleared.length : 0),
+        missedCounters: stats.missedCounters || 0,
+        damageRatio:    (stats.damageTaken || 0) > 0
+            ? ((stats.damageDealt || GameState.totalDmg || 0) / stats.damageTaken).toFixed(2)
+            : 'N/A'
+    };
+
+    const result = await AIService.call('run_coaching', payload)
+        || AI_FALLBACKS.run_coaching;
+
+    GameState.aiCoaching.text = result;
+    GameState.aiCoaching.loading = false;
+
+    const coachEl = document.getElementById('aiCoachingText');
+    if (coachEl && result) {
+        coachEl.innerHTML = result.split('\n')
+            .filter(l => l.trim())
+            .map(l => `<div style="color:${l.startsWith('▸')?'#00ffff':'#aaaaaa'};margin:2px 0;">${l}</div>`)
+            .join('');
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -8911,6 +8954,8 @@ const Game={
     GameState.zonesUnlocked=['neonNexus'];
     GameState.currentZoneId=null;
     GameState.runRelics=[];
+    GameState.runStats={missedCounters:0,damageDealt:0,damageTaken:0,zonesCleared:0,outcome:'defeat'};
+    GameState.aiCoaching={text:null,loading:false,dots:0,dotsTimer:0};
     QM.init();Inventory.init();LootScreen.reset();
     GameState.ccState=null; // reset so next creation gets fresh randoms
     SaveSystem.save();
