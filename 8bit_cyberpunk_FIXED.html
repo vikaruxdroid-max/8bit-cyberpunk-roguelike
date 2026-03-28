@@ -158,7 +158,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#060618;font-family:
   display:flex;justify-content:space-between;align-items:center;
   padding:clamp(4px,0.6vh,8px) clamp(12px,1.2vw,20px);
   background:linear-gradient(135deg,rgba(10,0,0,.95),rgba(4,0,20,.95));
-  border-bottom:3px solid #ff0040;
+  border-bottom:1px solid rgba(0,255,255,0.55);
   flex-shrink:0;z-index:20;gap:clamp(8px,1vw,16px);
 }
 .fb{font-family:'Share Tech Mono',monospace;font-size:clamp(9px,1vw,14px);color:var(--C);text-shadow:0 0 6px var(--C);letter-spacing:1px;}
@@ -214,7 +214,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#060618;font-family:
 .phud{
   flex-shrink:0;
   background:linear-gradient(180deg,rgba(10,0,0,.96),rgba(6,3,20,.98));
-  border-top:3px solid #ff0040;
+  border-top:1px solid rgba(0,255,255,0.55);
   padding:clamp(4px,0.6vh,8px) clamp(8px,1vw,14px);z-index:5;
   display:flex;align-items:center;
   gap:clamp(6px,0.7vw,12px);
@@ -1917,6 +1917,7 @@ const Arena = {
     if(this.shake.frames>0){ctx.translate((Math.random()-.5)*this.shake.intensity,(Math.random()-.5)*this.shake.intensity);this.shake.frames--;if(!this.shake.frames)this.shake.intensity=0;}
     this.drawBg(ctx, W, H, t);
     this.drawFloor(ctx, W, H);
+    if(GameState.currentScreen==='sCM') renderArenaBorder(ctx, W, H, 0, 144);
     if (GameState.currentScreen !== 'sCM') {
       if (GameState.currentScreen === 'sRH') renderRunHistory(ctx, W, H);     // 5.1
       if (GameState.currentScreen === 'sACH') renderAchievementScreen(ctx, W, H); // 5.3
@@ -1943,6 +1944,7 @@ const Arena = {
       ctx.save(); ctx.globalAlpha=.3; ctx.fillStyle='#000';
       ctx.beginPath(); ctx.ellipse(px2+sz.w/2, FLOOR_Y+2, sz.w*.45, 5, 0, 0, Math.PI*2); ctx.fill();
       ctx.restore();
+      drawGroundShadow(ctx, px2, FLOOR_Y, sz.w, 0, 255, 255);
 
       // Animation — dash movement system
       let lunge=0, scaleX=1, scaleY=1, extraBob=0;
@@ -2159,6 +2161,7 @@ const Arena = {
       if (pDead) ctx.restore();
       if (pWasHurt) ctx.restore();
 
+      renderPlayerGlow(ctx, px2, py2, sz.w, sz.h, ac);
       // HP bar — bigger, with colored fill
       this.hpBar(ctx, px2-4, py2 - 16, sz.w+8, p.hp, p.maxHp, ac);
       // Name label — readable size with dark background
@@ -2178,7 +2181,7 @@ const Arena = {
     const alive = enemies.filter(e => e.hp > 0 || e.deathTimer > 0);
     const eCount = alive.length;
     const eAreaW = W * 0.52;
-    const eStartX = W * 0.45;
+    const eStartX = W * 0.40;
 
     alive.forEach((en, i) => {
       const sz = SPRITE_SIZE[en.sprite] || {w:56,h:88};
@@ -2249,6 +2252,7 @@ const Arena = {
       ctx.save(); ctx.globalAlpha=.25; ctx.fillStyle='#000';
       ctx.beginPath(); ctx.ellipse(ex+sz.w/2, FLOOR_Y+2, sz.w*.45, 5, 0, 0, Math.PI*2); ctx.fill();
       ctx.restore();
+      {const ec=en.color||'#ff00ff';const _r=parseInt(ec.slice(1,3),16)||255,_g=parseInt(ec.slice(3,5),16)||0,_b=parseInt(ec.slice(5,7),16)||255;drawGroundShadow(ctx,ex,FLOOR_Y,sz.w,_r,_g,_b);}
 
       // Animation — dash movement
       let lunge=0, scaleX2=1, scaleY2=1, eExtraBob=0;
@@ -2452,8 +2456,14 @@ const Arena = {
       ctx.fillText('VS', W/2, H*.52); ctx.shadowBlur=0; ctx.restore();
     }
 
-    // Minimap overlay
-    if (GameState.currentScreen === 'sCM') this.drawMinimap(ctx, W, H);
+    // Room progress strip (replaces full minimap)
+    if (GameState.currentScreen === 'sCM') {
+      const fd=GameState.currentFloor;
+      if(fd&&fd.rooms){
+        const cur=GameState.currentRoomIdx||0;
+        renderRoomProgress(ctx, cur+1, fd.rooms.length, W-10, 14);
+      }
+    }
 
     // VFX — swap-delete expired entries
     let vi=this.vfx.length;while(vi--){if(this.vfx[vi].t>=this.vfx[vi].maxT){this.vfx[vi]=this.vfx[this.vfx.length-1];this.vfx.pop();}}
@@ -2783,6 +2793,8 @@ const Arena = {
     renderAIStatusDot(ctx,W,H);   // Phase 4.4 — AI live indicator dot
     AchToast.render(ctx,W,H);     // Phase 5.3 — achievement toast
     renderSeedDisplay(ctx,W,H); // Phase 5.5 — seed display
+    // Scanlines — after all game elements, before spell bar
+    if(GameState.currentScreen==='sCM') renderScanlines(ctx,W,H,0,144);
     // COMBAT-UI-2 — canvas spell bar (bottom of arena)
     if(GameState.currentScreen==='sCM'&&GameState.player){
       renderSpellBar(ctx,GameState.player.spells,W,H);
@@ -3543,7 +3555,7 @@ const Arena = {
   getEnemyPos(idx) {
     const enemies = GameState.enemies||[];
     const alive = enemies.filter(e=>e.hp>0);
-    const n = alive.length, eAreaW = this.W*.52, eStartX = this.W*.45;
+    const n = alive.length, eAreaW = this.W*.52, eStartX = this.W*.40;
     const en = enemies[idx]; if(!en) return {x:this.W*.7,y:this.H*.5};
     const aliveIdx = alive.indexOf(en);
     if(aliveIdx<0) return {x:this.W*.7,y:this.H*.5};
@@ -3560,7 +3572,7 @@ const Arena = {
     const sz = SPRITE_SIZE[p.sprite]||{w:56,h:88};
     const zfY={neonNexus:0.82};
     const flY=this.H*(zfY[GameState.currentZoneId]||0.73);
-    return {x: this.W*.14+sz.w/2, y: flY-sz.h/2};
+    return {x: this.W*.18+sz.w/2, y: flY-sz.h/2};
   },
 
   _mmCache:null,_mmKey:'',
@@ -5958,6 +5970,75 @@ function renderSpellAnimations(ctx) {
 }
 
 // ============================================================
+// COMBAT THEME — Cyberpunk visual functions
+// ============================================================
+
+function drawGroundShadow(ctx, x, y, w, r, g, b) {
+  ctx.save();
+  const gr=ctx.createRadialGradient(x+w/2,y,2,x+w/2,y,w*0.7);
+  gr.addColorStop(0,`rgba(${r},${g},${b},0.18)`);
+  gr.addColorStop(1,`rgba(${r},${g},${b},0)`);
+  ctx.fillStyle=gr; ctx.fillRect(x-w*0.2,y-4,w*1.4,10);
+  ctx.restore();
+}
+
+function renderArenaBorder(ctx, cw, ch, topH, botH) {
+  const x=0,y=topH,w=cw,h=ch-topH-botH;
+  const pulse=0.7+Math.sin(Date.now()/1200)*0.3;
+  ctx.save();
+  ctx.strokeStyle=`rgba(0,255,255,${(pulse*0.3).toFixed(2)})`;
+  ctx.lineWidth=3;ctx.shadowColor='#00ffff';ctx.shadowBlur=12;
+  ctx.strokeRect(x+1,y+1,w-2,h-2);
+  const cl=20;
+  ctx.strokeStyle='#00ffff';ctx.lineWidth=2;ctx.shadowBlur=6;
+  ctx.beginPath();ctx.moveTo(x,y+cl);ctx.lineTo(x,y);ctx.lineTo(x+cl,y);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(w-cl,y);ctx.lineTo(w,y);ctx.lineTo(w,y+cl);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x,ch-botH-cl);ctx.lineTo(x,ch-botH);ctx.lineTo(x+cl,ch-botH);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(w-cl,ch-botH);ctx.lineTo(w,ch-botH);ctx.lineTo(w,ch-botH-cl);ctx.stroke();
+  ctx.shadowBlur=0;
+  const pv=GameState.player;
+  if(pv&&pv.hp>0&&pv.hp/pv.maxHp<0.25&&Math.random()>0.85){
+    ctx.strokeStyle='rgba(255,50,50,0.4)';ctx.lineWidth=2;
+    ctx.strokeRect(x+2,y+2,w-4,h-4);
+  }
+  ctx.restore();
+}
+
+function renderScanlines(ctx, cw, ch, topH, botH) {
+  ctx.save();
+  ctx.globalAlpha=0.06;ctx.fillStyle='#000';
+  for(let sy=topH;sy<ch-botH;sy+=3)ctx.fillRect(0,sy,cw,1);
+  ctx.restore();
+}
+
+function renderPlayerGlow(ctx, x, y, sw, sh, accent) {
+  ctx.save();
+  const gy=y+sh-4;
+  const gr=ctx.createLinearGradient(x,gy,x+sw,gy);
+  gr.addColorStop(0,'transparent');
+  gr.addColorStop(0.3,accent+'44');
+  gr.addColorStop(0.7,accent+'44');
+  gr.addColorStop(1,'transparent');
+  ctx.fillStyle=gr;ctx.fillRect(x-8,gy,sw+16,8);
+  ctx.restore();
+}
+
+function renderRoomProgress(ctx, currentRoom, totalRooms, rightX, y) {
+  if(!totalRooms||totalRooms<1)return;
+  const dotSize=6,dotGap=4,totalW=totalRooms*(dotSize+dotGap);
+  ctx.save();
+  for(let i=0;i<totalRooms;i++){
+    const dx=rightX-totalW+i*(dotSize+dotGap);
+    ctx.beginPath();ctx.arc(dx+dotSize/2,y,dotSize/2,0,Math.PI*2);
+    if(i<currentRoom-1){ctx.fillStyle='#334455';}
+    else if(i===currentRoom-1){ctx.fillStyle='#00ffff';ctx.shadowColor='#00ffff';ctx.shadowBlur=6;}
+    else{ctx.fillStyle='#111122';}
+    ctx.fill();ctx.shadowBlur=0;
+  }
+  ctx.restore();
+}
+
+// ============================================================
 // COMBAT-UI-2: CANVAS SPELL BAR
 // ============================================================
 function renderSpellBar(ctx, spells, cw, ch) {
@@ -5966,6 +6047,23 @@ function renderSpellBar(ctx, spells, cw, ch) {
   const totalW = 4 * slotW + 3 * gap;
   const startX = cw/2 - totalW/2;
   const startY = ch - slotH - 72;
+
+  // Terminal panel background (Theme 5)
+  const barTotalW = totalW + 24;
+  const barX = cw/2 - barTotalW/2;
+  const barY = startY - 8;
+  const barH = slotH + 16;
+  ctx.save();
+  ctx.fillStyle='rgba(2,2,15,0.92)';ctx.fillRect(barX,barY,barTotalW,barH);
+  ctx.strokeStyle='#00ffff';ctx.lineWidth=1;ctx.shadowColor='#00ffff';ctx.shadowBlur=6;
+  ctx.beginPath();ctx.moveTo(barX,barY);ctx.lineTo(barX+barTotalW,barY);ctx.stroke();
+  ctx.shadowBlur=0;
+  const cl=10;
+  ctx.beginPath();ctx.moveTo(barX,barY+cl);ctx.lineTo(barX,barY);ctx.lineTo(barX+cl,barY);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(barX+barTotalW-cl,barY);ctx.lineTo(barX+barTotalW,barY);ctx.lineTo(barX+barTotalW,barY+cl);ctx.stroke();
+  ctx.font='6px "Press Start 2P"';ctx.fillStyle='#223344';ctx.textAlign='left';
+  ctx.fillText('SPELLS',barX+4,barY+8);
+  ctx.restore();
 
   spells.forEach((spell, i) => {
     if (!spell) return;
@@ -6049,6 +6147,17 @@ function renderEnemyHPBar(ctx, enemy, spriteX, spriteY, spriteW) {
   const barY = spriteY - 22;
   const pct  = Math.max(0, enemy.hp / enemy.maxHp);
   const color = pct > 0.6 ? '#00ff41' : pct > 0.3 ? '#ffaa00' : '#ff4444';
+
+  // Targeting reticle brackets (Theme 6)
+  const bx=barX-4,by2=barY-2,bw2=barW+8,bh2=barH+4,tl=6;
+  ctx.save();
+  ctx.strokeStyle = pct>0.5?'#00ff41':pct>0.3?'#ffaa00':'#ff4444';
+  ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(bx,by2+tl);ctx.lineTo(bx,by2);ctx.lineTo(bx+tl,by2);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(bx+bw2-tl,by2);ctx.lineTo(bx+bw2,by2);ctx.lineTo(bx+bw2,by2+tl);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(bx,by2+bh2-tl);ctx.lineTo(bx,by2+bh2);ctx.lineTo(bx+tl,by2+bh2);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(bx+bw2-tl,by2+bh2);ctx.lineTo(bx+bw2,by2+bh2);ctx.lineTo(bx+bw2,by2+bh2-tl);ctx.stroke();
+  ctx.restore();
 
   ctx.fillStyle = 'rgba(0,0,0,0.7)';
   ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
