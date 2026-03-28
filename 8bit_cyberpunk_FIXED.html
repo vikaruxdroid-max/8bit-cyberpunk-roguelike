@@ -1642,33 +1642,33 @@ const SPR = {
 
   // Hero sprites — individual high-detail PNGs with spritesheet fallback
   warrior(ctx, ox, oy, flip, t=0) {
-    const w=14*P, h=26*P;
+    const sz=SPRITE_SIZE['warrior']||{w:14*P,h:26*P}; const w=sz.w,h=sz.h;
     if(!_drawSS('heroMan',ctx,ox,oy,w,h,flip)){
-      _drawSS('warrior',ctx,ox,oy,w,22*P,flip)||_drawHeroFallback(ctx,ox,oy,w,h,'#445577');
+      _drawSS('warrior',ctx,ox,oy,w,h,flip)||_drawHeroFallback(ctx,ox,oy,w,h,'#445577');
     }
   },
   rogue(ctx, ox, oy, flip, t=0) {
-    const w=16*P, h=26*P;
+    const sz=SPRITE_SIZE['rogue']||{w:16*P,h:26*P}; const w=sz.w,h=sz.h;
     if(!_drawSS('heroWoman',ctx,ox,oy,w,h,flip)){
-      _drawSS('rogue',ctx,ox,oy,14*P,20*P,flip)||_drawHeroFallback(ctx,ox,oy,w,h,'#cc4444');
+      _drawSS('rogue',ctx,ox,oy,w,h,flip)||_drawHeroFallback(ctx,ox,oy,w,h,'#cc4444');
     }
   },
   sage(ctx, ox, oy, flip, t=0) {
-    const w=17*P, h=26*P;
+    const sz=SPRITE_SIZE['sage']||{w:17*P,h:26*P}; const w=sz.w,h=sz.h;
     if(!_drawSS('heroSage',ctx,ox,oy,w,h,flip)){
-      _drawSS('druid',ctx,ox,oy,14*P,22*P,flip)||_drawHeroFallback(ctx,ox,oy,w,h,'#4488cc');
+      _drawSS('druid',ctx,ox,oy,w,h,flip)||_drawHeroFallback(ctx,ox,oy,w,h,'#4488cc');
     }
   },
   shadow(ctx, ox, oy, flip, t=0) {
-    const w=19*P, h=26*P;
+    const sz=SPRITE_SIZE['shadow']||{w:19*P,h:26*P}; const w=sz.w,h=sz.h;
     if(!_drawSS('heroShadow',ctx,ox,oy,w,h,flip)){
-      _drawSS('netrunner',ctx,ox,oy,14*P,20*P,flip)||_drawHeroFallback(ctx,ox,oy,w,h,'#334455');
+      _drawSS('netrunner',ctx,ox,oy,w,h,flip)||_drawHeroFallback(ctx,ox,oy,w,h,'#334455');
     }
   },
   druid(ctx, ox, oy, flip, t=0) {
-    const w=21*P, h=26*P;
+    const sz=SPRITE_SIZE['druid']||{w:21*P,h:26*P}; const w=sz.w,h=sz.h;
     if(!_drawSS('heroRobot',ctx,ox,oy,w,h,flip)){
-      _drawSS('druid',ctx,ox,oy,14*P,22*P,flip)||_drawHeroFallback(ctx,ox,oy,w,h,'#44aa88');
+      _drawSS('druid',ctx,ox,oy,w,h,flip)||_drawHeroFallback(ctx,ox,oy,w,h,'#44aa88');
     }
   },
 
@@ -1681,7 +1681,6 @@ const SPR = {
   voidSpecter(ctx, ox, oy, flip, t=0) { _drawSS('voidSpecter',ctx,ox,oy,12*P,17*P,flip)||drawEnemyFallback(ctx,ox,oy,12*P,17*P,'#aa44ff'); },
   cyberOgre(ctx, ox, oy, flip, t=0) { _drawSS('cyberOgre',ctx,ox,oy,14*P,22*P,flip)||drawEnemyFallback(ctx,ox,oy,14*P,22*P,'#ff6600'); },
   dataWraith(ctx, ox, oy, flip, t=0) {
-    if(_drawSS('dataWraith',ctx,ox,oy,12*P,18*P,flip))return;
     ctx.save();
     if(flip){ctx.translate(ox+12*P,oy);ctx.scale(-1,1);ox=0;oy=0;}
     const gA=0.6+0.2*Math.sin(t*0.04);
@@ -1710,7 +1709,6 @@ const SPR = {
   circuitLich(ctx, ox, oy, flip, t=0) { _drawSS('circuitLich',ctx,ox,oy,14*P,22*P,flip)||drawEnemyFallback(ctx,ox,oy,14*P,22*P,'#39ff14'); },
   quantumBoss(ctx, ox, oy, flip, t=0) { _drawSS('quantumBoss',ctx,ox,oy,14*P,22*P,flip)||drawEnemyFallback(ctx,ox,oy,14*P,22*P,'#ff00ff'); },
   netrunner(ctx, ox, oy, flip, t=0) {
-    if(_drawSS('netrunner',ctx,ox,oy,14*P,20*P,flip))return;
     ctx.save();
     if(flip){ctx.translate(ox+14*P,oy);ctx.scale(-1,1);ox=0;oy=0;}
     // Hood/head
@@ -3575,112 +3573,7 @@ const Arena = {
     return {x: this.W*.18+sz.w/2, y: flY-sz.h/2};
   },
 
-  _mmCache:null,_mmKey:'',
-  drawMinimap(ctx, W, H) {
-    const p = GameState.player;
-    const mw=114, mh=92, mx=W-mw-6, my=6;
-    // Cache key: room index + cleared count + blink state
-    const floorData=GameState.currentFloor;
-    const blink=Math.floor(this.time/18)%2===0;
-    const cKey=GameState.currentRoomIdx+','+(floorData?floorData.rooms.filter(r=>r.cleared).length:0)+','+blink+','+(p?p.xp:0);
-    if(this._mmCache&&this._mmKey===cKey){ctx.drawImage(this._mmCache,mx,my);return;}
-    if(!this._mmCache){this._mmCache=document.createElement('canvas');this._mmCache.width=mw;this._mmCache.height=mh;}
-    this._mmKey=cKey;
-    const mctx=this._mmCache.getContext('2d');
-    mctx.clearRect(0,0,mw,mh);
-    // Remap coordinates: draw to offscreen at 0,0 offset
-    const _mx=0,_my=0;
-    mctx.fillStyle='rgba(2,2,20,0.92)';
-    mctx.strokeStyle='rgba(0,255,255,0.22)';
-    mctx.lineWidth=1;
-    mctx.fillRect(_mx,_my,mw,mh);
-    mctx.strokeRect(_mx,_my,mw,mh);
-    const zone=ZONES[GameState.currentZoneId];
-    mctx.fillStyle=zone?zone.color:MG;
-    if(zone){mctx.shadowColor=zone.color;mctx.shadowBlur=6;}
-    mctx.font=`${P-1}px 'Press Start 2P',monospace`;mctx.textAlign='center';
-    const zoneLabel=zone?zone.name.slice(0,10):`FL${GameState.floor} MAP`;
-    mctx.fillText(zoneLabel,_mx+mw/2,_my+8);
-    mctx.shadowBlur=0;
-
-    if (!floorData) { ctx.drawImage(this._mmCache,mx,my);return; }
-
-    const rooms = floorData.rooms;
-    const conns = floorData.connections;
-    const cur   = GameState.currentRoomIdx;
-
-    const xs=rooms.map(r=>r.position.x), ys=rooms.map(r=>r.position.y);
-    const minX=Math.min(...xs),maxX=Math.max(...xs);
-    const minY=Math.min(...ys),maxY=Math.max(...ys);
-    const rangeX=Math.max(1,maxX-minX), rangeY=Math.max(1,maxY-minY);
-    const pad=11, titleH=12, xpH=14;
-    const areaW=mw-pad*2, areaH=mh-titleH-xpH;
-    const toC = pos=>({
-      x: rangeX===0 ? _mx+mw/2 : _mx+pad + (pos.x-minX)/rangeX*areaW,
-      y: rangeY===0 ? _my+titleH+areaH/2 : _my+titleH + (pos.y-minY)/rangeY*areaH,
-    });
-
-    const TYPE_COL={combat:'#ff2244',loot:'#FFD700',rest:'#39FF14',merchant:'#00FFFF',boss:'#FF00FF'};
-
-    rooms.forEach(room=>{
-      const a=toC(room.position);
-      (conns[room.id]||[]).forEach(tid=>{
-        if(tid<=room.id)return;
-        const b=toC(rooms[tid].position);
-        const lit=room.visited&&rooms[tid].visited;
-        mctx.strokeStyle=lit?'rgba(0,255,255,0.35)':'rgba(20,20,60,0.7)';
-        mctx.lineWidth=1;mctx.beginPath();mctx.moveTo(a.x,a.y);mctx.lineTo(b.x,b.y);mctx.stroke();
-      });
-    });
-
-    rooms.forEach(room=>{
-      const pos=toC(room.position);
-      const isCur=room.id===cur;
-      const col=TYPE_COL[room.type]||'#fff';
-      const r=room.type==='boss'?5.5:4;
-      mctx.shadowBlur=0;
-      if(!room.visited){
-        mctx.fillStyle='#06060e';mctx.strokeStyle='#1a1a30';
-      } else if(room.cleared){
-        mctx.fillStyle=col+'33';mctx.strokeStyle=col+'88';
-      } else {
-        mctx.fillStyle=col+'66';mctx.strokeStyle=col;
-      }
-      if(isCur&&blink){mctx.shadowColor=col;mctx.shadowBlur=10;}
-      mctx.lineWidth=isCur?2:1;
-      mctx.beginPath();mctx.arc(pos.x,pos.y,r,0,Math.PI*2);mctx.fill();mctx.stroke();
-      if(isCur){
-        mctx.shadowBlur=0;mctx.strokeStyle='rgba(255,255,255,'+(blink?.9:.5)+')';
-        mctx.lineWidth=1.5;mctx.beginPath();mctx.arc(pos.x,pos.y,r+2.5,0,Math.PI*2);mctx.stroke();
-      }
-      mctx.shadowBlur=0;
-    });
-
-    if(cur>=0&&cur<rooms.length){
-      const pos=toC(rooms[cur].position);
-      mctx.fillStyle='#fff';mctx.shadowColor='#fff';mctx.shadowBlur=7;
-      mctx.beginPath();mctx.arc(pos.x,pos.y,2,0,Math.PI*2);mctx.fill();
-      mctx.shadowBlur=0;
-    }
-
-    const cleared2=rooms.filter(r=>r.cleared).length;
-    mctx.fillStyle=zone?zone.color+'aa':'rgba(0,255,255,0.5)';
-    mctx.font=`${P-2}px 'Press Start 2P',monospace`;mctx.textAlign='center';
-    mctx.fillText(`ROOM ${cleared2}/${rooms.length}`,_mx+mw/2,_my+mh-14);
-
-    if(p&&p.xpToNext){
-      const bx=_mx+4,by=_my+mh-9,bw=mw-8;
-      mctx.fillStyle='rgba(0,0,0,0.7)';mctx.fillRect(bx,by,bw,4);
-      mctx.strokeStyle='rgba(0,255,255,0.18)';mctx.lineWidth=0.5;mctx.strokeRect(bx,by,bw,4);
-      const xpPct=Math.min(1,p.xp/p.xpToNext);
-      const xpG=mctx.createLinearGradient(bx,by,bx+bw,by);
-      xpG.addColorStop(0,PU);xpG.addColorStop(1,CY);
-      mctx.fillStyle=xpG;mctx.fillRect(bx,by,bw*xpPct,4);
-      mctx.fillStyle=CY;mctx.font=`${P-2}px 'Press Start 2P',monospace`;mctx.textAlign='center';
-      mctx.fillText(`LV${p.level}`,_mx+mw/2,_my+mh-2);
-    }
-    ctx.drawImage(this._mmCache,mx,my);
-  }
+  drawMinimap() { /* removed — replaced by renderRoomProgress dot strip */ }
 };
 
 // ═══════════════════════════════════════════════════════════════
