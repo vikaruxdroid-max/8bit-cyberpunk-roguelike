@@ -995,6 +995,8 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
   opacity:0;transition:all .3s;letter-spacing:1px;}
 #miSkip.show{opacity:1;}
 #miSkip:hover{background:rgba(0,255,255,.1);box-shadow:0 0 15px rgba(0,255,255,.3);}
+.aiDots{display:inline-block;animation:dotFade 1.2s infinite;}
+@keyframes dotFade{0%,100%{opacity:0.2}50%{opacity:1}}
 </style>
 </head>
 <body>
@@ -7009,7 +7011,7 @@ const Combat = {
               <div id="aiCoachingBlock" style="margin-top:clamp(14px,2vh,24px);text-align:left;max-width:450px;width:100%;border-top:1px solid #222244;padding-top:12px;">
                 <div style="font-family:'Press Start 2P',monospace;font-size:7px;color:#ff00ff;margin-bottom:8px;">&gt; AI DEBRIEF:</div>
                 <div id="aiCoachingText" style="font-family:'Share Tech Mono',monospace;font-size:11px;line-height:1.8;color:#555577;">
-                  <div>ANALYZING RUN DATA...</div>
+                  <span id="aiLoadingText">ANALYZING RUN DATA</span><span class="aiDots">...</span>
                 </div>
               </div>
             </div>`;
