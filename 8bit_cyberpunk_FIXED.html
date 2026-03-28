@@ -6612,6 +6612,11 @@ function checkWeaponProc(attackResult){
   }
 }
 
+function cancelCombatIntroTimers() {
+  (GameState._combatIntroTimers || []).forEach(id => clearTimeout(id));
+  GameState._combatIntroTimers = [];
+}
+
 const Combat = {
   _dpsWindow:[],_dpsVal:0,
   _trackDPS(dmg){
@@ -7031,6 +7036,7 @@ const Combat = {
   },
   endCombat(won){
     if(this._endingCombat)return;this._endingCombat=true;
+    cancelCombatIntroTimers();
     clearInterval(GameState.combatInterval);GameState.combatInterval=null;GameState.combatRunning=false;
     const p=GameState.player;
     if(!won){
@@ -7719,7 +7725,7 @@ const UI={
     const inv=document.getElementById('invOverlay');if(inv)inv.style.display='none';
     const shop=document.getElementById('merchantShop');if(shop)shop.style.display='none';
     const death=document.getElementById('deathOverlay');if(death)death.style.display='none';
-    if(id!=='sCM'){DialogEngine._cancel();}
+    if(id!=='sCM'){DialogEngine._cancel();const _wmBtn=document.getElementById('wmMerchantBtn');if(_wmBtn)_wmBtn.style.pointerEvents='';}
   },
   flash(){const f=document.getElementById('fl');if(!f)return;f.style.opacity='.65';setTimeout(()=>f.style.opacity='0',320);},
   dmgNumAt(x,y,val,type){
@@ -8197,6 +8203,10 @@ document.addEventListener('click',()=>Audio.init(),{once:true});
 const MerchantShop={
   stock:[],
   open(){
+    const _blockedScreens = ['sCM', 'sDead', 'sWN'];
+    if (_blockedScreens.includes(GameState.currentScreen)) return;
+    if (GameState._phaseBanner?.active) return;
+    if (GameState.currentScreen === 'sCM') { cancelCombatIntroTimers(); }
     const fl=GameState.floor||1;
     this.stock=Array.from({length:4},()=>LootSystem.roll(fl));
     this.render();
@@ -9412,7 +9422,13 @@ const Game={
     }
     // Merchant button on world map
     const wmMerchBtn=document.getElementById('wmMerchantBtn');
-    if(wmMerchBtn)wmMerchBtn.addEventListener('click',()=>MerchantShop.open());
+    if(wmMerchBtn)wmMerchBtn.addEventListener('click',()=>{
+      const blocked=['sCM','sDead','sWN'];
+      if(blocked.includes(GameState.currentScreen))return;
+      if(GameState._phaseBanner?.active)return;
+      if(GameState._reactionPhase?.active)return;
+      MerchantShop.open();
+    });
     const shopCloseBtn=document.getElementById('shopClose');
     if(shopCloseBtn)shopCloseBtn.addEventListener('click',()=>MerchantShop.close());
     // World map back button
@@ -9841,6 +9857,7 @@ const Game={
     GameState.currentRoomIdx=idx;
     room.visited=true;
     UI.show('sCM');UI.updateFloor();
+    const _wmBtn=document.getElementById('wmMerchantBtn');if(_wmBtn)_wmBtn.style.pointerEvents='none';
     // Clear stale DM toast
     const toast=document.getElementById('dmToast');if(toast)toast.style.opacity='0';
     const exEl=document.getElementById('roomExits');
@@ -9895,8 +9912,11 @@ const Game={
         }else{
           const fe=DM.floorEvent(fl);
           DM.say(fe||DM.rand());
-          setTimeout(()=>DialogEngine.showEncounter(GameState.enemies[0]),600);
-          setTimeout(()=>Combat.start(),3200);
+          GameState._combatIntroTimers=GameState._combatIntroTimers||[];
+          GameState._combatIntroTimers.push(
+            setTimeout(()=>DialogEngine.showEncounter(GameState.enemies[0]),600),
+            setTimeout(()=>Combat.start(),3200)
+          );
         }
         break;
       }
@@ -10130,6 +10150,7 @@ const Game={
     this.enterRoom(0);
   },
   restart(){
+    cancelCombatIntroTimers();
     if(GameState.combatInterval)clearInterval(GameState.combatInterval);
     if(this._autoInterval){clearInterval(this._autoInterval);this._autoInterval=null;}
     GameState.combatRunning=false;
