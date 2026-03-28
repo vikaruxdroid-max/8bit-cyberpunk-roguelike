@@ -1460,9 +1460,7 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
 <script>
 'use strict';
 // ═══════════════════════════════════════════════════════════════
-// AI DIALOG CONFIG — enter key in-game via ⚙ button on title screen
-// ═══════════════════════════════════════════════════════════════
-const ANTHROPIC_API_KEY = ''; // overridden by localStorage 'anthropic_key'
+// AI integration handled by Phase 4 Worker proxy — no client-side keys
 // Cyberpunk vaporwave color palette for battle particles
 const SPLAT = ['#ff00ff','#00ffff','#ffe100','#8800ff','#ff0066','#ffaa00','#00ff41'];
 
@@ -2420,6 +2418,9 @@ const Arena = {
       renderPhaseBanner(ctx);
     }
 
+    // Synergy HUD (Phase 2.6)
+    renderSynergyHUD(ctx,W,H);
+
     // Vignettes
     const pv = GameState.player;
     if(pv&&pv.hp>0&&pv.hp/pv.maxHp<0.25){
@@ -3343,8 +3344,6 @@ const Arena = {
       // Show boss dialog bubble
       if(!bi.dialogShown&&dp>0.2){
         bi.dialogShown=true;
-        const line=this._getBossLine();
-        AIDialog._showEnemyDialog(bi.boss,`say exactly: "${line}"`, 'boss_arrival');
       }
       // Dialog box drawn by AIDialog — just show dark overlay
       ctx.globalAlpha=0.15;ctx.fillStyle='#0a0008';ctx.fillRect(0,0,W,H);
@@ -3378,7 +3377,6 @@ const Arena = {
     ctx.restore();
     if(bi.timer>=bi.totalFrames){
       bi.active=false;
-      AIDialog.hideAll();
       if(bi.onDone)bi.onDone();
     }
   },
@@ -4049,7 +4047,7 @@ const ACTIVE_SKILLS = [
   {id:'overclockSlam',tags:['attack','armor_pierce'],name:'Overclock Slam',icon:'💥',desc:'4x ATK heavy hit — pierces shields',mp:32,cd:0,maxCd:5,
    effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*4),false,['armor_pierce']);_vfx(t,'explode',OR);DM.say('OVERCLOCK SLAM! Maximum force!');}},
   {id:'virusInject',tags:['attack'],name:'Virus Inject',icon:'🦠',desc:'1.5x ATK + 1.5x ATK poison tick',mp:16,cd:0,maxCd:3,
-   effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*1.5));t.poison=(t.poison||0)+Math.floor(p.atk*1.5);_vfx(t,'spark',GR);DM.say('VIRUS INJECT! Corruption spreading!');}},
+   effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*1.5));t.poison=(t.poison||0)+Math.floor(p.atk*1.5);t.poisonTurns=3;_vfx(t,'spark',GR);DM.say('VIRUS INJECT! Corruption spreading!');}},
   {id:'magnetPull',tags:['attack'],name:'Magnet Pull',icon:'🧲',desc:'2x ATK pulls weakest enemy',mp:18,cd:0,maxCd:3,
    effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*2));_vfx(t,'spark',CY);DM.say('MAGNET PULL! Target locked!');}},
   {id:'neonSlash',tags:['attack'],name:'Neon Slash',icon:'⚔',desc:'2.2x ATK single target',mp:18,cd:0,maxCd:2,
@@ -4089,9 +4087,9 @@ const ACTIVE_SKILLS = [
   {id:'blackIce',tags:['attack'],name:'Black Ice',icon:'🧊',desc:'2.5x ATK freezing strike',mp:22,cd:0,maxCd:3,
    effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*2.5));t.stunTurns=(t.stunTurns||0)+1;_vfx(t,'explode','#44ddff');DM.say('BLACK ICE! Frozen solid!');}},
   {id:'malwareBlast',tags:['attack'],name:'Malware Blast',icon:'☢',desc:'1.5x ATK + 50% poison',mp:18,cd:0,maxCd:3,
-   effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*1.5));t.poison=(t.poison||0)+Math.floor(p.atk*0.5);_vfx(t,'spark',GR);DM.say('MALWARE BLAST! Systems infected!');}},
+   effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*1.5));t.poison=(t.poison||0)+Math.floor(p.atk*0.5);t.poisonTurns=3;_vfx(t,'spark',GR);DM.say('MALWARE BLAST! Systems infected!');}},
   {id:'razorWire',tags:['attack'],name:'Razor Wire',icon:'🪡',desc:'1.8x ATK bleeds 3 ticks',mp:20,cd:0,maxCd:3,
-   effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*1.8));t.bleed=(t.bleed||0)+3;_vfx(t,'slash',RD);DM.say('RAZOR WIRE! Lacerated!');}},
+   effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*1.8));t.bleed=(t.bleed||0)+3;t.bleedTurns=3;_vfx(t,'slash',RD);DM.say('RAZOR WIRE! Lacerated!');}},
   {id:'thermalDet',tags:['attack'],name:'Thermal Det',icon:'🔴',desc:'2.5x ATK AoE explosion',mp:28,cd:0,maxCd:4,
    effect(p,en){en.forEach(e=>{if(e.hp>0)Combat.deal(e,Math.floor(p.atk*2.5));});_aoeVfx(en,'explode',OR);DM.say('THERMAL DET! Burn radius!');}},
   {id:'quantumRend',tags:['attack'],name:'Quantum Rend',icon:'🌌',desc:'3x ATK tears through armor',mp:26,cd:0,maxCd:4,
@@ -4267,7 +4265,7 @@ const ETYPES = [
    ability:{name:'Architect Protocol',trigger:'phase',fn(e,p,phase){
      if(phase===2){
        e.shieldHp=Math.floor(e.maxHp*.15); e.shieldActive=true;
-       Arena.spawnVFX('ring',Arena.W*.5,Arena.H*.4,'#00ffcc',90);
+       Arena.spawnRing(Arena.W*.5,Arena.H*.4,'#00ffcc',90);
        DM.say('ARCHITECT PHASE 2: SHIELDS ONLINE — Only armor-pierce breaks through!');
      }
      if(phase===3){
@@ -4747,44 +4745,74 @@ const EQUIP_POOL = [
 // ── WEAPONS: 30 weapons organized by type — provide stat bonuses ──
 const WEAPONS = [
   // ── Blades (6) ──
-  {id:'plasmaKatana',name:'Plasma Katana',icon:'⚔',type:'Blade',bonus:{atk:10,spd:2},desc:'+10 ATK +2 SPD'},
-  {id:'neonCleaver',name:'Neon Cleaver',icon:'🔪',type:'Blade',bonus:{atk:14},desc:'+14 ATK'},
-  {id:'voidEdge',name:'Void Edge',icon:'🗡',type:'Blade',bonus:{atk:12,lifesteal:10},desc:'+12 ATK 10% lifesteal'},
-  {id:'chromeSaber',name:'Chrome Saber',icon:'⚔',type:'Blade',bonus:{atk:8,def:4},desc:'+8 ATK +4 DEF'},
-  {id:'laserTanto',name:'Laser Tanto',icon:'🔪',type:'Blade',bonus:{atk:6,spd:4},desc:'+6 ATK +4 SPD'},
-  {id:'riotBlade',name:'Riot Blade',icon:'🗡',type:'Blade',bonus:{atk:16},desc:'+16 ATK'},
+  {id:'plasmaKatana',name:'Plasma Katana',icon:'⚔',type:'Blade',bonus:{atk:10,spd:2},desc:'+10 ATK +2 SPD',
+   procEffect:{trigger:'on_hit',chance:0.12,action:'cast_free',spell:'neonSlash',description:'12% on hit: free Neon Slash'}},
+  {id:'neonCleaver',name:'Neon Cleaver',icon:'🔪',type:'Blade',bonus:{atk:14},desc:'+14 ATK',
+   procEffect:{trigger:'on_crit',chance:1.0,action:'deal_bonus_damage',damageMult:0.40,description:'Crits deal +40% bonus damage'}},
+  {id:'voidEdge',name:'Void Edge',icon:'🗡',type:'Blade',bonus:{atk:12,lifesteal:10},desc:'+12 ATK 10% lifesteal',
+   procEffect:{trigger:'on_hit',chance:0.15,action:'heal',healAmount:12,description:'15% on hit: heal 12 HP'}},
+  {id:'chromeSaber',name:'Chrome Saber',icon:'⚔',type:'Blade',bonus:{atk:8,def:4},desc:'+8 ATK +4 DEF',
+   procEffect:{trigger:'on_hit',chance:0.18,action:'apply_buff',buffType:'defUp',buffValue:4,buffDuration:2,description:'18% on hit: DEF +4 (2t)'}},
+  {id:'laserTanto',name:'Laser Tanto',icon:'🔪',type:'Blade',bonus:{atk:6,spd:4},desc:'+6 ATK +4 SPD',
+   procEffect:{trigger:'on_crit',chance:1.0,action:'deal_bonus_damage',damageMult:0.50,description:'Crits deal +50% bonus damage'}},
+  {id:'riotBlade',name:'Riot Blade',icon:'🗡',type:'Blade',bonus:{atk:16},desc:'+16 ATK',
+   procEffect:{trigger:'on_hit',chance:0.15,action:'apply_debuff',buffType:'bleed',buffValue:5,buffDuration:3,description:'15% on hit: Bleed (5dmg/3t)'}},
 
   // ── Pistols (6) ──
-  {id:'burstPistol',name:'Burst Pistol',icon:'🔫',type:'Pistol',bonus:{atk:8,spd:3},desc:'+8 ATK +3 SPD'},
-  {id:'plasmaDerringer',name:'Plasma Derringer',icon:'🔫',type:'Pistol',bonus:{atk:10,stunChance:15},desc:'+10 ATK 15% stun'},
-  {id:'silencedAuto',name:'Silenced Auto',icon:'🔫',type:'Pistol',bonus:{atk:7,spd:5},desc:'+7 ATK +5 SPD'},
-  {id:'mercRevolver',name:'Merc Revolver',icon:'🔫',type:'Pistol',bonus:{atk:14},desc:'+14 ATK'},
-  {id:'shockPistol',name:'Shock Pistol',icon:'🔫',type:'Pistol',bonus:{atk:9,stunChance:20},desc:'+9 ATK 20% stun'},
-  {id:'dualSmgs',name:'Dual SMGs',icon:'🔫',type:'Pistol',bonus:{atk:6,spd:6},desc:'+6 ATK +6 SPD'},
+  {id:'burstPistol',name:'Burst Pistol',icon:'🔫',type:'Pistol',bonus:{atk:8,spd:3},desc:'+8 ATK +3 SPD',
+   procEffect:{trigger:'on_hit',chance:0.20,action:'deal_bonus_damage',damage:10,description:'20% on hit: +10 bonus damage'}},
+  {id:'plasmaDerringer',name:'Plasma Derringer',icon:'🔫',type:'Pistol',bonus:{atk:10,stunChance:15},desc:'+10 ATK 15% stun',
+   procEffect:{trigger:'on_hit',chance:0.15,action:'apply_debuff',buffType:'stun',buffValue:0,buffDuration:1,description:'15% on hit: Stun (1t)'}},
+  {id:'silencedAuto',name:'Silenced Auto',icon:'🔫',type:'Pistol',bonus:{atk:7,spd:5},desc:'+7 ATK +5 SPD',
+   procEffect:{trigger:'on_hit',chance:0.25,action:'deal_bonus_damage',damage:8,description:'25% on hit: +8 bonus damage'}},
+  {id:'mercRevolver',name:'Merc Revolver',icon:'🔫',type:'Pistol',bonus:{atk:14},desc:'+14 ATK',
+   procEffect:{trigger:'on_crit',chance:1.0,action:'deal_bonus_damage',damageMult:0.60,description:'Crits deal +60% bonus damage'}},
+  {id:'shockPistol',name:'Shock Pistol',icon:'🔫',type:'Pistol',bonus:{atk:9,stunChance:20},desc:'+9 ATK 20% stun',
+   procEffect:{trigger:'on_hit',chance:0.20,action:'apply_debuff',buffType:'shock',buffValue:8,buffDuration:2,description:'20% on hit: Shock (8dmg/2t)'}},
+  {id:'dualSmgs',name:'Dual SMGs',icon:'🔫',type:'Pistol',bonus:{atk:6,spd:6},desc:'+6 ATK +6 SPD',
+   procEffect:{trigger:'on_hit',chance:0.30,action:'deal_bonus_damage',damage:6,description:'30% on hit: +6 bonus damage'}},
 
   // ── Heavy (6) ──
-  {id:'railCannon',name:'Rail Cannon',icon:'💥',type:'Heavy',bonus:{atk:18},desc:'+18 ATK'},
-  {id:'thermalLauncher',name:'Thermal Launcher',icon:'🚀',type:'Heavy',bonus:{atk:15,def:-3},desc:'+15 ATK -3 DEF'},
-  {id:'gaussRifle',name:'Gauss Rifle',icon:'💥',type:'Heavy',bonus:{atk:12,def:3},desc:'+12 ATK +3 DEF'},
-  {id:'minigun',name:'Minigun',icon:'💥',type:'Heavy',bonus:{atk:11,spd:-2},desc:'+11 ATK -2 SPD'},
-  {id:'rocketFist',name:'Rocket Fist',icon:'🤜',type:'Heavy',bonus:{atk:13,stunChance:25},desc:'+13 ATK 25% stun'},
-  {id:'gravHammer',name:'Grav Hammer',icon:'🔨',type:'Heavy',bonus:{atk:16,spd:-3},desc:'+16 ATK -3 SPD'},
+  {id:'railCannon',name:'Rail Cannon',icon:'💥',type:'Heavy',bonus:{atk:18},desc:'+18 ATK',
+   procEffect:{trigger:'on_hit',chance:0.10,action:'apply_debuff',buffType:'armor_break',buffValue:0.20,buffDuration:2,description:'10% on hit: Armor Break (-20% DEF, 2t)'}},
+  {id:'thermalLauncher',name:'Thermal Launcher',icon:'🚀',type:'Heavy',bonus:{atk:15,def:-3},desc:'+15 ATK -3 DEF',
+   procEffect:{trigger:'on_hit',chance:0.20,action:'apply_debuff',buffType:'burn',buffValue:8,buffDuration:3,description:'20% on hit: Burn (8dmg/3t)'}},
+  {id:'gaussRifle',name:'Gauss Rifle',icon:'💥',type:'Heavy',bonus:{atk:12,def:3},desc:'+12 ATK +3 DEF',
+   procEffect:{trigger:'on_hit',chance:0.15,action:'apply_debuff',buffType:'stun',buffValue:0,buffDuration:1,description:'15% on hit: Stun (1t)'}},
+  {id:'minigun',name:'Minigun',icon:'💥',type:'Heavy',bonus:{atk:11,spd:-2},desc:'+11 ATK -2 SPD',
+   procEffect:{trigger:'on_hit',chance:0.35,action:'deal_bonus_damage',damage:5,description:'35% on hit: +5 bonus damage'}},
+  {id:'rocketFist',name:'Rocket Fist',icon:'🤜',type:'Heavy',bonus:{atk:13,stunChance:25},desc:'+13 ATK 25% stun',
+   procEffect:{trigger:'on_hit',chance:0.15,action:'apply_debuff',buffType:'stun',buffValue:0,buffDuration:1,description:'15% on hit: Stun (1t)'}},
+  {id:'gravHammer',name:'Grav Hammer',icon:'🔨',type:'Heavy',bonus:{atk:16,spd:-3},desc:'+16 ATK -3 SPD',
+   procEffect:{trigger:'on_kill',chance:1.0,action:'apply_buff',buffType:'atkUp',buffValue:0.20,buffDuration:3,description:'On kill: ATK +20% (3t)'}},
 
   // ── Energy (6) ──
-  {id:'ionRifle',name:'Ion Rifle',icon:'⚡',type:'Energy',bonus:{atk:10,mp:15},desc:'+10 ATK +15 MP'},
-  {id:'photonWhip',name:'Photon Whip',icon:'✴',type:'Energy',bonus:{atk:9,spd:3},desc:'+9 ATK +3 SPD'},
-  {id:'teslaGauntlet',name:'Tesla Gauntlet',icon:'⚡',type:'Energy',bonus:{atk:11,stunChance:15},desc:'+11 ATK 15% stun'},
-  {id:'arcCaster',name:'Arc Caster',icon:'⚡',type:'Energy',bonus:{atk:8,mp:20},desc:'+8 ATK +20 MP'},
-  {id:'novaBeam',name:'Nova Beam',icon:'☀',type:'Energy',bonus:{atk:14,mp:10},desc:'+14 ATK +10 MP'},
-  {id:'pulseRifle',name:'Pulse Rifle',icon:'⚡',type:'Energy',bonus:{atk:12,cdReduce:1},desc:'+12 ATK -1 CD'},
+  {id:'ionRifle',name:'Ion Rifle',icon:'⚡',type:'Energy',bonus:{atk:10,mp:15},desc:'+10 ATK +15 MP',
+   procEffect:{trigger:'on_hit',chance:0.18,action:'apply_debuff',buffType:'shock',buffValue:10,buffDuration:2,description:'18% on hit: Shock (10dmg/2t)'}},
+  {id:'photonWhip',name:'Photon Whip',icon:'✴',type:'Energy',bonus:{atk:9,spd:3},desc:'+9 ATK +3 SPD',
+   procEffect:{trigger:'on_hit',chance:0.20,action:'deal_bonus_damage',damageMult:0.25,description:'20% on hit: +25% bonus damage'}},
+  {id:'teslaGauntlet',name:'Tesla Gauntlet',icon:'⚡',type:'Energy',bonus:{atk:11,stunChance:15},desc:'+11 ATK 15% stun',
+   procEffect:{trigger:'on_hit',chance:0.18,action:'apply_debuff',buffType:'shock',buffValue:12,buffDuration:2,description:'18% on hit: Shock (12dmg/2t)'}},
+  {id:'arcCaster',name:'Arc Caster',icon:'⚡',type:'Energy',bonus:{atk:8,mp:20},desc:'+8 ATK +20 MP',
+   procEffect:{trigger:'on_hit',chance:0.18,action:'apply_debuff',buffType:'shock',buffValue:10,buffDuration:2,description:'18% on hit: Shock (10dmg/2t)'}},
+  {id:'novaBeam',name:'Nova Beam',icon:'☀',type:'Energy',bonus:{atk:14,mp:10},desc:'+14 ATK +10 MP',
+   procEffect:{trigger:'on_crit',chance:1.0,action:'apply_debuff',buffType:'burn',buffValue:12,buffDuration:3,description:'Crits: Burn (12dmg/3t)'}},
+  {id:'pulseRifle',name:'Pulse Rifle',icon:'⚡',type:'Energy',bonus:{atk:12,cdReduce:1},desc:'+12 ATK -1 CD',
+   procEffect:{trigger:'on_hit',chance:0.15,action:'apply_debuff',buffType:'atkDown',buffValue:0.15,buffDuration:2,description:'15% on hit: ATK -15% (2t)'}},
 
   // ── Tech (6) ──
-  {id:'nanoBow',name:'Nano Bow',icon:'🏹',type:'Tech',bonus:{atk:10,dodge:10},desc:'+10 ATK 10% dodge'},
-  {id:'hackDrone',name:'Hack Drone',icon:'🤖',type:'Tech',bonus:{atk:7,def:5,spd:2},desc:'+7 ATK +5 DEF +2 SPD'},
-  {id:'smartGun',name:'Smart Gun',icon:'🎯',type:'Tech',bonus:{atk:11,cdReduce:1},desc:'+11 ATK -1 CD'},
-  {id:'toxinSprayer',name:'Toxin Sprayer',icon:'☣',type:'Tech',bonus:{atk:9,lifesteal:15},desc:'+9 ATK 15% lifesteal'},
-  {id:'monoWire',name:'Mono Wire',icon:'🪡',type:'Tech',bonus:{atk:13,spd:1},desc:'+13 ATK +1 SPD'},
-  {id:'gravBlade',name:'Grav Blade',icon:'🌀',type:'Tech',bonus:{atk:10,def:3,spd:1},desc:'+10 ATK +3 DEF +1 SPD'},
+  {id:'nanoBow',name:'Nano Bow',icon:'🏹',type:'Tech',bonus:{atk:10,dodge:10},desc:'+10 ATK 10% dodge',
+   procEffect:{trigger:'on_hit',chance:0.12,action:'apply_buff',buffType:'dodge',buffValue:1,buffDuration:2,description:'12% on hit: gain 1 dodge charge'}},
+  {id:'hackDrone',name:'Hack Drone',icon:'🤖',type:'Tech',bonus:{atk:7,def:5,spd:2},desc:'+7 ATK +5 DEF +2 SPD',
+   procEffect:{trigger:'on_hit',chance:0.12,action:'apply_debuff',buffType:'atkDown',buffValue:0.20,buffDuration:2,description:'12% on hit: ATK -20% (2t)'}},
+  {id:'smartGun',name:'Smart Gun',icon:'🎯',type:'Tech',bonus:{atk:11,cdReduce:1},desc:'+11 ATK -1 CD',
+   procEffect:{trigger:'on_crit',chance:1.0,action:'deal_bonus_damage',damageMult:0.35,description:'Crits deal +35% bonus damage'}},
+  {id:'toxinSprayer',name:'Toxin Sprayer',icon:'☣',type:'Tech',bonus:{atk:9,lifesteal:15},desc:'+9 ATK 15% lifesteal',
+   procEffect:{trigger:'on_hit',chance:0.20,action:'apply_debuff',buffType:'poison',buffValue:8,buffDuration:3,description:'20% on hit: Poison (8dmg/3t)'}},
+  {id:'monoWire',name:'Mono Wire',icon:'🪡',type:'Tech',bonus:{atk:13,spd:1},desc:'+13 ATK +1 SPD',
+   procEffect:{trigger:'on_hit',chance:0.15,action:'apply_debuff',buffType:'bleed',buffValue:8,buffDuration:3,description:'15% on hit: Bleed (8dmg/3t)'}},
+  {id:'gravBlade',name:'Grav Blade',icon:'🌀',type:'Tech',bonus:{atk:10,def:3,spd:1},desc:'+10 ATK +3 DEF +1 SPD',
+   procEffect:{trigger:'on_kill',chance:1.0,action:'apply_buff',buffType:'spdUp',buffValue:0.25,buffDuration:3,description:'On kill: SPD +25% (3t)'}},
 ];
 
 // ── POTIONS: 30 potions that activate buffs — added as usable spells ──
@@ -4811,7 +4839,7 @@ const POTIONS = [
   {id:'overloadTonic',tags:['potion'],name:'Overload Tonic',icon:'⚡',desc:'+80% ATK for 2 turns',mp:22,cd:0,maxCd:5,type:'Power',
    effect(p){p.addBuff('atkUp',{atk:Math.floor(p.baseAtk*0.8),turns:2});_pvfx('explode',OR);DM.say('OVERLOAD TONIC — maximum power!');}},
   {id:'venomCoat',tags:['potion'],name:'Venom Coat',icon:'☠',desc:'Poison all enemies 3 turns',mp:16,cd:0,maxCd:3,type:'Power',
-   effect(p,en){en.forEach(e=>{if(e.hp>0)e.poison=(e.poison||0)+Math.floor(p.atk*0.4);});_aoeVfx(en,'spark','#44ff00');DM.say('VENOM COAT — toxic spread!');}},
+   effect(p,en){en.forEach(e=>{if(e.hp>0){e.poison=(e.poison||0)+Math.floor(p.atk*0.4);e.poisonTurns=3;}});_aoeVfx(en,'spark','#44ff00');DM.say('VENOM COAT — toxic spread!');}},
   {id:'critElixir',tags:['potion'],name:'Crit Elixir',icon:'💎',desc:'+30% crit chance 4 turns',mp:14,cd:0,maxCd:4,type:'Power',
    effect(p){p.critBonus+=0.3;_pvfx('spark',MG);DM.say('CRIT ELIXIR — sharpened senses!');}},
   {id:'blitzDose',tags:['potion'],name:'Blitz Dose',icon:'💨',desc:'+50% SPD + ATK for 2 turns',mp:18,cd:0,maxCd:4,type:'Power',
@@ -4961,6 +4989,7 @@ class Player {
     const passives = cfg.passiveSkills || [];
     passives.forEach(p=>{if(p&&p.apply){p.apply(this);this.passiveIds.push(p.id);}});
     if(weaponBonus.stunChance) this.stunChance=weaponBonus.stunChance/100;
+    this.relics=[]; this.relicState={};
   }
   addBuff(id,p){this.buffs=this.buffs.filter(b=>b.id!==id);this.buffs.push({id,...p});this.recalc();}
   addDebuff(id,p){this.debuffs=this.debuffs.filter(d=>d.id!==id);this.debuffs.push({id,...p});}
@@ -4969,6 +4998,7 @@ class Player {
     for(const b of this.buffs){if(b.atk)this.atk+=b.atk;if(b.def)this.def+=b.def;if(b.spd)this.spd+=b.spd;}
   }
   tickBuffs(){
+    for(const b of this.buffs){if(b.regen&&b.regen>0){this.hp=Math.min(this.maxHp,this.hp+b.regen);const pp=Arena.getPlayerPos();Arena.spawnText(`+${b.regen}`,pp.x,pp.y-20,'#00ff41',10);}}
     this.buffs=this.buffs.filter(b=>{b.turns--;return b.turns>0;});
     const dead=[];
     for(const d of this.debuffs){
@@ -4981,6 +5011,7 @@ class Player {
   hasBuff(id){return this.buffs.some(b=>b.id===id);}
   isDodging(){
     const d=this.buffs.find(b=>b.id==='dodge');if(d&&d.dodges>0){d.dodges--;return true;}
+    const ps=this.buffs.find(b=>b.id==='phaseShield'&&b.dodgeChance>0&&b.turns>0);if(ps&&Math.random()<ps.dodgeChance)return true;
     if(this.dodgeChance&&Math.random()<this.dodgeChance)return true;
     return false;
   }
@@ -4997,6 +5028,7 @@ class Enemy {
     this.actionCounter=0; this.buffs=[]; this.debuffs=[];
     this.turnCount=0; this.phase=1; this.deathTimer=0;
     this.telegraph=null; // Telegraph system (Phase 1.1)
+    this.stunTurns=0; // Canonical stun counter (Fix 2)
     this.shieldHp=0; this.shieldActive=false; // Shield pool (Phase 1.2)
     this.animState='idle.base'; this.animTimer=0; this.lowHpSaid=false;
   }
@@ -5015,9 +5047,12 @@ class Enemy {
       d.turns--;if(d.turns<=0)dead.push(d.id);
     }
     this.debuffs=this.debuffs.filter(d=>!dead.includes(d.id));
+    if(this.stunTurns>0)this.stunTurns--;
+    if(this.poison&&this.poison>0){this.hp=Math.max(0,this.hp-this.poison);this.poisonTurns=(this.poisonTurns||1)-1;if(this.poisonTurns<=0){this.poison=0;this.poisonTurns=0;}}
+    if(this.bleed&&this.bleed>0){this.hp=Math.max(0,this.hp-this.bleed);this.bleedTurns=(this.bleedTurns||1)-1;if(this.bleedTurns<=0){this.bleed=0;this.bleedTurns=0;}}
     this.recalc();
   }
-  isStunned(){return this.debuffs.some(d=>d.id==='stun');}
+  isStunned(){if(this.stunTurns&&this.stunTurns>0)return true;return this.debuffs.some(d=>d.id==='stun'&&d.turns>0);}
   isDodging(){const d=this.buffs.find(b=>b.id==='phase');if(d&&d.dodges>0){d.dodges--;return true;}return false;}
   checkPhase(){
     if(!this.isBoss)return;
@@ -5905,11 +5940,161 @@ function closeMiniGame(){
   }
 }
 
+// ── SECRET ROOM SYSTEM — Phase 2.2 ──
+const SECRET_ROOM_TIERS={
+  GOLD:  {bossHpMult:1.5,bossAtkMult:1.3,relicRarity:'legendary'},
+  SILVER:{bossHpMult:1.2,bossAtkMult:1.15,relicRarity:'rare'},
+  BRONZE:{bossHpMult:1.0,bossAtkMult:1.0,relicRarity:'uncommon'}
+};
+
+const SECRET_BOSSES=[
+  {id:'secBoss_phantom',name:'PHANTOM PROTOCOL',hp:220,atk:30,def:12,spd:9,isBoss:true,color:'#aa88ff',
+   ability:{name:'Phase Shift',subtype:'dodge',trigger:'cd4',cdLeft:0,
+     fn(e,p){e.addBuff('phase',{dodges:2,turns:3});DM.say('PHANTOM: Phase shift active!');}},
+   loot:{gold:[80,120],spellDrop:0}},
+  {id:'secBoss_nemesis',name:'NEMESIS NODE',hp:260,atk:28,def:10,spd:7,isBoss:true,color:'#ff4400',
+   ability:{name:'Data Surge',subtype:'heavy_magical',trigger:'cd3',cdLeft:0,
+     fn(e,p){const d=Math.floor(e.atk*2);p.hp=Math.max(0,p.hp-d);UI.dmgNumPlayer(d,'crit');DM.say('NEMESIS: DATA SURGE!');}},
+   loot:{gold:[80,120],spellDrop:0}},
+  {id:'secBoss_glitch',name:'GLITCH SOVEREIGN',hp:200,atk:35,def:8,spd:11,isBoss:true,color:'#00ff88',
+   ability:{name:'Cascade Hack',subtype:'special',trigger:'cd4',cdLeft:0,
+     fn(e,p){p.spells.forEach(s=>{if(s.cd===0&&s.maxCd>0)s.cd=1;});DM.say('GLITCH: CASCADE HACK — spells disrupted!');}},
+   loot:{gold:[80,120],spellDrop:0}},
+  {id:'secBoss_archivist',name:'THE ARCHIVIST',hp:320,maxHp:320,atk:48,def:22,spd:6,isBoss:true,color:'#ffdd44',
+   relicDrop:'relic_archive_shard',
+   taunts:['YOUR DATA BELONGS TO ME.','UNAUTHORIZED ACCESS. PUNISHMENT: DEATH.','THE RECORDS SHOW YOU LOSE HERE.'],
+   ability:{name:'Record Purge',subtype:'execute',trigger:'cd4',cdLeft:0,
+     fn(e,p){if(p.hp/p.maxHp<0.4){const d=Math.floor(p.hp*0.5);p.hp=Math.max(1,p.hp-d);UI.dmgNumPlayer(d,'crit');DM.say('ARCHIVIST: RECORD PURGE — DELETION IN PROGRESS!');}else{const d=Math.floor(e.atk*1.8);p.hp=Math.max(0,p.hp-d);UI.dmgNumPlayer(d,'phit');DM.say('ARCHIVIST: DATA SURGE — ALL SECTORS CORRUPTED!');}}},
+   loot:{gold:[80,120],spellDrop:0}},
+  {id:'secBoss_chromeDuchess',name:'CHROME DUCHESS',hp:300,maxHp:300,atk:50,def:26,spd:7,isBoss:true,color:'#ddaaff',
+   relicDrop:'relic_chrome_crown',
+   taunts:['DARLING, YOU SHOULD NOT HAVE COME HERE.','CHROME DOES NOT BLEED. YOU DO.','YOUR RESISTANCE IS ADORABLE. AND FUTILE.'],
+   ability:{name:'Chrome Waltz',subtype:'multi_hit',trigger:'cd3',cdLeft:0,
+     fn(e,p){const hits=3;let total=0;for(let i=0;i<hits;i++){const d=Math.floor(e.atk*0.6);p.hp=Math.max(0,p.hp-d);total+=d;}UI.dmgNumPlayer(total,'phit');DM.say(`CHROME DUCHESS: CHROME WALTZ — ${hits}× STRIKE!`);}},
+   loot:{gold:[80,120],spellDrop:0}},
+  {id:'secBoss_binaryWitch',name:'BINARY WITCH',hp:290,maxHp:290,atk:45,def:20,spd:8,isBoss:true,color:'#ff88ff',
+   relicDrop:'relic_hex_tome',
+   taunts:['0xDEAD. THAT IS YOU.','I CAST IN MACHINE CODE.','MAGIC IS JUST UNDOCUMENTED BEHAVIOR.'],
+   ability:{name:'Null Pointer',subtype:'execute',trigger:'cd4',cdLeft:0,
+     fn(e,p){const d=Math.floor(e.atk*2.2);p.hp=Math.max(0,p.hp-d);p.spells.forEach(s=>{if(Math.random()<0.3&&s.cd<s.maxCd)s.cd=s.maxCd;});UI.dmgNumPlayer(d,'crit');DM.say('BINARY WITCH: NULL POINTER — EXCEPTION THROWN!');}},
+   loot:{gold:[80,120],spellDrop:0}}
+];
+
+function resolveSecretRoom(tier){
+  const tierData=(SECRET_ROOM_TIERS[tier]||SECRET_ROOM_TIERS.BRONZE);
+  // Award relic based on tier rarity
+  if(typeof awardRelic==='function'){
+    const pool=typeof RELICS!=='undefined'?RELICS.filter(r=>r.rarity===tierData.relicRarity):[];
+    if(pool.length){const r=pool[Math.floor(Math.random()*pool.length)];awardRelic(r.id);}
+  }
+  DM.say(`SECRET ROOM CLEARED [${tier}] — RELIC AWARDED`,'success');
+  GameState.secretRoom=null;
+}
+
 function openSecretRoom(tier){
-  // Stub — implemented in Block 2.2
-  DM.say('SECRET ROOM ['+tier+'] — unlocked by Block 2.2');
+  const tierData=SECRET_ROOM_TIERS[tier];
+  if(!tierData){DM.say('Secret room unavailable.');GameState.pendingSecretRoom=null;Game.enterRoom(GameState._pendingRoomIdx);return;}
+  const bossDef=SECRET_BOSSES[Math.floor(Math.random()*SECRET_BOSSES.length)];
+  const boss=JSON.parse(JSON.stringify(bossDef));
+  boss.ability.fn=bossDef.ability.fn; // restore function reference lost by JSON clone
+  boss.maxHp=Math.floor(boss.hp*tierData.bossHpMult);boss.hp=boss.maxHp;
+  boss.atk=Math.floor(boss.atk*tierData.bossAtkMult);
+  GameState.secretRoom={active:true,tier,tierData,bossDefId:bossDef.id};
   GameState.pendingSecretRoom=null;
-  Game.enterRoom(GameState._pendingRoomIdx);
+  GameState._phaseBanner={active:true,phase:0,enemyName:`[${tier}] SECRET ROOM — ${boss.name}`};
+  setTimeout(()=>{
+    if(GameState._phaseBanner)GameState._phaseBanner.active=false;
+    clearInterval(GameState.combatInterval);GameState.combatInterval=null;GameState.combatRunning=false;Combat._endingCombat=false;
+    GameState.enemies=[new Enemy(boss,GameState.floor)];
+    GameState.enemies.forEach(e=>{e.entranceAnim={active:true,frame:0,totalFrames:12,complete:false};});
+    DM.say(`⚠ SECRET ROOM [${tier}] — ${boss.name} AWAITS`);
+    UI.show('sCM');
+    setTimeout(()=>Combat.start(),800);
+  },2000);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RELIC SYSTEM — Phase 2.3
+// ═══════════════════════════════════════════════════════════════
+const RELICS=[
+  {id:'relic_ghost_chip',name:'GHOST CHIP',rarity:'uncommon',icon:'👻',description:'Negate first hit per room.',effect:{type:'proc',trigger:'first_hit_per_room',action:'negate_damage'}},
+  {id:'relic_overcharge_cell',name:'OVERCHARGE CELL',rarity:'uncommon',icon:'⚡',description:'+8 MP regen/turn.',effect:{type:'passive_stat',stat:'mpRegen',value:8}},
+  {id:'relic_black_market_chip',name:'BLACK MARKET CHIP',rarity:'uncommon',icon:'💰',description:'Merchant prices -20%.',effect:{type:'passive_stat',stat:'merchantDiscount',value:0.20}},
+  {id:'relic_scavenger_lens',name:'SCAVENGER LENS',rarity:'uncommon',icon:'🔍',description:'+30% gold drops.',effect:{type:'passive_percent',stat:'goldDropBonus',value:0.30}},
+  {id:'relic_medpack',name:'FIELD MEDPACK',rarity:'uncommon',icon:'➕',description:'+25% HP at rest rooms.',effect:{type:'passive_stat',stat:'restBonus',value:0.25}},
+  {id:'relic_feedback_loop',name:'FEEDBACK LOOP',rarity:'uncommon',icon:'🔄',description:'+1% ATK per 10 dmg taken.',effect:{type:'dynamic',stat:'atkCharge',per:'damage_taken',rate:0.001}},
+  {id:'relic_phase_cloak',name:'PHASE CLOAK',rarity:'uncommon',icon:'🌫️',description:'Dodge CD -1.',effect:{type:'passive_stat',stat:'dodgeCooldownReduction',value:1}},
+  {id:'relic_fortify_core',name:'FORTIFY CORE',rarity:'uncommon',icon:'🛡️',description:'+8 max HP/room (cap +80).',effect:{type:'on_room_clear',stat:'maxHp',value:8,cap:80}},
+  {id:'relic_archive_shard',name:'ARCHIVE SHARD',rarity:'rare',icon:'📼',description:'EX spells +30% damage.',effect:{type:'passive_percent',stat:'exSpellBonus',value:0.30}},
+  {id:'relic_golden_badge',name:'GOLDEN BADGE',rarity:'rare',icon:'🏅',description:'+15% dmg per elite kill (max +60%).',effect:{type:'on_kill',trigger:'elite_kill',stat:'eliteKillBonus',value:0.15,cap:0.60}},
+  {id:'relic_null_shard',name:'NULL SHARD',rarity:'rare',icon:'⬛',description:'+30% dmg vs debuffed enemies.',effect:{type:'passive_stat',stat:'debuffDamageBonus',value:0.30}},
+  {id:'relic_chrome_crown',name:'CHROME CROWN',rarity:'rare',icon:'👑',description:'+5 DEF per zone (max +40).',effect:{type:'passive_stat',stat:'zoneDefBonus',value:5,cap:40}},
+  {id:'relic_overclocked_coil',name:'OVERCLOCKED COIL',rarity:'rare',icon:'🌀',description:'+15% SPD below 50% HP.',effect:{type:'conditional',condition:'hp_below_50pct',stat:'spd',bonus:0.15}},
+  {id:'relic_hex_tome',name:'HEX TOME',rarity:'rare',icon:'📖',description:'Every 3rd spell costs 0 MP.',effect:{type:'proc',trigger:'spell_cast_count',interval:3,action:'free_cast'}},
+  {id:'relic_predator_lens',name:'PREDATOR LENS',rarity:'rare',icon:'🎯',description:'+20% dmg vs enemies with more HP than yours.',effect:{type:'conditional',condition:'enemy_hp_greater',stat:'dmg',bonus:0.20}},
+  {id:'relic_quantum_core',name:'QUANTUM CORE',rarity:'legendary',icon:'🔮',description:'10% chance any spell fires twice.',effect:{type:'proc',trigger:'on_spell_cast',chance:0.10,action:'double_cast'}},
+  {id:'relic_void_engine',name:'VOID ENGINE',rarity:'legendary',icon:'🕳️',description:'Kill splashes 15% maxHP to remaining.',effect:{type:'on_kill',trigger:'any_kill',action:'kill_splash',value:0.15}},
+  {id:'relic_berserker_node',name:'BERSERKER NODE',rarity:'legendary',icon:'💀',description:'+2% ATK/HP lost (max +80%).',effect:{type:'dynamic',stat:'atk',per:'hp_lost',rate:0.02,cap:0.80}},
+  {id:'relic_resonance_crystal',name:'RESONANCE CRYSTAL',rarity:'legendary',icon:'💎',description:'Crits apply 2-turn shock (10dmg/t).',effect:{type:'proc',trigger:'on_crit',action:'apply_shock',value:10,duration:2}},
+  {id:'relic_chain_protocol',name:'CHAIN PROTOCOL',rarity:'legendary',icon:'🔗',description:'25% single-target spells chain at 50% dmg.',effect:{type:'proc',trigger:'single_target_spell',chance:0.25,action:'chain_hit',chainMult:0.50}}
+];
+
+function getRelicDef(id){return RELICS.find(r=>r.id===id)||null;}
+
+function awardRelic(relicId){
+  const player=GameState.player;
+  const def=getRelicDef(relicId);
+  if(!def){console.warn('Unknown relic:',relicId);return;}
+  player.relics=player.relics||[];
+  if(player.relics.length>=5){DM.say('RELIC INVENTORY FULL (5/5) — RELIC LOST','warning');return;}
+  player.relics.push(relicId);
+  // Push to run history
+  GameState.runRelics=GameState.runRelics||[];
+  GameState.runRelics.push(relicId);
+  // Init runtime state
+  player.relicState=player.relicState||{};
+  if(def.effect.type==='proc')player.relicState[relicId]={castCount:0,roomUsed:false};
+  else if(def.effect.type==='on_room_clear')player.relicState[relicId]={stacks:0};
+  else if(def.effect.type==='on_kill')player.relicState[relicId]={stacks:0};
+  else if(def.effect.type==='dynamic')player.relicState[relicId]={currentBonus:0};
+  DM.say(`RELIC ACQUIRED: ${def.name}`);
+  const pp=Arena.getPlayerPos();Arena.spawnText(`+ ${def.name}`,pp.x,pp.y-30,'#ffd700',9);
+}
+
+function triggerRelicEvent(eventType,context){
+  const player=GameState.player;
+  if(!player||!player.relics||player.relics.length===0)return;
+  player.relics.forEach(relicId=>{
+    const def=getRelicDef(relicId);if(!def)return;
+    const effect=def.effect;
+    const state=(player.relicState=player.relicState||{})[relicId]||(player.relicState[relicId]={});
+    switch(eventType){
+      case 'room_start':
+        if(state.roomUsed!==undefined)state.roomUsed=false;
+        break;
+      case 'room_clear':
+        if(effect.type==='on_room_clear'){const maxB=effect.cap||999;player[effect.stat]=Math.min((player[effect.stat]||0)+effect.value,maxB);}
+        break;
+      case 'first_hit_received':
+        if(relicId==='relic_ghost_chip'&&!state.roomUsed){state.roomUsed=true;context.negated=true;const pp=Arena.getPlayerPos();Arena.spawnText('GHOST CHIP!',pp.x,pp.y-30,'#aaaaff',12);}
+        break;
+      case 'spell_cast':
+        if(relicId==='relic_hex_tome'){state.castCount=(state.castCount||0)+1;if(state.castCount%3===0){context.mpCost=0;const pp=Arena.getPlayerPos();Arena.spawnText('FREE CAST!',pp.x,pp.y-30,'#ffd700',12);}}
+        if(relicId==='relic_quantum_core'&&Math.random()<0.10){context.doubleCast=true;const pp=Arena.getPlayerPos();Arena.spawnText('QUANTUM ECHO!',pp.x,pp.y-30,'#ff00ff',12);}
+        break;
+      case 'on_crit':
+        if(relicId==='relic_resonance_crystal'&&context.target){context.target.addDebuff('shock',{dmgPct:0,damage:10,turns:2});const ep=Arena.getEnemyPos(GameState.enemies.indexOf(context.target));Arena.spawnText('SHOCK!',ep.x,ep.y-25,'#ffff00',11);}
+        break;
+      case 'on_kill':
+        if(relicId==='relic_void_engine'&&context.killedEnemy){const splash=Math.floor(context.killedEnemy.maxHp*0.15);(context.remainingEnemies||[]).forEach(e=>{if(e.hp>0){e.hp=Math.max(0,e.hp-splash);const ep=Arena.getEnemyPos(GameState.enemies.indexOf(e));Arena.spawnText(`VOID -${splash}`,ep.x,ep.y-25,'#8800ff',11);}});}
+        if(relicId==='relic_golden_badge'&&context.killedEnemy&&context.killedEnemy.tier==='advanced'){state.stacks=(state.stacks||0)+1;state.currentBonus=Math.min(0.60,state.stacks*0.15);DM.say(`GOLDEN BADGE: +${Math.floor(state.currentBonus*100)}% DMG`);}
+        break;
+      case 'damage_taken':
+        if(relicId==='relic_berserker_node'){const hpLost=player.maxHp-player.hp;state.currentBonus=Math.min(0.80,hpLost*0.02);}
+        if(relicId==='relic_feedback_loop'){state.currentBonus=Math.min(1.0,(state.currentBonus||0)+(context.damage||0)*0.001);}
+        break;
+    }
+  });
 }
 
 // ── HACK (Pattern Match) ──
@@ -6276,6 +6461,99 @@ function handleMiniGameClick(event,x,y){
   }
 }
 
+// ═══════════════════════════════════════════════════════════════
+// SPELL SYNERGY SYSTEM — Phase 2.6
+// ═══════════════════════════════════════════════════════════════
+const SYNERGIES=[
+  {id:'stun_execute',name:'KNOCKOUT PROTOCOL',requires:['stun','execute'],matchType:'tags',bonus:'+40% execute dmg on stunned',color:'#ffd700',effect:{type:'conditional_damage',condition:'target_stunned',spellTag:'execute',bonus:0.40}},
+  {id:'bleed_multi',name:'HEMORRHAGE',requires:['bleed_applier','multi_hit'],matchType:'tags',bonus:'Multi-hit triggers bleed stacks',color:'#ff4444',effect:{type:'hit_modifier',spellTag:'multi_hit',modifier:'bleed_per_hit'}},
+  {id:'shield_reflect',name:'MIRROR PROTOCOL',requires:['shield','reflect'],matchType:'tags',bonus:'Shield absorb triggers reflect 50%',color:'#00ffff',effect:{type:'proc_on_absorb',action:'reflect_half'}},
+  {id:'aoe_combo',name:'CHAIN REACTION',requires:['aoe','combo_builder'],matchType:'tags',bonus:'AoE hits each count toward combo',color:'#ff00ff',effect:{type:'combo_modifier',spellTag:'aoe',modifier:'count_all_hits'}},
+  {id:'heal_lifesteal',name:'VAMPIRE LORD',requires:['heal'],requiresPassive:'passive_lifesteal',matchType:'spell_and_passive',bonus:'Heal spells also trigger lifesteal',color:'#00ff41',effect:{type:'heal_modifier',spellTag:'heal',modifier:'add_lifesteal'}},
+  {id:'execute_low_hp',name:'DEATH MARK',requires:['execute'],requiresPassive:'passive_execution',matchType:'spell_and_passive',bonus:'Execute passive+spell stack: +80% at <25% HP',color:'#ff4444',effect:{type:'stacked_bonus',value:0.80}},
+  {id:'shield_block',name:'IRON TRINITY',requires:['shield','defense'],matchType:'tags',bonus:'Shields while blocking cost 0 MP',color:'#00aaff',effect:{type:'cost_modifier',condition:'block_active',spellTag:'shield',modifier:'free'}},
+  {id:'stun_aoe',name:'CROWD CONTROL',requires:['stun','aoe'],matchType:'tags',bonus:'AoE after stun +20% dmg',color:'#ffff00',effect:{type:'conditional_damage',condition:'any_enemy_stunned',spellTag:'aoe',bonus:0.20}},
+  {id:'full_offense',name:'ALL IN',requires:['attack','attack','attack'],matchType:'count',count:3,tag:'attack',bonus:'3+ attack spells: +15% all dmg',color:'#ff8800',effect:{type:'global_damage_bonus',value:0.15}},
+  {id:'full_defense',name:'BUNKER MODE',requires:['defense','defense'],matchType:'count',count:2,tag:'defense',bonus:'2+ defense: +25% shield effectiveness',color:'#0088ff',effect:{type:'shield_modifier',value:0.25}}
+];
+
+let _cachedSynergies=[];
+
+function detectActiveSynergies(playerSpells,playerPassives){
+  const spellTags=new Set();const tagCounts={};
+  (playerSpells||[]).forEach(spell=>{(spell.tags||[]).forEach(tag=>{spellTags.add(tag);tagCounts[tag]=(tagCounts[tag]||0)+1;});});
+  const activePassiveIds=(playerPassives||[]).map(p=>p.id||p);
+  return SYNERGIES.filter(syn=>{
+    if(syn.matchType==='tags')return syn.requires.every(tag=>spellTags.has(tag));
+    if(syn.matchType==='count')return(tagCounts[syn.tag]||0)>=syn.count;
+    if(syn.matchType==='spell_and_passive')return syn.requires.every(tag=>spellTags.has(tag))&&activePassiveIds.includes(syn.requiresPassive);
+    return false;
+  });
+}
+
+function refreshSynergies(){
+  const player=GameState.player;if(!player)return;
+  _cachedSynergies=detectActiveSynergies(player.spells,player.passiveIds||[]);
+}
+
+function renderSynergyHUD(ctx,canvasW,canvasH){
+  if(!_cachedSynergies.length)return;
+  const startX=canvasW*0.01,startY=canvasH*0.55,lineH=14;
+  _cachedSynergies.slice(0,3).forEach((syn,i)=>{
+    const y=startY+i*lineH;
+    const pulse=0.7+Math.sin(Date.now()/600+i)*0.3;
+    ctx.save();ctx.globalAlpha=pulse;ctx.font='6px "Press Start 2P",monospace';
+    ctx.fillStyle=syn.color;ctx.fillText(`★ ${syn.name}`,startX,y);ctx.restore();
+  });
+  if(_cachedSynergies.length>3){
+    ctx.save();ctx.font='6px "Press Start 2P",monospace';ctx.fillStyle='#aaaaaa';
+    ctx.fillText(`+${_cachedSynergies.length-3} MORE`,startX,startY+3*lineH);ctx.restore();
+  }
+}
+
+function getSwapSynergyDelta(currentSpells,offeredSpell,swapIndex){
+  const player=GameState.player;if(!player)return null;
+  const hypothetical=[...currentSpells];hypothetical[swapIndex]=offeredSpell;
+  const before=detectActiveSynergies(currentSpells,player.passiveIds||[]).length;
+  const after=detectActiveSynergies(hypothetical,player.passiveIds||[]).length;
+  if(after>before)return{delta:after-before,label:`+${after-before} SYNERGY`,color:'#00ff41'};
+  if(after<before)return{delta:after-before,label:`${after-before} SYNERGY`,color:'#ff4444'};
+  return null;
+}
+
+function applySynergyEffects(eventType,context){
+  _cachedSynergies.forEach(syn=>{
+    const e=syn.effect;
+    if(e.type==='conditional_damage'&&eventType==='spell_damage'&&context.spell&&context.spell.tags&&context.spell.tags.includes(e.spellTag)){
+      const condMet=e.condition==='target_stunned'?(context.target&&(context.target.stunTurns>0||context.target.debuffs&&context.target.debuffs.some(d=>d.id==='stun'))):e.condition==='any_enemy_stunned'?((context.allEnemies||[]).some(en=>en.stunTurns>0||en.debuffs&&en.debuffs.some(d=>d.id==='stun'))):false;
+      if(condMet)context.damage=Math.floor(context.damage*(1+e.bonus));
+    }
+    if(e.type==='global_damage_bonus'&&(eventType==='spell_damage'||eventType==='auto_attack'))context.damage=Math.floor(context.damage*(1+e.value));
+    if(e.type==='cost_modifier'&&eventType==='spell_cast_mp_check'&&context.spell&&context.spell.tags&&context.spell.tags.includes(e.spellTag)){if(e.condition==='block_active'&&GameState.isBlocking)context.mpCost=0;}
+  });
+}
+
+// ── WEAPON PROC ENGINE — Phase 2.5 ──
+function checkWeaponProc(attackResult){
+  const player=GameState.player;
+  const weapon=player&&player.weapons&&player.weapons[0];
+  if(!weapon||!weapon.procEffect)return;
+  const proc=weapon.procEffect;
+  const triggerMet=(proc.trigger==='on_hit'&&attackResult.hit)||(proc.trigger==='on_crit'&&attackResult.crit)||(proc.trigger==='on_kill'&&attackResult.killed);
+  if(!triggerMet)return;
+  if(Math.random()>=proc.chance)return;
+  const pp=Arena.getPlayerPos();
+  Arena.spawnText(`${weapon.name} PROC!`,pp.x,pp.y-35,'#ffd700',10);
+  const targets=attackResult.targets||[];
+  switch(proc.action){
+    case 'cast_free':{const sp=player.spells.find(s=>s.id===proc.spell);if(sp)Combat.castSpell(player,sp,GameState.enemies);break;}
+    case 'apply_buff':player.addBuff(proc.buffType,{[proc.buffType==='defUp'?'def':proc.buffType==='atkUp'?'atk':'spd']:Math.floor(player.baseAtk*(proc.buffValue||0.2)),turns:proc.buffDuration||2});break;
+    case 'apply_debuff':targets.forEach(t=>{if(t&&t.hp>0){if(proc.buffType==='stun'){t.stunTurns=(t.stunTurns||0)+1;}else if(proc.buffType==='poison'){t.poison=(t.poison||0)+proc.buffValue;t.poisonTurns=proc.buffDuration||3;}else if(proc.buffType==='bleed'){t.bleed=(t.bleed||0)+proc.buffValue;t.bleedTurns=proc.buffDuration||3;}else{t.addDebuff(proc.buffType,{value:proc.buffValue,turns:proc.buffDuration||2});}}});break;
+    case 'deal_bonus_damage':targets.forEach(t=>{if(t&&t.hp>0){const bd=proc.damage||Math.floor((weapon.bonus&&weapon.bonus.atk||10)*(proc.damageMult||0));t.hp=Math.max(0,t.hp-bd);const ep=Arena.getEnemyPos(GameState.enemies.indexOf(t));Arena.spawnText(`+${bd}`,ep.x,ep.y-20,'#ff8800',10);}});break;
+    case 'heal':{const h=proc.healAmount||10;player.hp=Math.min(player.maxHp,player.hp+h);Arena.spawnText(`+${h}HP`,pp.x,pp.y-20,'#00ff41',10);break;}
+  }
+}
+
 const Combat = {
   _dpsWindow:[],_dpsVal:0,
   _trackDPS(dmg){
@@ -6352,7 +6630,7 @@ const Combat = {
       const pq=GameState.settings.particles;
       const bc=pq==='high'?(isCrit?18:8):pq==='low'?4:0;
       if(bc>0)Arena.spawnBurst(pos.x,pos.y,burstColor,bc,isCrit?1.2:0.8);
-      if(isCrit){Arena.triggerShake(6,8);Arena.triggerScreenFlash(GameState.selectedAccent||CY,0.3);AIDialog.onCrit(enemy);}
+      if(isCrit){Arena.triggerShake(6,8);Arena.triggerScreenFlash(GameState.selectedAccent||CY,0.3);}
       if(GameState.combo>=5&&pq==='high')Arena.spawnBurst(pos.x,pos.y,GD,6,0.5);
     }
     // Increment combo
@@ -6361,7 +6639,7 @@ const Combat = {
       enemy._killed=true;
       this.killEnemy(enemy,isCrit,dmg);
     }
-    else{if(enemy.checkPhase)enemy.checkPhase();if(!enemy.lowHpSaid&&enemy.hp/enemy.maxHp<=0.3){enemy.lowHpSaid=true;DialogEngine.showLowHp(enemy);AIDialog.onLowHPEnemy(enemy);}}
+    else{if(enemy.checkPhase)enemy.checkPhase();if(!enemy.lowHpSaid&&enemy.hp/enemy.maxHp<=0.3){enemy.lowHpSaid=true;DialogEngine.showLowHp(enemy);}}
     return dmg;
   },
   getComboMult(){
@@ -6398,7 +6676,6 @@ const Combat = {
     }
     DM.say(`${en.name} destroyed!`);
     DialogEngine.showDeath(en);
-    AIDialog.onEnemyDeath(en);
     // Loot collection
     const drops=LootSystem.genLoot(en,GameState.floor);
     const gold=LootSystem.goldFromEnemy(en,GameState.floor);
@@ -6437,6 +6714,9 @@ const Combat = {
     const critChance=(p.hasBuff('crit')?0.35:0)+(p.critBonus||0);
     const isCrit=Math.random()<critChance;
     const d=this.deal(target,p.atk,isCrit);
+    if(isCrit)triggerRelicEvent('on_crit',{target:target}); // Hook 5
+    if(target.hp<=0)triggerRelicEvent('on_kill',{killedEnemy:target,remainingEnemies:GameState.enemies.filter(e=>e.hp>0&&e!==target)}); // Hook 6
+    checkWeaponProc({hit:true,crit:isCrit,killed:target.hp<=0,targets:[target]});
     // MP regen on melee hit: 3 base, 5 on crit
     const mpGain=isCrit?5:3;
     if(p.mp<p.maxMp){p.mp=Math.min(p.maxMp,p.mp+mpGain);UI.updateBars();}
@@ -6498,7 +6778,12 @@ const Combat = {
     const pc=Object.values(Inventory.equipped).find(i=>i&&i.id&&i.id.startsWith('phaseCloak'));
     if(pc&&Math.random()<.2){UI.dmgNumPlayer(0,'miss');DM.say('PHASE CLOAK! Attack phased through!');Arena.triggerDodge(true);return;}
     Audio.play('hit');
+    const reflectBuff=p.buffs&&p.buffs.find(b=>b.id==='reflect'&&b.reflect>0&&b.turns>0);
+    if(reflectBuff){const rd=Math.floor(rawDmg*reflectBuff.reflect);en.hp=Math.max(0,en.hp-rd);const ep=Arena.getEnemyPos(GameState.enemies.indexOf(en));Arena.spawnText(`REFLECT -${rd}`,ep.x,ep.y-25,'#ff00ff',11);DM.say(`Reflected ${rd} damage back!`);}
+    const relicCtx={negated:false};triggerRelicEvent('first_hit_received',relicCtx); // Hook 3
+    if(relicCtx.negated){UI.dmgNumPlayer(0,'miss');DM.say('GHOST CHIP — hit negated!','system');return;}
     p.hp=Math.max(0,p.hp-rawDmg);
+    triggerRelicEvent('damage_taken',{damage:rawDmg}); // Hook 7
     const pHurtSev=(rawDmg/p.maxHp>0.15)?'knockback':'flinch';
     Arena.triggerHurt(true,null,pHurtSev);Arena.triggerAttack(false,en);
     UI.dmgNumPlayer(rawDmg,'phit');
@@ -6523,6 +6808,8 @@ const Combat = {
     if(spell.cd>0||p.mp<spell.mp||(spell.hackedTurns||0)>0)return;
     Audio.play(spell.id==='bioPulse'?'heal':'spell');
     p.mp-=spell.mp;spell.cd=spell.maxCd;
+    const castCtx={mpCost:spell.mp,doubleCast:false};triggerRelicEvent('spell_cast',castCtx); // Hook 4
+    if(castCtx.mpCost===0)p.mp=Math.min(p.maxMp,p.mp+spell.mp); // refund if relic made it free
     // Track last player action for telegraph counter system (Phase 1.1)
     GameState._playerLastAction={type:spell.tags?spell.tags[0]:'attack',tags:spell.tags||['attack'],name:spell.name};
     // Spell evolution: track casts, evolve at 10
@@ -6535,6 +6822,7 @@ const Combat = {
       Arena.spawnText('SPELL EVOLVED!',Arena.getPlayerPos().x,Arena.getPlayerPos().y-40,'#FFD700',14);
       Audio.play('evolve');
       DM.say('SPELL EVOLVED! Power surging!');
+      refreshSynergies();
     }
     const prevSize=p.spellsCast.size;
     p.spellsCast.add(spell.id);
@@ -6542,6 +6830,7 @@ const Combat = {
     const aliveEn=enemies.filter(e=>e.hp>0);
     const dmgBefore=GameState.totalDmg;
     spell.effect(p,aliveEn);
+    if(castCtx.doubleCast)spell.effect(p,enemies.filter(e=>e.hp>0)); // Hook 4b — quantum echo
     GameState.spellDmg+=(GameState.totalDmg-dmgBefore);
     // Phase 3.2 — spell animation triggers
     {const tags=spell.tags||[];
@@ -6561,7 +6850,6 @@ const Combat = {
     else if(spell.id==='plasmaStrike'&&aliveEn[0]){const ep=Arena.getEnemyPos(GameState.enemies.indexOf(aliveEn[0]));Arena.spawnLightning(pp3.x,pp3.y,ep.x,ep.y,CY);}
     else if(spell.id==='voidDrain'&&aliveEn[0]){const ep2=Arena.getEnemyPos(GameState.enemies.indexOf(aliveEn[0]));Arena.spawnLightning(ep2.x,ep2.y,pp3.x,pp3.y,PU);}
     else{Arena.spawnBurst(pp3.x,pp3.y,p.accent||CY,16,0.85);}
-    AIDialog.onSpell(spell,aliveEn[0]);
     UI.updateBars();UI.updateSpells();
   },
   tick(){
@@ -6595,9 +6883,7 @@ const Combat = {
       p.hp=0;this.endCombat(false);return;
     }
     const alive=enemies.filter(e=>e.hp>0);
-    if(!alive.length){this.endCombat(true);return;}
-    AIDialog.onTurn(GameState.floorTurns,enemies);
-    if(p.hp/p.maxHp<=0.30&&!p.lowHpAISaid){p.lowHpAISaid=true;AIDialog.onLowHPPlayer();}
+    if(!alive.length){triggerRelicEvent('room_clear',{});this.endCombat(true);return;} // Hook 2
     p.tickBuffs();
     // Decrement block cooldown
     if(GameState.blockCd>0){GameState.blockCd--;UI.updateBlock();}
@@ -6659,7 +6945,7 @@ const Combat = {
           this.breakCombo();
         } else if(en.behavior==='tactical'){
           // Tactical: targets highest-value debuff application
-          if(p.hp/p.maxHp<.5)en.addDebuff('atkDown',{atk:Math.floor(en.atk*.1),turns:2});
+          if(p.hp/p.maxHp<.5)p.addDebuff('atkDown',{atk:Math.floor(en.atk*.1),turns:2});
           this.enemyAttack(en,p);
         } else {
           this.enemyAttack(en,p);
@@ -6769,7 +7055,6 @@ const Combat = {
     if(p2._atkSuppressStacks){const r=p2._atkSuppressStacks;p2._atkSuppressStacks=0;const tot=Math.floor(p2.baseAtk*.1)*r;p2.baseAtk+=tot;p2.atk+=tot;}
     GameState.combo=0;GameState.blockCd=0;GameState.isBlocking=false;
     QM._cleanRun=true;
-    AIDialog.init();
     UI.updateCombo();UI.updateBlock();UI.updateTurnOrder();
     Arena.resize(); // ensure canvas is properly sized before first render
     if(GameState.combatInterval)clearInterval(GameState.combatInterval);
@@ -6989,7 +7274,7 @@ const UI={
     const inv=document.getElementById('invOverlay');if(inv)inv.style.display='none';
     const shop=document.getElementById('merchantShop');if(shop)shop.style.display='none';
     const death=document.getElementById('deathOverlay');if(death)death.style.display='none';
-    if(id!=='sCM'){DialogEngine._cancel();AIDialog.hideAll();}
+    if(id!=='sCM'){DialogEngine._cancel();}
   },
   flash(){const f=document.getElementById('fl');if(!f)return;f.style.opacity='.65';setTimeout(()=>f.style.opacity='0',320);},
   dmgNumAt(x,y,val,type){
@@ -7993,7 +8278,7 @@ const Game={
       // Save settings
       const vol=document.getElementById('volSlider');if(vol)GameState.settings.volume=parseInt(vol.value);
       const pq=document.getElementById('particleQuality');if(pq)GameState.settings.particles=pq.value;
-      const sKey=document.getElementById('settingsApiKey');if(sKey&&sKey.value.trim())localStorage.setItem('anthropic_key',sKey.value.trim());
+      // API key removed — handled by Phase 4 Worker proxy
       document.getElementById('settingsModal').classList.remove('show');
     });
     const volSlider=document.getElementById('volSlider');
@@ -8007,23 +8292,8 @@ const Game={
     if(recordsBtn)recordsBtn.addEventListener('click',()=>{Records.renderModal();document.getElementById('recordsModal').classList.add('show');});
     const recordsClose=document.getElementById('recordsClose');
     if(recordsClose)recordsClose.addEventListener('click',()=>document.getElementById('recordsModal').classList.remove('show'));
-    // API key modal
-    const apiGearBtn = document.getElementById('apiGearBtn');
-    const apiModal   = document.getElementById('apiModal');
-    const apiKeyInput= document.getElementById('apiKeyInput');
-    const apiKeySave = document.getElementById('apiKeySave');
-    const apiKeyClose= document.getElementById('apiKeyClose');
-    if(apiGearBtn && apiModal){
-      // Pre-fill saved key
-      const saved = localStorage.getItem('anthropic_key');
-      if(saved && apiKeyInput) apiKeyInput.value = saved;
-      apiGearBtn.addEventListener('click',()=>{ apiModal.style.display='flex'; });
-      apiKeySave && apiKeySave.addEventListener('click',()=>{
-        const k = apiKeyInput ? apiKeyInput.value.trim() : '';
-        if(k) localStorage.setItem('anthropic_key', k);
-        apiModal.style.display='none';
-      });
-      apiKeyClose && apiKeyClose.addEventListener('click',()=>{ apiModal.style.display='none'; });
+    // API key modal removed — Phase 4 Worker proxy handles auth server-side
+    if(false){
       apiModal.addEventListener('click',(e)=>{ if(e.target===apiModal) apiModal.style.display='none'; });
     }
     // CONTINUE button — load save and go to world map
@@ -8494,6 +8764,7 @@ const Game={
       case 'boss':{
         const isBoss=room.type==='boss';
         GameState.enemies=isBoss?this._spawnBoss():this._spawnCombatEnemies();
+        triggerRelicEvent('room_start',{}); // Hook 1 — relic room_start reset
         GameState.enemies.forEach(e=>{e.entranceAnim={active:true,frame:0,totalFrames:12,complete:false};});
         p.mp=Math.min(p.maxMp,p.mp+Math.floor(p.maxMp*.3));
         p.spells.forEach(s=>s.cd=Math.max(0,(s.cd||0)-1));
@@ -9039,245 +9310,9 @@ const LootScreen={
   },
 };
 
-// ═══════════════════════════════════════════════════════════════
-// AI BATTLE DIALOG — Claude-powered enemy/player speech bubbles
-// ═══════════════════════════════════════════════════════════════
-const AIDialog = {
-  _enemyEl: null,
-  _playerEl: null,
-  _enemyTimer: null,
-  _playerTimer: null,
-  _queue: [],
-  _queueTimer: null,
-  _lastShownMs: 0,
-  _minGap: 2000,
-  _fallbackHistory: {enemy:[], player:[]},
-
-  init(){
-    this._enemyEl  = document.getElementById('speechBubbleEnemy');
-    this._playerEl = document.getElementById('speechBubblePlayer');
-    this._queue = [];
-    clearTimeout(this._queueTimer); this._queueTimer = null;
-    this._lastShownMs = 0;
-    this._fallbackHistory = {enemy:[], player:[]};
-    this.hideAll();
-  },
-
-  _getKey(){
-    return localStorage.getItem('anthropic_key') || (typeof ANTHROPIC_API_KEY !== 'undefined' ? ANTHROPIC_API_KEY : '');
-  },
-
-  async _call(systemPrompt, userMsg, fallback){
-    const key = this._getKey();
-    if(!key) return fallback;
-    const ctrl = new AbortController();
-    const tid = setTimeout(()=>ctrl.abort(), 3000);
-    try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method:'POST', signal:ctrl.signal,
-        headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-        body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:60,system:systemPrompt,messages:[{role:'user',content:userMsg}]})
-      });
-      clearTimeout(tid);
-      if(!res.ok) return fallback;
-      const data = await res.json();
-      const text = (data.content?.[0]?.text||'').trim();
-      return text || fallback;
-    } catch(e){ clearTimeout(tid); return fallback; }
-  },
-
-  _enemyPrompt(enemy, situation){
-    const p = GameState.player;
-    const etype = enemy.isBoss ? 'boss' : (enemy.type || 'grunt');
-    return `You are ${enemy.name||'an enemy'}, a ${etype} in a cyberpunk neon dungeon. Fighting a ${p?.className||'warrior'}. Speak ONE line only. Max 10 words. Vary your style — sometimes threatening, sometimes taunting, sometimes philosophical, sometimes glitching/corrupted speech (e.g. sy5t3m_err0r style), sometimes surprisingly calm. Never repeat yourself. Current state: ${situation}. Cyberpunk slang only. No quotes, no emojis.`;
-  },
-
-  _playerPrompt(situation){
-    const p = GameState.player;
-    const hp = p ? `${p.hp}/${p.maxHp} HP` : 'unknown HP';
-    return `You are a ${p?.className||'warrior'} in a cyberpunk dungeon. Respond with ONE line only. Max 10 words. Vary your tone — sometimes cocky, sometimes focused, sometimes dark humor, sometimes silent determination shown through action words. Never repeat yourself. Current state: ${situation} (${hp}). Cyberpunk slang only. No quotes, no emojis.`;
-  },
-
-  _pickFallback(pool, sideKey){
-    const p = (pool && pool.length) ? pool : (sideKey==='enemy' ? ['System error.','Prepare to die.','End protocol.'] : ['Stay focused.','Not today.','Keep going.']);
-    const hist = this._fallbackHistory[sideKey] || [];
-    const recent = hist.slice(-5);
-    const fresh = p.filter(l=>!recent.includes(l));
-    const src = fresh.length ? fresh : p;
-    const chosen = src[Math.floor(Math.random()*src.length)];
-    hist.push(chosen);
-    if(hist.length > 5) hist.shift();
-    this._fallbackHistory[sideKey] = hist;
-    return chosen;
-  },
-
-  _getFallbacks(key){
-    return GameState.dialog?.ai_fallbacks?.[key] || [];
-  },
-
-  // Core internal show methods
-  async _showEnemyDialog(enemy, situation, poolKey){
-    const pool = this._getFallbacks(poolKey);
-    const fallback = this._pickFallback(pool, 'enemy');
-    const sys = this._enemyPrompt(enemy, situation);
-    const text = await this._call(sys, situation, fallback);
-    this._enqueue({side:'enemy', text, color:'#ff2d78', enemy});
-  },
-
-  async _showPlayerDialog(situation, poolKey){
-    const pool = this._getFallbacks(poolKey);
-    const fallback = this._pickFallback(pool, 'player');
-    const sys = this._playerPrompt(situation);
-    const text = await this._call(sys, situation, fallback);
-    this._enqueue({side:'player', text, color:'#00ffff', enemy:null});
-  },
-
-  // Queue system — minimum 2s gap between any two bubbles
-  _enqueue(item){
-    this._queue.push(item);
-    this._drainQueue();
-  },
-
-  _drainQueue(){
-    if(this._queueTimer !== null) return;
-    if(!this._queue.length) return;
-    const now = Date.now();
-    const wait = Math.max(0, this._minGap - (now - this._lastShownMs));
-    this._queueTimer = setTimeout(()=>{
-      this._queueTimer = null;
-      if(!this._queue.length) return;
-      const item = this._queue.shift();
-      this._lastShownMs = Date.now();
-      this._displayBubble(item.side, item.text, item.color, item.enemy);
-      this._drainQueue();
-    }, wait);
-  },
-
-  _displayBubble(side, text, color, enemy){
-    const el = side === 'enemy' ? this._enemyEl : this._playerEl;
-    const timerKey = side === 'enemy' ? '_enemyTimer' : '_playerTimer';
-    if(!el) return;
-    clearTimeout(this[timerKey]);
-    const textEl = el.querySelector('.sb-text');
-    if(!textEl) return;
-    textEl.textContent = '';
-    el.style.borderColor = color;
-    el.style.boxShadow = `0 0 14px ${color}66`;
-    el.style.opacity = '1';
-    el.style.display = 'block';
-    // Position after layout paint so offsetWidth is accurate
-    requestAnimationFrame(()=>this._positionBubble(side, el, enemy));
-    // Dismiss after typewrite completes + 4.5s hold
-    const twMs = text.length * 30;
-    this._typewrite(textEl, text);
-    this[timerKey] = setTimeout(()=>this._hideBubble(side), twMs + 4500);
-  },
-
-  // Converts canvas sprite position to arena-wrap DOM coordinates
-  _positionBubble(side, el, enemy){
-    const cv = Arena.cv;
-    if(!cv || !Arena.W || !Arena.H) return;
-    const scaleX = cv.clientWidth / Arena.W;
-    const scaleY = cv.clientHeight / Arena.H;
-    let cx, cy;
-    if(side === 'enemy'){
-      const idx = enemy ? GameState.enemies.indexOf(enemy) : 0;
-      const pos = Arena.getEnemyPos(Math.max(0, idx));
-      cx = pos.x; cy = pos.y;
-    } else {
-      const pos = Arena.getPlayerPos();
-      cx = pos.x; cy = pos.y;
-    }
-    const domX = cx * scaleX;
-    const domY = cy * scaleY;
-    const bw = el.offsetWidth || 220;
-    const bh = el.offsetHeight || 70;
-    const gap = 12;
-    const parentW = (el.parentElement||document.body).clientWidth;
-    const parentH = (el.parentElement||document.body).clientHeight;
-    // Position BELOW character but ABOVE the dialog bar area
-    const spriteH = 88 * (cv.clientHeight / Arena.H);
-    const dialogBarReserve = 140; // space for DM dialog + HUD at bottom
-    let left = domX - bw / 2;
-    let top  = domY + spriteH * 0.3 + gap;
-    left = Math.max(4, Math.min(left, parentW - bw - 4));
-    // Clamp: don't overlap bottom dialog bar, don't go above arena
-    top = Math.min(top, parentH - bh - dialogBarReserve);
-    top = Math.max(4, top);
-    // If still overlapping character, move to ABOVE instead
-    if(top > domY - 10 && top < domY + spriteH){
-      top = Math.max(4, domY - bh - gap);
-    }
-    el.style.left = left + 'px';
-    el.style.top  = top  + 'px';
-  },
-
-  _hideBubble(side){
-    const el = side === 'enemy' ? this._enemyEl : this._playerEl;
-    if(!el) return;
-    el.style.opacity = '0';
-    setTimeout(()=>{ if(el.style.opacity==='0'){ el.style.display='none'; el.style.opacity='1'; } }, 500);
-  },
-
-  hideAll(){
-    if(this._twIv){clearInterval(this._twIv);this._twIv=null;}
-    clearTimeout(this._queueTimer); this._queueTimer = null;
-    this._queue = [];
-    clearTimeout(this._enemyTimer); clearTimeout(this._playerTimer);
-    if(this._enemyEl){ this._enemyEl.style.display='none'; this._enemyEl.style.opacity='1'; }
-    if(this._playerEl){ this._playerEl.style.display='none'; this._playerEl.style.opacity='1'; }
-  },
-
-  // Typewrite at 30ms/char; dismiss timer starts AFTER completion
-  _typewrite(el, text){
-    if(this._twIv)clearInterval(this._twIv);
-    el.textContent = '';
-    let i = 0;
-    this._twIv = setInterval(()=>{
-      el.textContent += text[i++]||'';
-      if(i >= text.length){clearInterval(this._twIv);this._twIv=null;}
-    }, 30);
-  },
-
-  // ── Trigger points ──────────────────────────────────────────────
-
-  _isBossFight(){return GameState.enemies?.some(e=>e.isBoss)||false;},
-
-  // Turn 1 only: enemy taunts then player responds (BOSS FIGHTS ONLY)
-  onTurn(turnNum, enemies){
-    if(turnNum !== 1 || !this._isBossFight()) return;
-    const en = enemies?.find(e=>e.hp>0); if(!en) return;
-    this._showEnemyDialog(en, 'battle start, first encounter with this hero', 'enemy_taunt');
-    setTimeout(()=>this._showPlayerDialog('responding to enemy opening taunt with confidence', 'player_comeback'), 2200);
-  },
-
-  onLowHPEnemy(enemy){
-    if(!this._isBossFight()) return;
-    this._showEnemyDialog(enemy, 'critically wounded, desperate, near death', 'enemy_lowHp');
-  },
-
-  onLowHPPlayer(){
-    if(!this._isBossFight()) return;
-    this._showPlayerDialog('critically wounded, fighting through pain and damage', 'player_lowHp');
-  },
-
-  onEnemyDeath(enemy){
-    if(!this._isBossFight()) return;
-    this._showEnemyDialog(enemy, 'dying, speaking final words before shutdown', 'enemy_death');
-  },
-
-  // Crit: one line from player only (boss fights only)
-  onCrit(enemy){
-    if(!this._isBossFight()) return;
-    this._showPlayerDialog('you just landed a devastating critical hit on the enemy', 'player_crit');
-  },
-
-  // Skill use: one line from player only
-  onSpell(spell, enemy){
-    if(!spell || !this._isBossFight()) return;
-    this._showPlayerDialog(`you just activated ${spell.name}, a powerful combat ability`, 'player_spell');
-  },
-};
+// AIDialog removed — Phase 4 Worker proxy handles AI narration (SPEC §8)
+// Zero client-side API keys. Zero fetch() to api.anthropic.com.
+const _AIDialog_tombstone = {}; // AIDialog fully removed — no API keys, no fetch to api.anthropic.com
 
 // ═══════════════════════════════════════════════════════════════
 // UNIFIED VICTORY SCREEN — post-combat: loot + paperdoll + upgrades
@@ -9911,9 +9946,11 @@ const VictoryScreen = {
     const F = "font-family:'Share Tech Mono',monospace;";
     const typeLabel = { active: 'ATTACK', defensive: 'DEFENSE', potion: 'POTION' }[poolInfo.type] || 'SPELL';
 
-    const makeCard = (spell, label, borderClr) => {
+    const synergyDelta = getSwapSynergyDelta(p.spells, offered, slotIdx);
+    const makeCard = (spell, label, borderClr, synergyHint) => {
       const evolved = spell.evolved ? ' [EX]' : '';
       const casts = spell.castCount ? ` (${spell.castCount} casts)` : '';
+      const synBadge = synergyHint ? `<div style="${F}font-size:clamp(7px,0.7vw,9px);color:${synergyHint.color};font-weight:bold;text-align:center;padding-top:4px;text-shadow:0 0 6px ${synergyHint.color};">${synergyHint.label}</div>` : '';
       return `<div style="flex:1;max-width:280px;border:1.5px solid ${borderClr};border-radius:6px;padding:clamp(8px,1vh,14px) clamp(10px,1.2vw,16px);background:rgba(10,10,30,.85);display:flex;flex-direction:column;gap:4px;">
         <div style="${F}font-size:clamp(7px,0.7vw,9px);color:${borderClr};text-transform:uppercase;letter-spacing:1px;">${label}</div>
         <div style="display:flex;align-items:center;gap:8px;">
@@ -9924,22 +9961,24 @@ const VictoryScreen = {
           </div>
           <div style="${F}font-size:clamp(7px,0.7vw,9px);color:#776;text-align:right;white-space:nowrap;line-height:1.5;">MP:${spell.mp}<br>CD:${spell.maxCd}${casts}</div>
         </div>
+        ${synBadge}
       </div>`;
     };
 
     cont.innerHTML = `
-      ${makeCard(currentSpell, 'CURRENT ' + typeLabel, '#00ffff')}
+      ${makeCard(currentSpell, 'CURRENT ' + typeLabel, '#00ffff', null)}
       <div style="display:flex;flex-direction:column;gap:6px;align-items:center;flex-shrink:0;">
         <button id="vicSwapBtn" style="${F}font-size:clamp(8px,0.9vw,12px);padding:6px 14px;background:rgba(255,0,255,.15);border:1px solid #ff00ff;color:#ff00ff;cursor:pointer;border-radius:4px;">⟲ SWAP</button>
         <button id="vicKeepBtn" style="${F}font-size:clamp(8px,0.9vw,12px);padding:6px 14px;background:rgba(0,255,255,.08);border:1px solid rgba(0,255,255,.3);color:#00ffff;cursor:pointer;border-radius:4px;">✓ KEEP</button>
       </div>
-      ${makeCard(offered, 'OFFERED ' + typeLabel, '#ff00ff')}
+      ${makeCard(offered, 'OFFERED ' + typeLabel, '#ff00ff', synergyDelta)}
     `;
 
     document.getElementById('vicSwapBtn').addEventListener('click', () => {
       // Replace the spell
       p.spells[slotIdx] = { ...offered, effect: offered.effect, cd: 0, hackedTurns: 0, castCount: 0, evolved: false };
       this._swapDecision = 'swap';
+      refreshSynergies();
       cont.innerHTML = `<div style="${F}font-size:clamp(10px,1.1vw,14px);color:#ff00ff;text-shadow:0 0 10px rgba(255,0,255,.5);padding:10px;">⟲ SWAPPED: ${currentSpell.name} → ${offered.name}</div>`;
       UI.renderSpells();
       this._updateContinue();
