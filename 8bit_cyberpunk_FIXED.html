@@ -1039,6 +1039,7 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
     <div class="pause-box">
       <div class="pause-title">⏸ PAUSED</div>
       <button class="pause-btn" id="pauseResume">▶ RESUME</button>
+      <button class="pause-btn" id="pauseAutoBtn">⚡ AUTO BATTLE: OFF</button>
       <button class="pause-btn" id="pauseSettings">⚙ SETTINGS</button>
       <div id="pauseSeedDisplay" style="font-family:'Share Tech Mono',monospace;font-size:8px;color:#333355;margin:4px 0;"></div>
       <button class="pause-btn" id="pauseCopySeed" style="font-size:8px;">⎘ COPY SEED</button>
@@ -1218,18 +1219,30 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
 
   <!-- COMBAT -->
   <div class="scr" id="sCM">
-    <!-- Top HUD — compact single bar -->
+    <!-- Top HUD — zone / room | HP bar | credits / speed / map -->
     <div class="chdr">
+      <!-- Left: zone name + room counter -->
       <span class="fb" id="fbadge">NEON NEXUS</span>
       <span class="fb" id="rbadge" style="color:var(--C)">ROOM 1/10</span>
-      <span class="fb" style="color:var(--GD)" id="kbadge">KILLS:0</span>
-      <span class="fb" style="color:var(--M)" id="dbadge">DMG:0</span>
-      <span class="fb" style="color:var(--G)" id="tbadge">TURN:0</span>
+      <!-- Center: HP + MP bars -->
+      <div id="chdrBars" style="display:flex;flex-direction:column;gap:3px;align-items:center;flex:1;padding:0 8px;">
+        <div style="position:relative;width:200px;height:14px;background:#0a0a1a;border:1px solid #334455;overflow:hidden;">
+          <div id="chdrHpFill" style="position:absolute;left:0;top:0;bottom:0;width:100%;background:#00ff41;transition:width .25s;"></div>
+          <span id="chdrHpNum" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Press Start 2P',monospace;font-size:6px;color:#fff;pointer-events:none;z-index:1;letter-spacing:1px;">120/120</span>
+        </div>
+        <div style="width:120px;height:5px;background:#0a0a1a;border:1px solid #223344;overflow:hidden;">
+          <div id="chdrMpFill" style="height:100%;width:100%;background:#4488ff;transition:width .25s;"></div>
+        </div>
+      </div>
+      <!-- Right: credits, speed, map -->
       <span class="fb" style="color:var(--GD)" id="goldbadge">⚡0 CR</span>
-      <span class="fb" style="color:#ff8844;display:none" id="dpsBadge">DPS:0</span>
       <button id="speedBtn" onclick="Game.toggleSpeed();" style="font-family:'Share Tech Mono',monospace;font-size:clamp(7px,0.8vw,10px);padding:2px 6px;cursor:pointer;background:rgba(0,255,65,.15);border:1px solid var(--G);color:var(--G);">1x</button>
-      <button id="autoBtn" onclick="Game.toggleAuto();" style="font-family:'Share Tech Mono',monospace;font-size:clamp(7px,0.8vw,10px);padding:2px 6px;cursor:pointer;background:rgba(136,0,255,.15);border:1px solid var(--P);color:var(--P);">AUTO:OFF</button>
       <button id="mapBtn" class="hidden">MAP</button>
+      <!-- Hidden: keep in DOM for JS refs -->
+      <span id="kbadge" style="display:none">KILLS:0</span>
+      <span id="dbadge" style="display:none">DMG:0</span>
+      <span id="tbadge" style="display:none">TURN:0</span>
+      <span id="dpsBadge" style="display:none">DPS:0</span>
     </div>
     <!-- Full-width arena -->
     <div class="cmain">
@@ -1505,7 +1518,7 @@ const SPLAT = ['#ff00ff','#00ffff','#ffe100','#8800ff','#ff0066','#ffaa00','#00f
 // ═══════════════════════════════════════════════════════════════
 // PIXEL ART — P=4px per pixel, all sprites drawn with fillRect
 // ═══════════════════════════════════════════════════════════════
-const P = 4; // one "pixel" = 4x4 real pixels
+const P = 6; // one "pixel" = 6x6 real pixels
 const _ = null;
 
 // ── Spritesheet system: load sprites.png (4x3 grid), crop per character ──
@@ -1676,36 +1689,44 @@ const SPR = {
     }
   },
 
-  // Non-hero sprites: spritesheet-based with fallback
-  ranger(ctx, ox, oy, flip, t=0) { _drawSS('rogue',ctx,ox,oy,14*P,20*P,flip)||_fbrect(ctx,ox,oy,14*P,20*P,'#228844'); },
-  cleric(ctx, ox, oy, flip, t=0) { _drawSS('circuitLich',ctx,ox,oy,14*P,22*P,flip)||_fbrect(ctx,ox,oy,14*P,22*P,'#4488cc'); },
-  warlock(ctx, ox, oy, flip, t=0) { _drawSS('voidSpecter',ctx,ox,oy,14*P,22*P,flip)||_fbrect(ctx,ox,oy,14*P,22*P,'#8844cc'); },
-  glitchDrone(ctx, ox, oy, flip, t=0) { _drawSS('glitchDrone',ctx,ox,oy,12*P,12*P,flip)||_fbrect(ctx,ox,oy,12*P,12*P,'#00cccc'); },
-  neonGolem(ctx, ox, oy, flip, t=0) { _drawSS('neonGolem',ctx,ox,oy,14*P,22*P,flip)||_fbrect(ctx,ox,oy,14*P,22*P,'#8800ff'); },
-  voidSpecter(ctx, ox, oy, flip, t=0) { _drawSS('voidSpecter',ctx,ox,oy,12*P,17*P,flip)||_fbrect(ctx,ox,oy,12*P,17*P,'#aa44ff'); },
-  cyberOgre(ctx, ox, oy, flip, t=0) { _drawSS('cyberOgre',ctx,ox,oy,14*P,22*P,flip)||_fbrect(ctx,ox,oy,14*P,22*P,'#ff6600'); },
-  dataWraith(ctx, ox, oy, flip, t=0) { _drawSS('dataWraith',ctx,ox,oy,12*P,18*P,flip)||_fbrect(ctx,ox,oy,12*P,18*P,'#00ffff'); },
-  pulseHound(ctx, ox, oy, flip, t=0) { _drawSS('pulseHound',ctx,ox,oy,14*P,17*P,flip)||_fbrect(ctx,ox,oy,14*P,17*P,'#ff2244'); },
-  circuitLich(ctx, ox, oy, flip, t=0) { _drawSS('circuitLich',ctx,ox,oy,14*P,22*P,flip)||_fbrect(ctx,ox,oy,14*P,22*P,'#39ff14'); },
-  quantumBoss(ctx, ox, oy, flip, t=0) { _drawSS('quantumBoss',ctx,ox,oy,14*P,22*P,flip)||_fbrect(ctx,ox,oy,14*P,22*P,'#ff00ff'); },
-  netrunner(ctx, ox, oy, flip, t=0) { _drawSS('netrunner',ctx,ox,oy,14*P,20*P,flip)||_fbrect(ctx,ox,oy,14*P,20*P,'#00ffff'); },
+  // Non-hero sprites: spritesheet-based with glitch fallback
+  ranger(ctx, ox, oy, flip, t=0) { _drawSS('rogue',ctx,ox,oy,14*P,20*P,flip)||drawEnemyFallback(ctx,ox,oy,14*P,20*P,'#228844'); },
+  cleric(ctx, ox, oy, flip, t=0) { _drawSS('circuitLich',ctx,ox,oy,14*P,22*P,flip)||drawEnemyFallback(ctx,ox,oy,14*P,22*P,'#4488cc'); },
+  warlock(ctx, ox, oy, flip, t=0) { _drawSS('voidSpecter',ctx,ox,oy,14*P,22*P,flip)||drawEnemyFallback(ctx,ox,oy,14*P,22*P,'#8844cc'); },
+  glitchDrone(ctx, ox, oy, flip, t=0) { _drawSS('glitchDrone',ctx,ox,oy,12*P,12*P,flip)||drawEnemyFallback(ctx,ox,oy,12*P,12*P,'#00cccc'); },
+  neonGolem(ctx, ox, oy, flip, t=0) { _drawSS('neonGolem',ctx,ox,oy,14*P,22*P,flip)||drawEnemyFallback(ctx,ox,oy,14*P,22*P,'#8800ff'); },
+  voidSpecter(ctx, ox, oy, flip, t=0) { _drawSS('voidSpecter',ctx,ox,oy,12*P,17*P,flip)||drawEnemyFallback(ctx,ox,oy,12*P,17*P,'#aa44ff'); },
+  cyberOgre(ctx, ox, oy, flip, t=0) { _drawSS('cyberOgre',ctx,ox,oy,14*P,22*P,flip)||drawEnemyFallback(ctx,ox,oy,14*P,22*P,'#ff6600'); },
+  dataWraith(ctx, ox, oy, flip, t=0) { _drawSS('dataWraith',ctx,ox,oy,12*P,18*P,flip)||drawEnemyFallback(ctx,ox,oy,12*P,18*P,'#00ffff'); },
+  pulseHound(ctx, ox, oy, flip, t=0) { _drawSS('pulseHound',ctx,ox,oy,14*P,17*P,flip)||drawEnemyFallback(ctx,ox,oy,14*P,17*P,'#ff2244'); },
+  circuitLich(ctx, ox, oy, flip, t=0) { _drawSS('circuitLich',ctx,ox,oy,14*P,22*P,flip)||drawEnemyFallback(ctx,ox,oy,14*P,22*P,'#39ff14'); },
+  quantumBoss(ctx, ox, oy, flip, t=0) { _drawSS('quantumBoss',ctx,ox,oy,14*P,22*P,flip)||drawEnemyFallback(ctx,ox,oy,14*P,22*P,'#ff00ff'); },
+  netrunner(ctx, ox, oy, flip, t=0) { _drawSS('netrunner',ctx,ox,oy,14*P,20*P,flip)||drawEnemyFallback(ctx,ox,oy,14*P,20*P,'#00ffff'); },
   // DM sprite (not in spritesheet — keep simple)
   dm(ctx,ox,oy,flip,t=0) { _fbrect(ctx,ox,oy,12*P,14*P,'#8888aa'); }
 };
 function _fbrect(ctx,x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(x,y,w,h);}
+function drawEnemyFallback(ctx,x,y,w,h,c){
+  ctx.fillStyle='rgba(0,0,0,0.6)';ctx.fillRect(x,y,w,h);
+  ctx.strokeStyle=c;ctx.lineWidth=1;
+  for(let i=0;i<6;i++){const ly=y+Math.random()*h;ctx.beginPath();ctx.moveTo(x,ly);ctx.lineTo(x+w*(0.3+Math.random()*0.7),ly);ctx.stroke();}
+  ctx.strokeRect(x,y,w,h);
+  ctx.font='10px "Press Start 2P"';ctx.fillStyle=c;ctx.textAlign='center';
+  ctx.fillText('?',x+w/2,y+h/2+4);ctx.textAlign='left';
+}
 
 
-// Actual pixel dimensions per sprite (cols * P, rows * P)
+// Actual pixel dimensions per sprite (cols * P, rows * P) — at P=6
 const SPRITE_SIZE = {
-  warrior:{w:56,h:104}, ranger:{w:56,h:80}, rogue:{w:64,h:104},
-  sage:{w:68,h:104}, shadow:{w:76,h:104}, druid:{w:84,h:104},
-  cleric:{w:56,h:88}, warlock:{w:56,h:88},
-  glitchDrone:{w:48,h:48}, neonGolem:{w:56,h:88},
-  voidSpecter:{w:48,h:68}, cyberOgre:{w:56,h:88},
-  dataWraith:{w:48,h:72}, pulseHound:{w:56,h:68},
-  circuitLich:{w:56,h:88}, quantumBoss:{w:56,h:88},
-  netrunner:{w:56,h:80},
-  dm:{w:48,h:56}
+  warrior:{w:84,h:156}, ranger:{w:84,h:120}, rogue:{w:96,h:156},
+  sage:{w:102,h:156}, shadow:{w:114,h:156}, druid:{w:126,h:156},
+  cleric:{w:84,h:132}, warlock:{w:84,h:132},
+  glitchDrone:{w:72,h:72}, neonGolem:{w:84,h:132},
+  voidSpecter:{w:72,h:102}, cyberOgre:{w:84,h:132},
+  dataWraith:{w:72,h:108}, pulseHound:{w:84,h:102},
+  circuitLich:{w:84,h:132}, quantumBoss:{w:84,h:132},
+  netrunner:{w:84,h:120},
+  dm:{w:72,h:84}
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -7055,8 +7076,8 @@ const Combat = {
     // Update turn order display
     UI.updateTurnOrder();
     UI.updateBars();UI.updateSpells();UI.renderBuffs();
-    document.getElementById('dbadge').textContent='DMG:'+GameState.totalDmg;
-    document.getElementById('kbadge').textContent='KILLS:'+GameState.totalKills;
+    const _db=document.getElementById('dbadge');if(_db)_db.textContent='DMG:'+GameState.totalDmg;
+    const _kb=document.getElementById('kbadge');if(_kb)_kb.textContent='KILLS:'+GameState.totalKills;
     QM.check();
   },
   endCombat(won){
@@ -7785,6 +7806,16 @@ const UI={
     }
     const hpN=document.getElementById('phpn');if(hpN)hpN.textContent=`${Math.max(0,p.hp)}/${p.maxHp}`;
     const mpN=document.getElementById('pmpn');if(mpN)mpN.textContent=`${Math.max(0,p.mp)}/${p.maxMp}`;
+    // Chdr HP/MP bars
+    const chf=document.getElementById('chdrHpFill');
+    const chn=document.getElementById('chdrHpNum');
+    const cmf=document.getElementById('chdrMpFill');
+    if(chf){
+      const hc=hpPct>0.5?'#00ff41':hpPct>0.25?'#ffaa00':'#ff4444';
+      chf.style.width=(hpPct*100)+'%';chf.style.background=hc;
+    }
+    if(chn)chn.textContent=`${Math.max(0,p.hp)}/${p.maxHp}`;
+    if(cmf)cmf.style.width=Math.max(0,p.mp/p.maxMp*100)+'%';
   },
   updateSpells(){
     const p=GameState.player;
@@ -9417,6 +9448,8 @@ const Game={
         }
       }
     });
+    const pauseAutoBtn=document.getElementById('pauseAutoBtn');
+    if(pauseAutoBtn)pauseAutoBtn.addEventListener('click',()=>Game.toggleAuto());
     const pauseResume=document.getElementById('pauseResume');
     if(pauseResume)pauseResume.addEventListener('click',()=>{
       const pm=document.getElementById('pauseMenu');pm.classList.remove('show');
@@ -9972,12 +10005,9 @@ const Game={
             showBossIntroNarration(boss,()=>Combat.start()); // Phase 4.1 — narration before combat
           });
         }else{
-          const fe=DM.floorEvent(fl);
-          DM.say(fe||DM.rand());
           GameState._combatIntroTimers=GameState._combatIntroTimers||[];
           GameState._combatIntroTimers.push(
-            setTimeout(()=>DialogEngine.showEncounter(GameState.enemies[0]),600),
-            setTimeout(()=>Combat.start(),3200)
+            setTimeout(()=>Combat.start(),1200)
           );
         }
         break;
@@ -10160,12 +10190,12 @@ const Game={
   _autoBattle:false,
   toggleAuto(){
     this._autoBattle=!this._autoBattle;
-    const btn=document.getElementById('autoBtn');
+    const btn=document.getElementById('pauseAutoBtn');
     if(btn){
-      btn.textContent=this._autoBattle?'AUTO:ON':'AUTO:OFF';
-      btn.style.background=this._autoBattle?'rgba(0,255,65,.3)':'rgba(136,0,255,.15)';
-      btn.style.borderColor=this._autoBattle?'var(--G)':'var(--P)';
-      btn.style.color=this._autoBattle?'var(--G)':'var(--P)';
+      btn.textContent=this._autoBattle?'⚡ AUTO BATTLE: ON':'⚡ AUTO BATTLE: OFF';
+      btn.style.background=this._autoBattle?'rgba(0,255,65,.3)':'';
+      btn.style.borderColor=this._autoBattle?'var(--G)':'';
+      btn.style.color=this._autoBattle?'var(--G)':'';
     }
     // When auto is on, auto-click continue on victory screens
     if(this._autoBattle){
