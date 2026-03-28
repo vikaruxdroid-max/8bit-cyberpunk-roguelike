@@ -66,6 +66,28 @@ html,body{width:100%;height:100%;overflow:hidden;background:#060618;font-family:
   position:absolute;bottom:clamp(12px,2vh,24px);left:0;right:0;text-align:center;pointer-events:none;}
 @keyframes mmPulse{0%,100%{box-shadow:0 0 20px rgba(0,255,255,.25),inset 0 0 24px rgba(0,255,255,.06)}50%{box-shadow:0 0 40px rgba(0,255,255,.5),0 0 80px rgba(255,0,255,.15),inset 0 0 36px rgba(0,255,255,.1)}}
 
+/* ── MAIN MENU REDESIGN ─────────────────────────────── */
+#menuSettingsBtn{position:absolute;top:16px;right:20px;background:none;border:1px solid #1a1a3a;color:#555577;font-size:18px;cursor:pointer;padding:6px 10px;border-radius:4px;transition:color .2s,border-color .2s;font-family:inherit;line-height:1;z-index:60;}
+#menuSettingsBtn:hover{color:#00ffff;border-color:#00ffff;}
+#menuTagline{font-family:'Share Tech Mono',monospace;font-size:11px;color:#444466;text-align:center;margin:4px 0 20px 0;min-height:16px;letter-spacing:2px;}
+#menuConnectBtn{width:340px;padding:16px 0;font-family:'Press Start 2P',monospace;font-size:14px;color:#00ffff;background:rgba(0,255,255,.04);border:2px solid #00ffff;cursor:pointer;letter-spacing:4px;position:relative;transition:background .2s,box-shadow .2s;animation:connectPulse 2.5s ease-in-out infinite;margin-bottom:10px;}
+#menuConnectBtn:hover{background:rgba(0,255,255,.12);box-shadow:0 0 24px rgba(0,255,255,.4),inset 0 0 12px rgba(0,255,255,.08);animation:none;}
+@keyframes connectPulse{0%,100%{box-shadow:0 0 8px rgba(0,255,255,.2);}50%{box-shadow:0 0 20px rgba(0,255,255,.5),inset 0 0 8px rgba(0,255,255,.06);}}
+#menuContinueBtn{width:340px;padding:12px 0;font-family:'Press Start 2P',monospace;font-size:11px;color:#556677;background:rgba(255,255,255,.02);border:1px solid #1e2a3a;cursor:pointer;letter-spacing:3px;transition:color .2s,border-color .2s;margin-bottom:20px;}
+#menuContinueBtn:hover{color:#aaccdd;border-color:#334455;}
+#menuContinueBtn:disabled,#menuContinueBtn.hidden{opacity:.25;cursor:default;pointer-events:none;}
+#menuDailyStrip{width:340px;padding:10px 14px;border:1px solid #332200;background:rgba(255,200,0,.03);cursor:pointer;margin-bottom:16px;transition:background .2s,border-color .2s;text-align:left;box-sizing:border-box;}
+#menuDailyStrip:hover{background:rgba(255,200,0,.08);border-color:#ffd700;}
+#menuDailyStrip .daily-label{font-family:'Press Start 2P',monospace;font-size:8px;color:#ffd700;letter-spacing:2px;display:block;margin-bottom:4px;}
+#menuDailyStrip .daily-mods{font-family:'Share Tech Mono',monospace;font-size:10px;color:#887744;letter-spacing:1px;}
+#menuDailyStrip .daily-complete{font-family:'Share Tech Mono',monospace;font-size:10px;color:#445544;}
+#menuDailyStrip .daily-streak{font-family:'Share Tech Mono',monospace;font-size:9px;color:#333344;float:right;margin-top:-18px;}
+#menuTertiaryRow{display:flex;gap:8px;margin-bottom:24px;}
+.menu-tertiary-btn{padding:8px 14px;font-family:'Press Start 2P',monospace;font-size:6px;color:#334455;background:none;border:1px solid #1a1a2e;cursor:pointer;letter-spacing:1px;transition:color .2s,border-color .2s;}
+.menu-tertiary-btn:hover{color:#aaaacc;border-color:#334466;}
+#menuFooter{font-family:'Share Tech Mono',monospace;font-size:9px;color:#1a1a2e;letter-spacing:3px;text-align:center;position:absolute;bottom:14px;left:0;right:0;}
+/* ── END MAIN MENU REDESIGN ─────────────────────────── */
+
 /* ══ CHARACTER CREATE — CYBERPUNK VAPORWAVE ══ */
 #sCS{padding:0;gap:0;overflow:hidden;background:#020210;position:relative;height:100vh;width:100vw;}
 #sCS.on{display:flex;flex-direction:column;}
@@ -1105,22 +1127,25 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
   <div class="scr" id="sMM">
     <canvas id="matrixCV"></canvas>
     <div class="mm-overlay">
+      <button id="menuSettingsBtn" title="Settings">⚙</button>
       <div class="mm-title">
         <div class="mm-title-main">8-BIT</div>
         <div class="mm-title-sub">CYBERPUNK</div>
       </div>
-      <div class="mm-btns">
-        <button class="mm-btn mm-connect" id="mmConnect" onclick="UI.show('sCS');City.resize();">CONNECT</button>
-        <button class="mm-btn mm-secondary" id="mmContinue" style="display:none" onclick="if(SaveSystem.load()){UI.show('sCS');WorldMap.show();}">CONTINUE</button>
-        <div class="mm-row">
-          <button class="mm-btn mm-small" id="mmSettings" onclick="document.getElementById('settingsModal').classList.add('show');">SETTINGS</button>
-          <button class="mm-btn mm-small" id="mmRecords" onclick="Records.showPanel();">RECORDS</button>
-          <button class="mm-btn mm-small" id="mmRunLog" onclick="RunHistoryScreen.open();">RUN LOG</button>
-          <button class="mm-btn mm-small" id="mmDaily" style="color:#ffd700;border-color:#ffd700;" onclick="startDailyChallenge();">DAILY</button>
-          <button class="mm-btn mm-small" id="mmAch" onclick="AchievementScreen.open();">ACHIEVEMENTS</button>
-        </div>
+      <div id="menuTagline"></div>
+      <button id="menuConnectBtn">◈ &nbsp; CONNECT &nbsp; ◈</button>
+      <button id="menuContinueBtn">CONTINUE</button>
+      <div id="menuDailyStrip">
+        <span class="daily-label">★ DAILY CHALLENGE</span>
+        <span class="daily-mods" id="menuDailyMods">LOADING...</span>
+        <span class="daily-streak" id="menuDailyStreak"></span>
       </div>
-      <div class="mm-footer">NEON DUNGEON ROGUELIKE</div>
+      <div id="menuTertiaryRow">
+        <button class="menu-tertiary-btn" id="menuRunLogBtn">RUN LOG</button>
+        <button class="menu-tertiary-btn" id="menuRecordsBtn">RECORDS</button>
+        <button class="menu-tertiary-btn" id="menuAchBtn">ACHIEVEMENTS</button>
+      </div>
+      <div id="menuFooter">NEON DUNGEON v1.0 &nbsp;//&nbsp; GRID ONLINE</div>
     </div>
   </div>
 
@@ -7726,6 +7751,8 @@ const UI={
     const shop=document.getElementById('merchantShop');if(shop)shop.style.display='none';
     const death=document.getElementById('deathOverlay');if(death)death.style.display='none';
     if(id!=='sCM'){DialogEngine._cancel();const _wmBtn=document.getElementById('wmMerchantBtn');if(_wmBtn)_wmBtn.style.pointerEvents='';}
+    if(id==='sMM'){startMenuTaglineRotation();populateMenuDailyStrip();updateContinueButtonState();}
+    else{stopMenuTaglineRotation();}
   },
   flash(){const f=document.getElementById('fl');if(!f)return;f.style.opacity='.65';setTimeout(()=>f.style.opacity='0',320);},
   dmgNumAt(x,y,val,type){
@@ -9232,6 +9259,70 @@ const Achievements={
   }
 };
 
+// ── Main menu: rotating tagline ──────────────────────────────────
+const MENU_TAGLINES = [
+  'THE GRID REMEMBERS EVERYTHING.',
+  'JACK IN. JACK OUT. REPEAT UNTIL DEAD.',
+  "CORPORATE SECURITY IS SOMEONE ELSE'S PROBLEM.",
+  'NO GODS. NO MODS. NO MERCY.',
+  'EVERY RUN IS YOUR LAST RUN.',
+  'THE DUNGEON DOES NOT NEGOTIATE.',
+  'SURVIVE LONG ENOUGH TO REGRET IT.',
+  'YOUR FIREWALL IS A SUGGESTION.',
+  'PAIN IS A FEATURE. SO IS PERMADEATH.',
+  'THE CORE AWAITS. IT IS NOT PATIENT.'
+];
+let _menuTaglineIndex = Math.floor(Math.random() * MENU_TAGLINES.length);
+let _menuTaglineInterval = null;
+
+function updateMenuTagline() {
+  const el = document.getElementById('menuTagline');
+  if (!el) return;
+  el.textContent = MENU_TAGLINES[_menuTaglineIndex];
+  _menuTaglineIndex = (_menuTaglineIndex + 1) % MENU_TAGLINES.length;
+}
+function startMenuTaglineRotation() {
+  updateMenuTagline();
+  if (_menuTaglineInterval) clearInterval(_menuTaglineInterval);
+  _menuTaglineInterval = setInterval(updateMenuTagline, 4000);
+}
+function stopMenuTaglineRotation() {
+  if (_menuTaglineInterval) { clearInterval(_menuTaglineInterval); _menuTaglineInterval = null; }
+}
+
+// ── Main menu: daily strip population ────────────────────────────
+function populateMenuDailyStrip() {
+  const modsEl   = document.getElementById('menuDailyMods');
+  const streakEl = document.getElementById('menuDailyStreak');
+  const strip    = document.getElementById('menuDailyStrip');
+  if (!modsEl || !strip) return;
+  const played = hasDailyBeenPlayed();
+  const streak = getDailyStreak();
+  const seed   = getDailySeed();
+  const mods   = getDailyModifiers(seed);
+  if (played) {
+    modsEl.className   = 'daily-complete';
+    modsEl.textContent = 'COMPLETED TODAY';
+    strip.style.cursor  = 'default';
+    strip.style.opacity = '0.5';
+  } else {
+    modsEl.className   = 'daily-mods';
+    modsEl.textContent = mods[0] && mods[1] ? `${mods[0].name} + ${mods[1].name}` : 'TODAY\'S RUN';
+    strip.style.cursor  = 'pointer';
+    strip.style.opacity = '1';
+  }
+  if (streakEl) streakEl.textContent = streak > 0 ? `${streak}d streak` : '';
+}
+
+// ── Main menu: continue button state ─────────────────────────────
+function updateContinueButtonState() {
+  const btn = document.getElementById('menuContinueBtn');
+  if (!btn) return;
+  const hasSave = SaveSystem.hasSave();
+  btn.disabled = !hasSave;
+  btn.classList.toggle('hidden', !hasSave);
+}
+
 const Game={
   init(){
     // Load generative content JSON — use boot cache if available, else fetch (offline fallback)
@@ -9430,22 +9521,26 @@ const Game={
   },
 
   initMainMenu(){
-    document.getElementById('mmConnect').addEventListener('click',()=>{
-      UI.show('sCS');
-      City.resize();
+    document.getElementById('menuConnectBtn')?.addEventListener('click',()=>{
+      UI.show('sCS');City.resize();
     });
-    const contBtn=document.getElementById('mmContinue');
-    if(contBtn){
-      contBtn.style.display=SaveSystem.hasSave()?'':'none';
-      contBtn.addEventListener('click',()=>{
-        if(SaveSystem.load()){ UI.show('sCS'); WorldMap.show(); }
-      });
-    }
-    document.getElementById('mmSettings')?.addEventListener('click',()=>{
+    document.getElementById('menuContinueBtn')?.addEventListener('click',()=>{
+      if(SaveSystem.load()){UI.show('sCS');WorldMap.show();}
+    });
+    document.getElementById('menuSettingsBtn')?.addEventListener('click',()=>{
       document.getElementById('settingsModal').classList.add('show');
     });
-    document.getElementById('mmRecords')?.addEventListener('click',()=>{
+    document.getElementById('menuRecordsBtn')?.addEventListener('click',()=>{
       Records.showPanel();
+    });
+    document.getElementById('menuRunLogBtn')?.addEventListener('click',()=>{
+      RunHistoryScreen.open();
+    });
+    document.getElementById('menuAchBtn')?.addEventListener('click',()=>{
+      AchievementScreen.open();
+    });
+    document.getElementById('menuDailyStrip')?.addEventListener('click',()=>{
+      if(!hasDailyBeenPlayed())startDailyChallenge();
     });
   },
 
@@ -10133,9 +10228,7 @@ const Game={
     WorldMap.hide();
     Inventory.init();LootScreen.reset();
     Arena.time=0;Arena.vfx=[];Arena.particles=[];Arena.floatTexts=[];Arena._initHexParticles&&Arena._initHexParticles();
-    // Update main menu continue button
-    const mmCont=document.getElementById('mmContinue');
-    if(mmCont)mmCont.style.display=SaveSystem.hasSave()?'':'none';
+    // Continue button state updated via _applyShow when sMM is shown
     const contBtn=document.getElementById('continueBtn');
     if(contBtn)contBtn.style.display=SaveSystem.hasSave()?'':'none';
     UI.show('sMM');this.buildClassSelect();
