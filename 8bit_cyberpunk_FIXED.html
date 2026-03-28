@@ -1018,6 +1018,8 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
       <div class="pause-title">⏸ PAUSED</div>
       <button class="pause-btn" id="pauseResume">▶ RESUME</button>
       <button class="pause-btn" id="pauseSettings">⚙ SETTINGS</button>
+      <div id="pauseSeedDisplay" style="font-family:'Share Tech Mono',monospace;font-size:8px;color:#333355;margin:4px 0;"></div>
+      <button class="pause-btn" id="pauseCopySeed" style="font-size:8px;">⎘ COPY SEED</button>
       <button class="pause-btn danger" id="pauseRestart">↺ RESTART RUN</button>
       <button class="pause-btn danger" id="pauseQuit">⌂ QUIT TO MENU</button>
     </div>
@@ -1114,6 +1116,8 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
           <button class="mm-btn mm-small" id="mmSettings" onclick="document.getElementById('settingsModal').classList.add('show');">SETTINGS</button>
           <button class="mm-btn mm-small" id="mmRecords" onclick="Records.showPanel();">RECORDS</button>
           <button class="mm-btn mm-small" id="mmRunLog" onclick="RunHistoryScreen.open();">RUN LOG</button>
+          <button class="mm-btn mm-small" id="mmDaily" style="color:#ffd700;border-color:#ffd700;" onclick="startDailyChallenge();">DAILY</button>
+          <button class="mm-btn mm-small" id="mmAch" onclick="AchievementScreen.open();">ACHIEVEMENTS</button>
         </div>
       </div>
       <div class="mm-footer">NEON DUNGEON ROGUELIKE</div>
@@ -1333,10 +1337,13 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
     <div class="wntitle">✦ DUNGEON CONQUERED ✦<br><span style="font-size:5.5px;color:var(--C)">THE NEON ABYSS IS YOURS</span></div>
     <div class="wnstats" id="wnstats"></div>
     <button class="rbtn gold" onclick="Game.restart()">NEW RUN</button>
+    <button class="rbtn" id="btnNGPlus" style="color:#ff00ff;border-color:#ff00ff;display:none;" onclick="Game.startNGPlus()">NEW GAME+</button>
+    <button class="rbtn" id="btnEndless" style="color:#00ff41;border-color:#00ff41;" onclick="startEndlessMode()">ENDLESS MODE</button>
   </div>
 
   <!-- RUN HISTORY SCREEN (canvas-rendered) -->
   <div class="scr" id="sRH"></div>
+  <div class="scr" id="sACH"></div>
 
   <!-- LOOT SCREEN -->
   <div class="scr" id="sLT">
@@ -1711,6 +1718,15 @@ const Arena = {
         else{RunHistoryScreen.scrollOffset=Math.min(maxOffset,RunHistoryScreen.scrollOffset+1);}
         return;
       }
+      // 5.3 — Achievement screen scroll + back
+      if(GameState.currentScreen==='sACH'){
+        const rect=this.cv.getBoundingClientRect();
+        const cy=e.clientY-rect.top;
+        if(cy>this.H-40){UI.show('sMM');return;}
+        else if(cy<this.H/2){AchievementScreen.scrollOffset=Math.max(0,AchievementScreen.scrollOffset-44);}
+        else{AchievementScreen.scrollOffset=Math.min(AchievementScreen.scrollOffset+44,Math.max(0,Math.ceil(ACHIEVEMENTS.length/2)*44-(this.H-74)));}
+        return;
+      }
       if(GameState.miniGame&&GameState.miniGame.active&&GameState.miniGame.phase==='playing'){
         const rect=this.cv.getBoundingClientRect();
         handleMiniGameClick(e,e.clientX-rect.left,e.clientY-rect.top);
@@ -1757,6 +1773,7 @@ const Arena = {
     updateSpellAnimations(effectiveDt);
     updateDeathAnimations(effectiveDt);
     NarrationBox.update(effectiveDt); // Phase 4.1 — typewriter tick
+    AchToast.update(effectiveDt);     // Phase 5.3 — achievement toast
     GlitchTransition.update();
     this.render();
     requestAnimationFrame(ts=>this.loop(ts));
@@ -1782,7 +1799,8 @@ const Arena = {
     this.drawBg(ctx, W, H, t);
     this.drawFloor(ctx, W, H);
     if (GameState.currentScreen !== 'sCM') {
-      if (GameState.currentScreen === 'sRH') renderRunHistory(ctx, W, H); // 5.1
+      if (GameState.currentScreen === 'sRH') renderRunHistory(ctx, W, H);     // 5.1
+      if (GameState.currentScreen === 'sACH') renderAchievementScreen(ctx, W, H); // 5.3
       GlitchTransition.render(ctx,W,H);
       return;
     }
@@ -2659,6 +2677,15 @@ const Arena = {
     ctx.restore();
     NarrationBox.render(ctx,W,H); // Phase 4.1 — AI narration overlay
     renderAIStatusDot(ctx,W,H);   // Phase 4.4 — AI live indicator dot
+    AchToast.render(ctx,W,H);     // Phase 5.3 — achievement toast
+    renderSeedDisplay(ctx,W,H); // Phase 5.5 — seed display
+    // Phase 5.4 — endless floor HUD
+    if(GameState.endlessMode&&GameState.currentScreen==='sCM'){
+      ctx.save();ctx.font='7px "Press Start 2P"';ctx.fillStyle='#00ff41';
+      ctx.shadowColor='#00ff41';ctx.shadowBlur=8;
+      ctx.fillText(`ENDLESS FL.${GameState.endlessFloor||1}`,8,H-10);
+      ctx.shadowBlur=0;ctx.restore();
+    }
     GlitchTransition.render(ctx,W,H);
   },
 
@@ -5049,6 +5076,7 @@ class Enemy {
     this.maxHp=Math.floor(type.hp*(1+floor*.15)*dm.hp); this.hp=this.maxHp;
     this.atk=Math.floor(type.atk*(1+floor*.1)*dm.atk); this.baseAtk=this.atk;
     this.baseDef=type.def||0; this.def=this.baseDef; this.baseSpd=type.spd;
+    if(GameState.enemySpdMult&&GameState.enemySpdMult!==1.0){this.baseSpd=Math.floor(this.baseSpd*GameState.enemySpdMult);}
     this.actionCounter=0; this.buffs=[]; this.debuffs=[];
     this.turnCount=0; this.phase=1; this.deathTimer=0;
     this.telegraph=null; // Telegraph system (Phase 1.1)
@@ -5080,7 +5108,7 @@ class Enemy {
   isDodging(){const d=this.buffs.find(b=>b.id==='phase');if(d&&d.dodges>0){d.dodges--;return true;}return false;}
   checkPhase(){
     if(!this.isBoss)return;
-    const pct=this.hp/this.maxHp,np=pct>.60?1:pct>.25?2:3;
+    const _ng3=getNGPlusLevel()>=3;const pct=this.hp/this.maxHp,np=pct>(_ng3?.70:.60)?1:pct>(_ng3?.35:.25)?2:3;
     if(np!==this.phase){
       this.phase=np;
       this.ability.fn(this,GameState.player,np);
@@ -5137,7 +5165,7 @@ function buildTelegraph(enemy, incomingDamage, player) {
         active: true,
         attackName: attackName,
         attackType: abilitySubtype,
-        turnsRemaining: isBoss ? 2 : 1,
+        turnsRemaining: Math.max(1, (isBoss ? 2 : 1) - (getNGPlusLevel() >= 2 ? 1 : 0)),
         counterType: counterType,
         warningText: `\u26A1 ${enemy.name}: ${attackName.toUpperCase()}`,
         damage: incomingDamage,
@@ -5250,7 +5278,7 @@ function openReactionPhase(enemy,telegraph){
   const rp=GameState._reactionPhase;
   if(rp.active){rp.pendingQueue.push({enemy,telegraph});return;}
   const isBoss=enemy.maxHp>=200||enemy.id==='quantumBoss'||enemy.id==='theArchitect';
-  const finalTime=isBoss?REACTION_TIME.boss:REACTION_TIME.normal;
+  const _ng5Pen=getNGPlusLevel()>=5?500:0;const finalTime=Math.max(1500,(isBoss?REACTION_TIME.boss:REACTION_TIME.normal)-_ng5Pen);
   rp.active=true;rp.enemy=enemy;rp.telegraph=telegraph;
   rp.timeLimit=finalTime;rp.timeRemaining=finalTime;rp.timerStarted=Date.now();
   rp.playerResponded=false;rp.responseSpell=null;rp.responseGrade=null;
@@ -6817,6 +6845,7 @@ const Combat = {
     p.hp=Math.max(0,p.hp-rawDmg);
     triggerRelicEvent('damage_taken',{damage:rawDmg}); // Hook 7
     if(GameState.runStats)GameState.runStats.damageTaken=(GameState.runStats.damageTaken||0)+rawDmg;
+    GameState._damageTakenThisCombat=(GameState._damageTakenThisCombat||0)+rawDmg;
     const pHurtSev=(rawDmg/p.maxHp>0.15)?'knockback':'flinch';
     Arena.triggerHurt(true,null,pHurtSev);Arena.triggerAttack(false,en);
     UI.dmgNumPlayer(rawDmg,'phit');
@@ -6839,7 +6868,10 @@ const Combat = {
   },
   castSpell(p,spell,enemies){
     if(spell.cd>0||p.mp<spell.mp||(spell.hackedTurns||0)>0)return;
+    // POTIONS_LOCKED daily modifier
+    if(GameState.potionsLocked&&POTIONS.some(d=>d.id===spell.id)){DM.say('POTIONS LOCKED — DRY RUN modifier active','warning');return;}
     Audio.play(spell.id==='bioPulse'?'heal':'spell');
+    if(spell.id==='bioPulse'&&GameState.runStats)GameState.runStats.healSpellUsed=true; // 5.3
     p.mp-=spell.mp;spell.cd=spell.maxCd;
     const castCtx={mpCost:spell.mp,doubleCast:false};triggerRelicEvent('spell_cast',castCtx); // Hook 4
     if(castCtx.mpCost===0)p.mp=Math.min(p.maxMp,p.mp+spell.mp); // refund if relic made it free
@@ -6936,12 +6968,16 @@ const Combat = {
     if(p.hp<=0){this.endCombat(false);return;}
     p.spells.forEach(s=>{if(s.cd>0)s.cd--;if(s.hackedTurns>0){s.hackedTurns--;if(s.hackedTurns===0)DM.say(`${s.name} back online!`);}});
     alive.forEach(e=>e.tickBD());
+    // UNSTABLE_GRID daily modifier — 20% self-stun chance
+    if(GameState.unstableGrid&&Math.random()<0.20){p.selfStunned=true;}
     p.actionCounter+=p.spd;
     if(p.actionCounter>=100){
       p.actionCounter-=100;
-      this.autoSpell(p,enemies);
-      const t=this.lowestHp(enemies);
-      if(t&&t.hp>0)this.playerAttack(t);
+      if(p.selfStunned){p.selfStunned=false;}else{
+        this.autoSpell(p,enemies);
+        const t=this.lowestHp(enemies);
+        if(t&&t.hp>0)this.playerAttack(t);
+      }
     }
     for(const en of alive){
       en.actionCounter+=en.spd;en.turnCount++;
@@ -7000,6 +7036,8 @@ const Combat = {
     if(!won){
       if(GameState.runStats)GameState.runStats.outcome='defeat';
       saveRunToHistory('defeat'); // 5.1 — persist to run log
+      if(GameState.isDailyChallenge){saveDailyResult('defeat',GameState.runStats?.zonesCleared||0);_seededRNG=null;GameState.isDailyChallenge=false;}
+      updateAchStats('defeat'); // 5.3
       UI.flash();
       fetchRunCoaching(); // fire-and-forget — result injected into #aiCoachingText when ready
       setTimeout(()=>{
@@ -7057,6 +7095,10 @@ const Combat = {
       const defeatedBoss=GameState.enemies?.[0]||{id:'unknown'};
       recordBossPerformance(defeatedBoss,GameState.floorTurns,GameState._bossHpOnEntry||p.hp);
       if(GameState.runStats)GameState.runStats.zonesCleared=(GameState.runStats.zonesCleared||0)+1;
+      // 5.3 — no-damage boss achievement
+      if((GameState._damageTakenThisCombat||0)===0) unlockAchievement('no_dmg_boss');
+      // 5.3 — speed zone achievement
+      if(GameState.runStats?.zoneStartTime&&(Date.now()-GameState.runStats.zoneStartTime)/1000<180) unlockAchievement('speed_zone');
       fetchDifficultyTuning(GameState.runStats?.bossPerformance?.slice(-1)?.[0]); // fire-and-forget
       const zoneName=ZONES[GameState.currentZoneId]?.name||'ZONE';
       DM.say(`${zoneName} BOSS DEFEATED! Zone cleared!`);
@@ -7101,6 +7143,7 @@ const Combat = {
     // Restore suppressed ATK from Corporate Drone
     if(p2._atkSuppressStacks){const r=p2._atkSuppressStacks;p2._atkSuppressStacks=0;const tot=Math.floor(p2.baseAtk*.1)*r;p2.baseAtk+=tot;p2.atk+=tot;}
     GameState.combo=0;GameState.blockCd=0;GameState.isBlocking=false;
+    GameState._damageTakenThisCombat=0; // 5.3 — reset per-combat for no_dmg_boss
     QM._cleanRun=true;
     UI.updateCombo();UI.updateBlock();UI.updateTurnOrder();
     Arena.resize(); // ensure canvas is properly sized before first render
@@ -7818,10 +7861,17 @@ const UI={
     Records.saveRun();
   },
   renderWin(){
-    document.getElementById('wnstats').innerHTML=`<div>ALL 10 FLOORS CONQUERED!</div><div>KILLS:${GameState.totalKills}</div><div>DMG:${GameState.totalDmg}</div><div>QUESTS:${GameState.questsDone}</div><div style="color:${GD};margin-top:6px">LEGENDARY CHAMPION!</div>`;
+    const ngLevel=getNGPlusLevel();
+    const ngLabel=ngLevel>0?` (NG+${ngLevel})`:'';
+    document.getElementById('wnstats').innerHTML=`<div>ALL 10 FLOORS CONQUERED${ngLabel}!</div><div>KILLS:${GameState.totalKills}</div><div>DMG:${GameState.totalDmg}</div><div>QUESTS:${GameState.questsDone}</div><div style="color:${GD};margin-top:6px">LEGENDARY CHAMPION!</div>`;
     if(GameState.runStats)GameState.runStats.outcome='victory';
     saveRunToHistory('victory'); // 5.1 — persist to run log
+    if(GameState.isDailyChallenge){saveDailyResult('victory',GameState.runStats?.zonesCleared||0);_seededRNG=null;GameState.isDailyChallenge=false;}
+    updateAchStats('victory'); // 5.3
     Records.saveRun();
+    // Show NG+ button
+    const ngBtn=document.getElementById('btnNGPlus');
+    if(ngBtn){ngBtn.style.display='';ngBtn.textContent=ngLevel>0?`NEW GAME+ (NG+${ngLevel+1})`:'NEW GAME+';}
   },
   updateFloor(){
     const zone=ZONES[GameState.currentZoneId];
@@ -7853,7 +7903,7 @@ const UI={
   updateCombo(){
     const c=GameState.combo;
     if(!c){GameState._maxCombo=GameState._maxCombo||0;}
-    else{GameState._maxCombo=Math.max(GameState._maxCombo||0,c);}
+    else{GameState._maxCombo=Math.max(GameState._maxCombo||0,c);if(GameState.runStats)GameState.runStats.maxCombo=GameState._maxCombo;}
     const disp=document.getElementById('comboDisplay');
     const edge=document.getElementById('comboEdge');
     if(!disp)return;
@@ -7986,7 +8036,7 @@ const Rogue={
       if(e.bonus.mp){p.maxMp+=e.bonus.mp;p.mp=Math.min(p.maxMp,p.mp+e.bonus.mp);}
       if(e.bonus.cdReduce)p.spells.forEach(s=>s.maxCd=Math.max(1,s.maxCd-e.bonus.cdReduce));
     }}));
-    return [...this.pool,...eq].sort(()=>Math.random()-.5).slice(0,3);
+    return [...this.pool,...eq].sort(()=>rng()-.5).slice(0,3);
   },
   apply(u){u.apply(GameState.player);UI.flash();DM.say(`Upgrade: ${u.name}!`);setTimeout(()=>Game.enterFloor(),400);},
   getEnemies(floor){
@@ -8004,7 +8054,7 @@ const Rogue={
       if(e.id==='corporateDrone'&&floor<3)return false;
       return true;
     });
-    return Array.from({length:count},()=>new Enemy(pool[Math.floor(Math.random()*pool.length)],floor));
+    return Array.from({length:count},()=>new Enemy(pool[Math.floor(rng()*pool.length)],floor));
   }
 };
 
@@ -8036,7 +8086,7 @@ const DungeonGen = {
     const types = GameState.dungeonConfig?.room_types || defs;
     const pool = Object.entries(types).filter(([t])=>!exclude.includes(t));
     const total = pool.reduce((s,[,v])=>s+(v.weight||10), 0);
-    let r = Math.random() * total;
+    let r = rng() * total;
     for (const [type, v] of pool) { r -= (v.weight||10); if (r<=0) return type; }
     return 'combat';
   },
@@ -8084,7 +8134,7 @@ const DungeonGen = {
     const mids = rooms.slice(1, -1);
     if (mids.length >= 4) {
       for (let attempt = 0; attempt < 8; attempt++) {
-        const ai = 1 + Math.floor(Math.random() * (mids.length - 2));
+        const ai = 1 + Math.floor(rng() * (mids.length - 2));
         const bi = ai + 2;
         if (bi < rooms.length-1 && !connections[ai].includes(bi)) {
           connections[ai].push(bi); connections[bi].push(ai); break;
@@ -8183,6 +8233,7 @@ const MerchantShop={
       if(canBuy)d.addEventListener('click',()=>{
         if(Inventory.items.filter(x=>x).length>=24){DM.say('Bag full!');return;}
         Inventory.gold-=price;Inventory.items[Inventory.items.indexOf(null)]=item;
+        if(GameState.runStats)GameState.runStats.goldSpent=(GameState.runStats.goldSpent||0)+price; // 5.3
         this.stock[i]=null;Audio.play('uiClick');this.render();Inventory.render();
       });
       d.addEventListener('mouseenter',()=>{if(canBuy)d.style.boxShadow='0 0 12px rgba(0,255,255,.4)';});
@@ -8554,7 +8605,8 @@ function buildRunRecord(outcome) {
             secretRoomsCleared: stats.secretRoomsCleared || 0
         },
         dailyChallenge: GameState.isDailyChallenge || false,
-        dailySeed:      GameState.dailySeed        || null
+        dailySeed:      GameState.dailySeed        || null,
+        seed:           GameState.currentSeed      || null
     };
 }
 
@@ -8635,6 +8687,11 @@ function renderRunHistory(ctx, cw, ch) {
         const sc = run.stats || {};
         const counterTotal = (sc.successfulCounters||0) + (sc.missedCounters||0);
         ctx.fillText(`DMG: ${sc.damageDealt||0}  TAKEN: ${sc.damageTaken||0}  KILLS: ${sc.enemiesKilled||0}  COUNTERS: ${sc.successfulCounters||0}/${counterTotal}`, 28, y + 42);
+        if (run.seed) {
+            ctx.font = '5px "Share Tech Mono"';
+            ctx.fillStyle = '#2a2a44';
+            ctx.fillText(`SEED: ${run.seed}`, 28, y + rowH - 6);
+        }
 
         if (run.dailyChallenge) {
             ctx.font = '6px "Press Start 2P"';
@@ -8661,6 +8718,498 @@ const RunHistoryScreen = {
         UI.show('sRH');
     }
 };
+
+// ═══════════════════════════════════════════════════════════════
+// SEEDED RNG — Phase 5.2
+// ═══════════════════════════════════════════════════════════════
+let _seededRNG = null;
+
+function createSeededRNG(seed) {
+    let s = seed >>> 0;
+    return function() {
+        s = (Math.imul(1664525, s) + 1013904223) >>> 0;
+        return s / 0x100000000;
+    };
+}
+
+function getDailySeed() {
+    const d = new Date();
+    const dateStr = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+    return parseInt(dateStr) * 31337;
+}
+
+function rng() {
+    return _seededRNG ? _seededRNG() : Math.random();
+}
+
+// ============================================================
+// SEED SHARING — Phase 5.5
+// ============================================================
+
+function renderSeedDisplay(ctx, cw, ch) {
+    const seed = GameState.currentSeed;
+    if (!seed || GameState.currentScreen !== 'sCM') return;
+    ctx.save();
+    ctx.font = '6px "Share Tech Mono"';
+    ctx.fillStyle = '#333355';
+    ctx.textAlign = 'left';
+    ctx.fillText(`SEED:${seed}`, 8, ch - 22);
+    ctx.restore();
+}
+
+function copySeedToClipboard() {
+    const seed = String(GameState.currentSeed || '');
+    if (!seed) return;
+    navigator.clipboard.writeText(seed).then(() => {
+        DM.say(`SEED COPIED: ${seed}`, 'system');
+    }).catch(() => {
+        DM.say(`SEED: ${seed} — copy manually`, 'system');
+    });
+}
+
+function showSeedInput(onSeedConfirmed) {
+    // Remove any stale overlay first
+    const existing = document.getElementById('_seedInputOverlay');
+    if (existing) existing.remove();
+
+    const wrap = document.createElement('div');
+    wrap.id = '_seedInputOverlay';
+    wrap.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);';
+
+    const label = document.createElement('div');
+    label.style.cssText = 'font-family:"Press Start 2P",monospace;font-size:8px;color:#00ffff;margin-bottom:12px;';
+    label.textContent = 'ENTER SEED (or press ENTER for random)';
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = 'optional seed';
+    input.maxLength = 10;
+    input.style.cssText = 'background:#0a0a1a;border:1px solid #00ffff;color:#00ffff;font-family:"Press Start 2P",monospace;font-size:10px;padding:8px 12px;outline:none;width:180px;text-align:center;';
+
+    wrap.appendChild(label);
+    wrap.appendChild(input);
+    document.body.appendChild(wrap);
+    input.focus();
+
+    const confirm = (val) => {
+        wrap.remove();
+        const seed = val ? (parseInt(val) || Math.floor(Math.random() * 0xFFFFFFFF)) : Math.floor(Math.random() * 0xFFFFFFFF);
+        onSeedConfirmed(seed);
+    };
+
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter')  { confirm(input.value.trim()); }
+        if (e.key === 'Escape') { confirm(''); }
+    });
+    // Remove if user navigates away from char-select screen
+    const cleanup = setInterval(() => {
+        if (!document.getElementById('_seedInputOverlay')) { clearInterval(cleanup); return; }
+        if (GameState.currentScreen && GameState.currentScreen !== 'sCCS') { wrap.remove(); clearInterval(cleanup); }
+    }, 500);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DAILY CHALLENGE — Phase 5.2
+// ═══════════════════════════════════════════════════════════════
+const DAILY_MODIFIERS = [
+    { id:'glass_cannon',  name:'GLASS CANNON',   desc:'+50% ATK, -50% DEF',           apply: p => { p.atk=Math.floor(p.atk*1.5); p.def=Math.floor(p.def*0.5); } },
+    { id:'spell_locked',  name:'SPELL LOCKED',   desc:'No spell swaps this run',       apply: () => { GameState.spellSwapLocked = true; } },
+    { id:'cursed_gold',   name:'CURSED GOLD',    desc:'2× HP enemies, 2× gold drops',  apply: () => { GameState.difficultyMod.enemyStatMultiplier = 2.0; GameState.goldMult = 2.0; } },
+    { id:'overclock',     name:'OVERCLOCK',      desc:'All SPD doubled for everyone',  apply: p => { p.spd=Math.floor(p.spd*2); GameState.enemySpdMult = 2.0; } },
+    { id:'no_potions',    name:'DRY RUN',        desc:'No potions allowed',            apply: () => { GameState.potionsLocked = true; } },
+    { id:'elite_only',    name:'ELITE GAUNTLET', desc:'All enemies are elite tier',    apply: () => { GameState.eliteGauntlet = true; } },
+    { id:'mono_caster',   name:'MONO-CASTER',    desc:'Only 1 spell slot active',      apply: () => { GameState.activeSpellSlots = 1; } },
+    { id:'unstable_grid', name:'UNSTABLE GRID',  desc:'20% self-stun chance per turn', apply: () => { GameState.unstableGrid = true; } }
+];
+
+function getDailyModifiers(seed) {
+    const rngFn = createSeededRNG(seed);
+    const pool = [...DAILY_MODIFIERS];
+    const picks = [];
+    for (let i = 0; i < 2; i++) {
+        const idx = Math.floor(rngFn() * pool.length);
+        picks.push(pool.splice(idx, 1)[0]);
+    }
+    return picks;
+}
+
+const DAILY_HISTORY_KEY = 'neonDungeon_dailyHistory';
+
+function getTodayKey() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function hasDailyBeenPlayed() {
+    try {
+        const history = JSON.parse(localStorage.getItem(DAILY_HISTORY_KEY) || '{}');
+        return !!history[getTodayKey()];
+    } catch { return false; }
+}
+
+function saveDailyResult(outcome, zonesCleared) {
+    try {
+        const history = JSON.parse(localStorage.getItem(DAILY_HISTORY_KEY) || '{}');
+        history[getTodayKey()] = { outcome, zonesCleared, timestamp: Date.now() };
+        const keys = Object.keys(history).sort().reverse().slice(0, 30);
+        const trimmed = {};
+        keys.forEach(k => { trimmed[k] = history[k]; });
+        localStorage.setItem(DAILY_HISTORY_KEY, JSON.stringify(trimmed));
+    } catch(e) { console.warn('[Daily] Failed to save result:', e.message); }
+}
+
+function getDailyStreak() {
+    try {
+        const history = JSON.parse(localStorage.getItem(DAILY_HISTORY_KEY) || '{}');
+        let streak = 0;
+        const d = new Date();
+        while (true) {
+            const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+            if (!history[key]) break;
+            streak++;
+            d.setDate(d.getDate() - 1);
+        }
+        return streak;
+    } catch { return 0; }
+}
+
+function startDailyChallenge() {
+    const seed = getDailySeed();
+    const modifiers = getDailyModifiers(seed);
+    _seededRNG = createSeededRNG(seed);
+
+    // Set daily state before resetting so flags survive
+    GameState.isDailyChallenge = true;
+    GameState.dailySeed = seed;
+    GameState.dailyModifiers = modifiers;
+    GameState.spellSwapLocked = false;
+    GameState.potionsLocked = false;
+    GameState.eliteGauntlet = false;
+    GameState.activeSpellSlots = 4;
+    GameState.unstableGrid = false;
+    GameState.enemySpdMult = 1.0;
+    GameState.goldMult = 1.0;
+
+    // Reset game state (mirrors Game.restart but skips UI.show('sMM') and char select)
+    if (GameState.combatInterval) clearInterval(GameState.combatInterval);
+    if (Game._autoInterval) { clearInterval(Game._autoInterval); Game._autoInterval = null; }
+    GameState.combatRunning = false;
+    Object.assign(GameState, {
+        selectedGender: null, selectedAccent: null, ccState: null, selectedEquip: null,
+        totalDmg: 0, totalKills: 0, questsDone: 0, turnCount: 0, levelUpPending: false,
+        currentFloor: null, currentRoomIdx: 0, floorGold: 0, combo: 0, blockCd: 0,
+        isBlocking: false, _maxCombo: 0, currentZoneId: null,
+        zonesCleared: [], zonesUnlocked: ['neonNexus'], floor: 1,
+        runRelics: []
+    });
+    GameState._diffMult = { hp:1, atk:1, loot:1 };
+    GameState.runStats = { missedCounters:0, successfulCounters:0, damageDealt:0, damageTaken:0,
+        zonesCleared:0, outcome:'defeat', bossPerformance:[], startTime:Date.now(),
+        enemiesKilled:0, bossesKilled:0, goldEarned:0, miniGamesPlayed:0, secretRoomsCleared:0 };
+    GameState.aiCoaching = { text:null, loading:false, dots:0, dotsTimer:0 };
+    GameState.difficultyMod = { enemyStatMultiplier:1.0, abilityProbability:1.0, lastReasoning:null };
+
+    // UI cleanup
+    const exEl = document.getElementById('roomExits'); if (exEl) exEl.style.display = 'none';
+    const pm = document.getElementById('pauseMenu'); if (pm) pm.classList.remove('show');
+    const aw = document.getElementById('arenaWrap'); if (aw) aw.classList.remove('boss-room');
+    const mb = document.getElementById('mapBtn'); if (mb) mb.classList.add('hidden');
+    WorldMap.hide();
+    Inventory.init(); LootScreen.reset();
+    Arena.time = 0; Arena.vfx = []; Arena.particles = []; Arena.floatTexts = [];
+    if (Arena._initHexParticles) Arena._initHexParticles();
+    QM.init();
+
+    // Seeded player creation — no char select screen
+    const genderKeys = Object.keys(GENDERS);
+    const gender = genderKeys[Math.floor(_seededRNG() * genderKeys.length)];
+    const activeSkill1 = ACTIVE_SKILLS[Math.floor(_seededRNG() * ACTIVE_SKILLS.length)];
+    const a2pool = ACTIVE_SKILLS.filter(s => s.id !== activeSkill1.id);
+    const activeSkill2 = a2pool[Math.floor(_seededRNG() * a2pool.length)];
+    const defensiveSkill = DEFENSIVE_SKILLS[Math.floor(_seededRNG() * DEFENSIVE_SKILLS.length)];
+    const passiveSkill = PASSIVE_SKILLS[Math.floor(_seededRNG() * PASSIVE_SKILLS.length)];
+    const weapon = WEAPONS[Math.floor(_seededRNG() * WEAPONS.length)];
+    const potion = POTIONS[Math.floor(_seededRNG() * POTIONS.length)];
+
+    const cfg = {
+        gender, accent: CY, statAlloc: { hp:0, atk:0, def:0, spd:0, mp:0 },
+        activeSkills: [activeSkill1, activeSkill2],
+        defensiveSkills: [defensiveSkill],
+        passiveSkills: [passiveSkill],
+        weapons: [weapon],
+        potions: [potion]
+    };
+    GameState.selectedGender = gender;
+    GameState.selectedAccent = CY;
+    GameState.difficulty = 'normal';
+    GameState.runnerName = 'RUNNER-' + String(seed).slice(-4);
+    GameState.player = new Player(cfg);
+
+    // Apply modifiers to player after initialization
+    modifiers.forEach(m => m.apply(GameState.player));
+
+    Game.enterZone('neonNexus');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ACHIEVEMENT SYSTEM — Phase 5.3
+// ═══════════════════════════════════════════════════════════════
+const ACHIEVEMENTS = [
+    { id:'first_clear',      name:'JACK IN',          desc:'Complete your first run.' },
+    { id:'first_daily',      name:'DAILY GRIND',       desc:'Complete a daily challenge.' },
+    { id:'daily_10',         name:'DAILY DRIVER',      desc:'Complete 10 daily challenges.' },
+    { id:'speed_zone',       name:'SPEED DAEMON',      desc:'Clear any zone in under 3 minutes.' },
+    { id:'no_dmg_boss',      name:'GHOST PROTOCOL',    desc:'Defeat any boss without taking damage.' },
+    { id:'all_minigames',    name:'SIDE HUSTLE',       desc:'Complete all 6 mini-game types in one run.' },
+    { id:'perfect_counter',  name:'REFLEX GOD',        desc:'Land 10 perfect counters in one run.' },
+    { id:'evolve_all',       name:'EX MACHINE',        desc:'Evolve all 4 spells to EX in one run.' },
+    { id:'no_heal_clear',    name:'AGGRO',             desc:'Clear The Core without using a heal spell.' },
+    { id:'secret_gold',      name:'DEEP CUTS',         desc:'Clear a GOLD secret room.' },
+    { id:'all_secrets',      name:'COMPLETIONIST',     desc:'Clear all 6 secret boss types.' },
+    { id:'relic_full',       name:'HOARDER',           desc:'Hold 5 relics simultaneously.' },
+    { id:'10_runs',          name:'GRID VETERAN',      desc:'Complete 10 runs (any outcome).' },
+    { id:'50_runs',          name:'GRID LIFER',        desc:'Complete 50 runs (any outcome).' },
+    { id:'100_kills',        name:'BODY COUNT',        desc:'Kill 100 enemies in one run.' },
+    { id:'win_streak_3',     name:'ON A ROLL',         desc:'Win 3 runs in a row.' },
+    { id:'glass_cannon_win', name:'FRAGILE VICTORY',   desc:'Win a run with the GLASS CANNON modifier.' },
+    { id:'no_gold_spent',    name:'MISER',             desc:'Complete a run without spending any gold.' },
+    { id:'max_combo',        name:'COMBO KING',        desc:'Reach a combo count of 20 in one combat.' },
+    { id:'all_zones',        name:'CARTOGRAPHER',      desc:'Visit all 8 zones in a single run.' }
+];
+
+const ACH_STORAGE_KEY = 'neonDungeon_achievements';
+const ACH_STATS_KEY   = 'neonDungeon_achStats';
+
+function loadAchievements() {
+    try { return JSON.parse(localStorage.getItem(ACH_STORAGE_KEY) || '{}'); } catch { return {}; }
+}
+function loadAchStats() {
+    try { return JSON.parse(localStorage.getItem(ACH_STATS_KEY) || '{}'); } catch { return {}; }
+}
+function saveAchStats(stats) {
+    try { localStorage.setItem(ACH_STATS_KEY, JSON.stringify(stats)); }
+    catch(e) { console.warn('[Achievements] Failed to save stats:', e.message); }
+}
+function isUnlocked(achId) { return !!loadAchievements()[achId]; }
+
+function unlockAchievement(achId) {
+    if (isUnlocked(achId)) return false;
+    const def = ACHIEVEMENTS.find(a => a.id === achId);
+    if (!def) return false;
+    const unlocked = loadAchievements();
+    unlocked[achId] = { unlockedAt: Date.now() };
+    try { localStorage.setItem(ACH_STORAGE_KEY, JSON.stringify(unlocked)); }
+    catch(e) { console.warn('[Achievements] Failed to save unlock:', e.message); return false; }
+    showAchievementToast(def);
+    return true;
+}
+
+const AchToast = {
+    active: false, name: '', desc: '', timer: 0, duration: 3000,
+    show(def) { this.active=true; this.name=def.name; this.desc=def.desc; this.timer=this.duration; },
+    update(dt) { if(!this.active)return; this.timer-=dt; if(this.timer<=0)this.active=false; },
+    render(ctx, cw, ch) {
+        if(!this.active)return;
+        const alpha = Math.min(1, this.timer/400);
+        const slideIn = Math.min(1, (this.duration-this.timer)/300);
+        const w=280, h=50;
+        const x=cw-w-16;
+        const y=16+(1-slideIn)*(-(h+20));
+        ctx.save();
+        ctx.globalAlpha=alpha;
+        ctx.fillStyle='#0a0a1a';
+        ctx.strokeStyle='#ffd700';
+        ctx.lineWidth=1;
+        ctx.fillRect(x,y,w,h);
+        ctx.strokeRect(x,y,w,h);
+        ctx.font='6px "Press Start 2P"';
+        ctx.fillStyle='#ffd700';
+        ctx.textAlign='left';
+        ctx.fillText('ACHIEVEMENT UNLOCKED',x+10,y+14);
+        ctx.font='7px "Press Start 2P"';
+        ctx.fillStyle='#ffffff';
+        ctx.fillText(this.name,x+10,y+28);
+        ctx.font='6px "Share Tech Mono"';
+        ctx.fillStyle='#aaaaaa';
+        const trunc=this.desc.length>38?this.desc.substring(0,36)+'..':this.desc;
+        ctx.fillText(trunc,x+10,y+42);
+        ctx.restore();
+    }
+};
+function showAchievementToast(def) { AchToast.show(def); }
+
+function checkAchievements() {
+    const stats = GameState.runStats || {};
+    const achStats = loadAchStats();
+    if((achStats.runs_won||0)>=1)  unlockAchievement('first_clear');
+    if((achStats.total_runs||0)>=10) unlockAchievement('10_runs');
+    if((achStats.total_runs||0)>=50) unlockAchievement('50_runs');
+    if((achStats.daily_completions||0)>=1)  unlockAchievement('first_daily');
+    if((achStats.daily_completions||0)>=10) unlockAchievement('daily_10');
+    if((achStats.win_streak||0)>=3) unlockAchievement('win_streak_3');
+    if((GameState.runRelics||[]).length>=5) unlockAchievement('relic_full');
+    if((stats.enemiesKilled||0)>=100) unlockAchievement('100_kills');
+    const exCount=(GameState.player?.spells||[]).filter(s=>s.evolved).length;
+    if(exCount>=4) unlockAchievement('evolve_all');
+    if((stats.successfulCounters||0)>=10) unlockAchievement('perfect_counter');
+    if((stats.zonesVisited||new Set()).size>=8) unlockAchievement('all_zones');
+    if((stats.maxCombo||0)>=20) unlockAchievement('max_combo');
+}
+
+function updateAchStats(outcome) {
+    const achStats = loadAchStats();
+    const runStats = GameState.runStats || {};
+    achStats.total_runs = (achStats.total_runs||0)+1;
+    achStats.runs_won   = (achStats.runs_won||0)+(outcome==='victory'?1:0);
+    achStats.win_streak = outcome==='victory'?(achStats.win_streak||0)+1:0;
+    if(GameState.isDailyChallenge && outcome==='victory'){
+        achStats.daily_completions=(achStats.daily_completions||0)+1;
+        const mods=GameState.dailyModifiers||[];
+        if(mods.some(m=>m.id==='glass_cannon')) unlockAchievement('glass_cannon_win');
+    }
+    // MISER — no gold spent this run
+    if(outcome==='victory' && !(runStats.goldSpent>0)) unlockAchievement('no_gold_spent');
+    // AGGRO — won without using heal
+    if(outcome==='victory' && !runStats.healSpellUsed && GameState.currentZoneId==='theCore') unlockAchievement('no_heal_clear');
+    saveAchStats(achStats);
+    checkAchievements();
+}
+
+function renderAchievementScreen(ctx, cw, ch) {
+    const unlocked = loadAchievements();
+    const total = ACHIEVEMENTS.length;
+    const count = Object.keys(unlocked).length;
+    ctx.fillStyle='#050510';
+    ctx.fillRect(0,0,cw,ch);
+    ctx.font='10px "Press Start 2P"';
+    ctx.fillStyle='#ffd700';
+    ctx.textAlign='center';
+    ctx.fillText('ACHIEVEMENTS',cw/2,36);
+    ctx.font='7px "Press Start 2P"';
+    ctx.fillStyle='#555577';
+    ctx.fillText(`${count} / ${total} UNLOCKED`,cw/2,54);
+    const cols=2, colW=(cw-60)/cols, rowH=44, startY=74;
+    ACHIEVEMENTS.forEach((ach,i)=>{
+        const col=i%cols;
+        const row=Math.floor(i/cols);
+        const x=20+col*(colW+20);
+        const y=startY+row*rowH-(AchievementScreen.scrollOffset||0);
+        if(y<60||y>ch-20)return;
+        const done=!!unlocked[ach.id];
+        ctx.save();
+        ctx.fillStyle=done?'rgba(255,215,0,0.06)':'rgba(255,255,255,0.02)';
+        ctx.fillRect(x,y,colW,rowH-6);
+        ctx.strokeStyle=done?'#ffd700':'#222244';
+        ctx.lineWidth=1;
+        ctx.strokeRect(x,y,colW,rowH-6);
+        ctx.font='6px "Press Start 2P"';
+        ctx.fillStyle=done?'#ffd700':'#555577';
+        ctx.textAlign='left';
+        ctx.fillText(ach.name,x+8,y+14);
+        ctx.font='6px "Share Tech Mono"';
+        ctx.fillStyle=done?'#aaaaaa':'#333355';
+        const trunc=ach.desc.length>36?ach.desc.substring(0,34)+'..':ach.desc;
+        ctx.fillText(trunc,x+8,y+28);
+        ctx.restore();
+    });
+    ctx.textAlign='left';
+    _rhRenderBackButton(ctx,cw,ch);
+}
+
+const AchievementScreen = { scrollOffset: 0, open() { this.scrollOffset=0; UI.show('sACH'); } };
+
+function renderDailyMenuEntry(ctx, x, y) {
+    const played = hasDailyBeenPlayed();
+    const streak = getDailyStreak();
+    const seed = getDailySeed();
+    const mods = getDailyModifiers(seed);
+    ctx.save();
+    ctx.font = '8px "Press Start 2P"';
+    if (played) {
+        ctx.fillStyle = '#555577';
+        ctx.fillText('DAILY: COMPLETE', x, y);
+        ctx.font = '6px "Share Tech Mono"';
+        ctx.fillStyle = '#444455';
+        ctx.fillText(`STREAK: ${streak} DAYS`, x, y + 16);
+    } else {
+        ctx.fillStyle = '#ffd700';
+        ctx.fillText('DAILY CHALLENGE', x, y);
+        ctx.font = '6px "Share Tech Mono"';
+        ctx.fillStyle = '#aaaaaa';
+        ctx.fillText(`${mods[0].name} + ${mods[1].name}`, x, y + 16);
+        ctx.fillStyle = '#555577';
+        ctx.fillText(`STREAK: ${streak} DAYS`, x, y + 28);
+    }
+    ctx.restore();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// NEW GAME+ & ENDLESS MODE — Phase 5.4
+// ═══════════════════════════════════════════════════════════════
+const NG_PLUS_KEY = 'neonDungeon_ngPlus';
+
+function getNGPlusLevel() {
+    try { return parseInt(localStorage.getItem(NG_PLUS_KEY) || '0'); }
+    catch { return 0; }
+}
+
+function incrementNGPlus() {
+    try { localStorage.setItem(NG_PLUS_KEY, String(getNGPlusLevel() + 1)); }
+    catch(e) { console.warn('[NG+] Failed to save:', e.message); }
+}
+
+const NG_PLUS_MODIFIERS = [
+    { label:'NG+1', enemyHpMult:1.25, enemyAtkMult:1.20, desc:'Enemies tougher. Nothing else changes.' },
+    { label:'NG+2', enemyHpMult:1.50, enemyAtkMult:1.40, desc:'Telegraphed attacks fire 1 turn faster.' },
+    { label:'NG+3', enemyHpMult:1.75, enemyAtkMult:1.60, desc:'Boss phase thresholds: 70% and 35%.' },
+    { label:'NG+4', enemyHpMult:2.00, enemyAtkMult:1.80, desc:'All enemies have 1 random buff on spawn.' },
+    { label:'NG+5', enemyHpMult:2.50, enemyAtkMult:2.00, desc:'Reaction window reduced by 0.5s.' }
+];
+
+function getNGPlusModifier() {
+    const level = Math.min(getNGPlusLevel(), NG_PLUS_MODIFIERS.length);
+    return level > 0 ? NG_PLUS_MODIFIERS[level - 1] : null;
+}
+
+function applyNGPlusMod(enemy) {
+    const mod = getNGPlusModifier();
+    if (!mod || enemy.isSecretBoss) return;
+    enemy.maxHp = Math.round(enemy.maxHp * mod.enemyHpMult);
+    enemy.hp    = enemy.maxHp;
+    enemy.atk   = Math.round(enemy.atk  * mod.enemyAtkMult);
+    // NG+4: random spawn buff
+    if (getNGPlusLevel() >= 4) {
+        const spawnBuffs = ['atk_up','def_up','spd_up','regen'];
+        const buffId = spawnBuffs[Math.floor(Math.random() * spawnBuffs.length)];
+        const buffVal = { atk_up:{atk:Math.floor(enemy.atk*0.20),turns:99}, def_up:{def:Math.floor((enemy.baseDef||1)*0.20+2),turns:99}, spd_up:{spd:2,turns:99}, regen:{} }[buffId] || {};
+        enemy.addBuff(buffId, buffVal);
+    }
+}
+
+// Endless mode
+function startEndlessMode() {
+    GameState.endlessMode  = true;
+    GameState.endlessFloor = 1;
+    DM.say('ENDLESS MODE ACTIVATED. THE GRID HAS NO FLOOR.', 'warning');
+    Game.enterZone('theCore');
+}
+
+function getEndlessScaling() {
+    const floor = GameState.endlessFloor || 1;
+    return {
+        enemyHpMult:  1 + (floor - 1) * 0.15,
+        enemyAtkMult: 1 + (floor - 1) * 0.10,
+        goldMult:     1 + (floor - 1) * 0.25
+    };
+}
+
+function applyEndlessScaling(enemy) {
+    if (!GameState.endlessMode) return;
+    const sc = getEndlessScaling();
+    enemy.maxHp = Math.round(enemy.maxHp * sc.enemyHpMult);
+    enemy.hp    = enemy.maxHp;
+    enemy.atk   = Math.round(enemy.atk  * sc.enemyAtkMult);
+}
 
 // ═══════════════════════════════════════════════════════════════
 // ACHIEVEMENTS — persistent unlock tracking
@@ -8790,6 +9339,8 @@ const Game={
           if(pm){
             const open=pm.classList.contains('show');
             pm.classList.toggle('show',!open);
+            if(!open){const sd=document.getElementById('pauseSeedDisplay');if(sd)sd.textContent=GameState.currentSeed?`SEED: ${GameState.currentSeed}`:'';}
+
             if(!open&&GameState.combatRunning){clearInterval(GameState.combatInterval);GameState.combatInterval=null;GameState.combatRunning=false;}
             else if(open&&!GameState.combatRunning&&(GameState.enemies||[]).filter(e=>e.hp>0).length){
               GameState.combatRunning=true;if(GameState.combatInterval)clearInterval(GameState.combatInterval);GameState.combatInterval=setInterval(()=>Combat.tick(),Game._combatSpeed||1200);
@@ -8810,6 +9361,8 @@ const Game={
       document.getElementById('pauseMenu').classList.remove('show');
       document.getElementById('settingsModal').classList.add('show');
     });
+    const pauseCopySeed=document.getElementById('pauseCopySeed');
+    if(pauseCopySeed)pauseCopySeed.addEventListener('click',()=>copySeedToClipboard());
     const pauseRestart=document.getElementById('pauseRestart');
     if(pauseRestart)pauseRestart.addEventListener('click',()=>{document.getElementById('pauseMenu').classList.remove('show');Game.restart();});
     const pauseQuit=document.getElementById('pauseQuit');
@@ -9172,7 +9725,7 @@ const Game={
 
   renderEquip(){/* no-op — gear now rendered inline */},
 
-  enterDungeon(){
+  enterDungeon(customSeed){
     const cc=GameState.ccState;
     if(!cc)return;
     const cfg={
@@ -9207,9 +9760,15 @@ const Game={
     GameState.zonesUnlocked=['neonNexus'];
     GameState.currentZoneId=null;
     GameState.runRelics=[];
+    // 5.5 — seed every normal run
+    GameState.currentSeed = customSeed || Math.floor(Math.random() * 0xFFFFFFFF);
+    _seededRNG = createSeededRNG(GameState.currentSeed);
     GameState.runStats={missedCounters:0,successfulCounters:0,damageDealt:0,damageTaken:0,zonesCleared:0,outcome:'defeat',bossPerformance:[],startTime:Date.now(),enemiesKilled:0,bossesKilled:0,goldEarned:0,miniGamesPlayed:0,secretRoomsCleared:0};
     GameState.aiCoaching={text:null,loading:false,dots:0,dotsTimer:0};
     GameState.difficultyMod={enemyStatMultiplier:1.0,abilityProbability:1.0,lastReasoning:null};
+    GameState.isDailyChallenge=false;GameState.dailySeed=null;GameState.dailyModifiers=null;
+    GameState.spellSwapLocked=false;GameState.potionsLocked=false;GameState.eliteGauntlet=false;
+    GameState.activeSpellSlots=4;GameState.unstableGrid=false;GameState.enemySpdMult=1.0;GameState.goldMult=1.0;
     QM.init();Inventory.init();LootScreen.reset();
     GameState.ccState=null; // reset so next creation gets fresh randoms
     SaveSystem.save();
@@ -9220,6 +9779,13 @@ const Game={
     const zone=ZONES[zoneId];if(!zone)return;
     if(!GameState.zonesUnlocked.includes(zoneId))return;
     GameState.currentZoneId=zoneId;
+    // 5.3 — track zones visited and zone start time for achievements
+    if(GameState.runStats){
+        if(!GameState.runStats.zonesVisited)GameState.runStats.zonesVisited=new Set();
+        GameState.runStats.zonesVisited.add(zoneId);
+        GameState.runStats.zoneStartTime=Date.now();
+        if(GameState.runStats.zonesVisited.size>=8)checkAchievements();
+    }
     setZoneAtmosphere(zoneId);
     GameState.floor=zone.difficulty;
     // Generate dungeon for this zone using zone room count
@@ -9338,7 +9904,7 @@ const Game={
         room.cleared=true;
         DM.say('A loot cache — supplies from fallen runners.');
         const items=[LootSystem.roll(fl),LootSystem.roll(fl)];
-        const gold=Math.floor(20+fl*8+Math.random()*20);
+        const gold=Math.floor(20+fl*8+rng()*20);
         Inventory.gold+=gold;Inventory._gold();
         GameState.floorGold+=gold;GameState.itemsCollected+=items.length;
         // Add items directly to inventory
@@ -9461,6 +10027,7 @@ const Game={
       en.atk=Math.floor(bossType.atk*2.2);en.baseAtk=en.atk;
     }
     applyDifficultyMod(en); // 4.3 — skips quantumBoss/theArchitect internally
+    applyNGPlusMod(en); applyEndlessScaling(en); // 5.4
     return [en];
   },
 
@@ -9481,9 +10048,12 @@ const Game={
     const fallback=ETYPES.filter(e=>!e.isBoss);
     const src=pool.length?pool:fallback;
     return Array.from({length:maxEn},()=>{
-      const type=src[Math.floor(Math.random()*src.length)];
+      const type=src[Math.floor(rng()*src.length)];
       const en=new Enemy(type,level);
       applyDifficultyMod(en);
+      applyNGPlusMod(en); applyEndlessScaling(en); // 5.4
+      // ELITE_GAUNTLET daily modifier
+      if(GameState.eliteGauntlet&&!en.isBoss){en.maxHp=Math.floor(en.maxHp*1.5);en.hp=en.maxHp;en.atk=Math.floor(en.atk*1.3);}
       return en;
     });
   },
@@ -9566,7 +10136,8 @@ const Game={
     Object.assign(GameState,{selectedGender:null,selectedAccent:null,ccState:null,selectedEquip:null,totalDmg:0,totalKills:0,
       questsDone:0,turnCount:0,levelUpPending:false,
       currentFloor:null,currentRoomIdx:0,floorGold:0,combo:0,blockCd:0,isBlocking:false,_maxCombo:0,
-      currentZoneId:null,zonesCleared:[],zonesUnlocked:['neonNexus'],floor:1});
+      currentZoneId:null,zonesCleared:[],zonesUnlocked:['neonNexus'],floor:1,
+      endlessMode:false,endlessFloor:0});
     const exEl=document.getElementById('roomExits');if(exEl)exEl.style.display='none';
     const pm=document.getElementById('pauseMenu');if(pm)pm.classList.remove('show');
     const aw=document.getElementById('arenaWrap');if(aw)aw.classList.remove('boss-room');
@@ -9580,6 +10151,10 @@ const Game={
     const contBtn=document.getElementById('continueBtn');
     if(contBtn)contBtn.style.display=SaveSystem.hasSave()?'':'none';
     UI.show('sMM');this.buildClassSelect();
+  },
+  startNGPlus(){
+    incrementNGPlus();
+    this.restart();
   }
 };
 
@@ -9616,19 +10191,19 @@ const LEG_NAMES={
 
 const LootSystem={
   roll(floor){
-    const r=Math.random();
+    const r=rng();
     const rarity=r<0.03?'legendary':r<0.18?'rare':'common';
-    const def=ITEM_DEFS[Math.floor(Math.random()*ITEM_DEFS.length)];
+    const def=ITEM_DEFS[Math.floor(rng()*ITEM_DEFS.length)];
     const scale=1+(floor-1)*0.2;
     const mult=rarity==='legendary'?1.8:rarity==='rare'?1.35:1;
-    const entries=Object.entries(def.stats).sort(()=>Math.random()-.5);
+    const entries=Object.entries(def.stats).sort(()=>rng()-.5);
     const take=rarity==='legendary'?entries.length:rarity==='rare'?Math.min(2,entries.length):1;
     const bonuses={};
     entries.slice(0,take).forEach(([k,[mn,mx]])=>{
-      bonuses[k]=Math.max(1,Math.floor((mn+Math.random()*(mx-mn))*scale*mult));
+      bonuses[k]=Math.max(1,Math.floor((mn+rng()*(mx-mn))*scale*mult));
     });
     const pool=rarity==='legendary'?LEG_NAMES[def.id]:rarity==='rare'?RARE_NAMES[def.id]:null;
-    const name=pool?pool[Math.floor(Math.random()*pool.length)]:def.name;
+    const name=pool?pool[Math.floor(rng()*pool.length)]:def.name;
     const color=rarity==='legendary'?OR:rarity==='rare'?GD:CY;
     return{id:def.id+'_'+Date.now()+'_'+Math.random().toString(36).slice(2,5),
       typeId:def.id,name,icon:def.icon,slot:def.slot,rarity,level:floor,bonuses,color};
@@ -10491,8 +11066,15 @@ const VictoryScreen = {
     const p = GameState.player;
     if (!p || !p.spells || p.spells.length < 2) { wrap.style.display = 'none'; return; }
 
+    // SPELL_LOCKED daily modifier — show locked state, no swap
+    if (GameState.spellSwapLocked) {
+        wrap.style.display = 'block';
+        cont.innerHTML = `<div style="font-family:'Share Tech Mono',monospace;font-size:clamp(9px,1vw,13px);color:#ff00ff;text-align:center;padding:12px;">⚠ SPELL LOCKED — DAILY CHALLENGE MODIFIER ACTIVE ⚠</div>`;
+        return;
+    }
+
     // Pick a random spell slot to offer a swap for
-    const slotIdx = Math.floor(Math.random() * p.spells.length);
+    const slotIdx = Math.floor(rng() * p.spells.length);
     const currentSpell = p.spells[slotIdx];
     const poolInfo = getSpellPool(currentSpell.id);
     if (!poolInfo) { wrap.style.display = 'none'; return; }
@@ -10501,7 +11083,7 @@ const VictoryScreen = {
     const currentIds = new Set(p.spells.map(s => s.id));
     const candidates = poolInfo.pool.filter(s => !currentIds.has(s.id));
     if (!candidates.length) { wrap.style.display = 'none'; return; }
-    const offered = candidates[Math.floor(Math.random() * candidates.length)];
+    const offered = candidates[Math.floor(rng() * candidates.length)];
 
     this._swapOffer = { slotIdx, currentSpell, offered, poolType: poolInfo.type };
     wrap.style.display = 'block';
@@ -10605,6 +11187,12 @@ const VictoryScreen = {
       SaveSystem.save();
       // Win condition: THE CORE cleared
       if (zoneId === 'theCore') {
+        if (GameState.endlessMode) {
+          GameState.endlessFloor = (GameState.endlessFloor || 1) + 1;
+          DM.say(`ENDLESS FLOOR ${GameState.endlessFloor} — DEEPER INTO THE ABYSS`);
+          setTimeout(() => { if (cb) cb(); }, 300);
+          return;
+        }
         UI.renderWin(); UI.show('sWN'); return;
       }
       setTimeout(() => { if (cb) cb(); }, 300); // cb = WorldMap.show
@@ -10614,7 +11202,9 @@ const VictoryScreen = {
   },
 };
 
-document.getElementById('ebtn').addEventListener('click',()=>Game.enterDungeon());
+document.getElementById('ebtn').addEventListener('click',()=>{
+  showSeedInput(seed=>Game.enterDungeon(seed));
+});
 
 // ── BOOT SEQUENCE: Apple II style preloader ──
 const BootScreen = {
