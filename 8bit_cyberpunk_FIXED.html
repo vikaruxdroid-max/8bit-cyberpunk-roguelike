@@ -8777,46 +8777,6 @@ function copySeedToClipboard() {
     });
 }
 
-function showSeedInput(onSeedConfirmed) {
-    // Remove any stale overlay first
-    const existing = document.getElementById('_seedInputOverlay');
-    if (existing) existing.remove();
-
-    const wrap = document.createElement('div');
-    wrap.id = '_seedInputOverlay';
-    wrap.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);';
-
-    const label = document.createElement('div');
-    label.style.cssText = 'font-family:"Press Start 2P",monospace;font-size:8px;color:#00ffff;margin-bottom:12px;';
-    label.textContent = 'ENTER SEED (or press ENTER for random)';
-
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.placeholder = 'optional seed';
-    input.maxLength = 10;
-    input.style.cssText = 'background:#0a0a1a;border:1px solid #00ffff;color:#00ffff;font-family:"Press Start 2P",monospace;font-size:10px;padding:8px 12px;outline:none;width:180px;text-align:center;';
-
-    wrap.appendChild(label);
-    wrap.appendChild(input);
-    document.body.appendChild(wrap);
-    input.focus();
-
-    const confirm = (val) => {
-        wrap.remove();
-        const seed = val ? (parseInt(val) || Math.floor(Math.random() * 0xFFFFFFFF)) : Math.floor(Math.random() * 0xFFFFFFFF);
-        onSeedConfirmed(seed);
-    };
-
-    input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter')  { confirm(input.value.trim()); }
-        if (e.key === 'Escape') { confirm(''); }
-    });
-    // Remove if user navigates away from char-select screen
-    const cleanup = setInterval(() => {
-        if (!document.getElementById('_seedInputOverlay')) { clearInterval(cleanup); return; }
-        if (GameState.currentScreen && GameState.currentScreen !== 'sCCS') { wrap.remove(); clearInterval(cleanup); }
-    }, 500);
-}
 
 // ═══════════════════════════════════════════════════════════════
 // DAILY CHALLENGE — Phase 5.2
@@ -9274,14 +9234,21 @@ const Achievements={
 
 const Game={
   init(){
-    // Load generative content JSON — non-blocking; fallback to null defaults if offline
-    Promise.all([
-      fetch('dialog_db.json').then(r=>r.json()),
-      fetch('dungeon_gen.json').then(r=>r.json())
-    ]).then(([dialog,dungeonConfig])=>{
-      GameState.dialog=dialog;
-      GameState.dungeonConfig=dungeonConfig;
-    }).catch(()=>{/* offline: GameState.dialog and dungeonConfig stay null, hardcoded fallbacks apply */});
+    // Load generative content JSON — use boot cache if available, else fetch (offline fallback)
+    const _dlg=window._assetCache?.json?.['dialog_db.json'];
+    const _dgn=window._assetCache?.json?.['dungeon_gen.json'];
+    if(_dlg&&_dgn){
+      GameState.dialog=_dlg;
+      GameState.dungeonConfig=_dgn;
+    }else{
+      Promise.all([
+        fetch('dialog_db.json').then(r=>r.json()),
+        fetch('dungeon_gen.json').then(r=>r.json())
+      ]).then(([dialog,dungeonConfig])=>{
+        GameState.dialog=dialog;
+        GameState.dungeonConfig=dungeonConfig;
+      }).catch(()=>{/* offline: hardcoded fallbacks apply */});
+    }
     MatrixRain.init();
     City.init();
     Arena.init();
@@ -11223,9 +11190,10 @@ const VictoryScreen = {
   },
 };
 
-document.getElementById('ebtn').addEventListener('click',()=>{
-  showSeedInput(seed=>Game.enterDungeon(seed));
-});
+document.getElementById('ebtn').addEventListener('click',()=>Game.enterDungeon());
+
+// ── Asset cache: populated during boot, reused at runtime to avoid re-fetching ──
+window._assetCache = { images: {}, json: {} };
 
 // ── BOOT SEQUENCE: Apple II style preloader ──
 const BootScreen = {
@@ -11292,7 +11260,7 @@ const BootScreen = {
     imgSrcs.forEach(src => {
       assets.push(new Promise(res => {
         const img = new Image();
-        img.onload = () => { updateProgress('  LOADED: '+src.toUpperCase()); res(); };
+        img.onload = () => { window._assetCache.images[src]=img; updateProgress('  LOADED: '+src.toUpperCase()); res(); };
         img.onerror = () => { updateProgress('  SKIP:   '+src.toUpperCase()); res(); };
         img.src = src;
       }));
@@ -11301,7 +11269,7 @@ const BootScreen = {
     // Preload JSON
     jsonSrcs.forEach(src => {
       assets.push(
-        fetch(src).then(r=>r.json()).then(()=>updateProgress('  LOADED: '+src.toUpperCase())).catch(()=>updateProgress('  SKIP:   '+src.toUpperCase()))
+        fetch(src).then(r=>r.json()).then(data=>{window._assetCache.json[src]=data;updateProgress('  LOADED: '+src.toUpperCase());}).catch(()=>updateProgress('  SKIP:   '+src.toUpperCase()))
       );
     });
 
