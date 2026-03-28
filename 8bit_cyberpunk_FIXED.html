@@ -1693,6 +1693,7 @@ const Arena = {
     window.addEventListener('resize', () => this.resize());
     requestAnimationFrame(ts=>this.loop(ts));
     this.cv.addEventListener('click',e=>{
+      if(NarrationBox.active){NarrationBox.skip();return;} // Phase 4.1 — click to skip/dismiss
       if(GameState.miniGame&&GameState.miniGame.active&&GameState.miniGame.phase==='playing'){
         const rect=this.cv.getBoundingClientRect();
         handleMiniGameClick(e,e.clientX-rect.left,e.clientY-rect.top);
@@ -1738,6 +1739,7 @@ const Arena = {
     if(_activeAtmosphere)_activeAtmosphere.update(effectiveDt,this.W,this.H);
     updateSpellAnimations(effectiveDt);
     updateDeathAnimations(effectiveDt);
+    NarrationBox.update(effectiveDt); // Phase 4.1 — typewriter tick
     GlitchTransition.update();
     this.render();
     requestAnimationFrame(ts=>this.loop(ts));
@@ -2637,6 +2639,7 @@ const Arena = {
       if(sf.timer>=30)sf.active=false;
     }
     ctx.restore();
+    NarrationBox.render(ctx,W,H); // Phase 4.1 — AI narration overlay
     GlitchTransition.render(ctx,W,H);
   },
 
@@ -4711,11 +4714,13 @@ const WorldMap = {
         DIFFICULTY: ${'★'.repeat(zone.difficulty)}${'☆'.repeat(5-zone.difficulty)}<br>
         ROOMS: ${zone.rooms} &nbsp;·&nbsp; REC LEVEL: ${zone.recLevel}
       </div>
+      <div id="wmAiLore" style="font-family:'Share Tech Mono',monospace;font-size:9px;color:#557755;padding:4px 0 0 0;opacity:0.85;line-height:1.5;min-height:14px;"></div>
       ${missing.length?`<div class="wm-prereq">🔒 REQUIRES:<br>${missing.map(p=>ZONES[p]?.name||p).join('<br>')}</div>`:''}
       ${cleared?'<div class="wm-cleared">✓ ZONE CLEARED</div>':''}
       ${unlocked&&!cleared?`<button class="wm-enter-btn" id="wmEnterBtn">▶ ENTER ZONE ◀</button>`:''}
       ${!unlocked?'<div class="wm-locked">🔒 ZONE LOCKED</div>':''}
     `;
+    fetchZoneLore(zoneId); // Phase 4.1 — fire-and-forget, populates wmAiLore when ready
     const btn=document.getElementById('wmEnterBtn');
     if(btn)btn.onclick=()=>{ this.hide(); Game.enterZone(zoneId); };
   },
@@ -7093,6 +7098,249 @@ const DM={
 };
 
 // ═══════════════════════════════════════════════════════════════
+// AI SERVICE — Phase 4.1
+// Worker: https://neon-dungeon-ai.neondungeon.workers.dev
+// Zero API keys in this file. Worker holds the key.
+// ═══════════════════════════════════════════════════════════════
+
+const AIService = {
+    WORKER_URL: 'https://neon-dungeon-ai.neondungeon.workers.dev',
+    TIMEOUT_MS: 3000,
+    enabled: true,
+
+    async call(feature, payload) {
+        if (!this.enabled) return null;
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), this.TIMEOUT_MS);
+        try {
+            const response = await fetch(this.WORKER_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ feature, payload }),
+                signal: controller.signal
+            });
+            clearTimeout(timeout);
+            if (!response.ok) throw new Error(`Worker error: ${response.status}`);
+            const data = await response.json();
+            return data.result || null;
+        } catch (err) {
+            clearTimeout(timeout);
+            if (err.name === 'AbortError') {
+                console.warn('[AI] Timeout — using fallback');
+            } else {
+                console.warn('[AI] Unreachable — disabling for session:', err.message);
+                this.enabled = false;
+            }
+            return null;
+        }
+    }
+};
+
+const AI_FALLBACKS = {
+    boss_narration: {
+        'quantumBoss':               'The Quantum Boss materializes from fragmented data. Only those who understand the pattern survive.',
+        'theArchitect':              'The Architect regards you as an anomaly to be corrected. Correct it first.',
+        'secBoss_archivist':         'The Archivist has catalogued every way you can die. It intends to demonstrate.',
+        'secBoss_phantom':           'The Phantom Executive has already filed the paperwork for your termination.',
+        'secBoss_nemesis':           'The Null Prophet sees nothing in your future. It plans to make that literal.',
+        'secBoss_chromeDuchess':     'The Chrome Duchess finds your resistance aesthetically displeasing.',
+        'secBoss_glitch':            'The Overclocked Priest moves faster than prayer. Faster than you.',
+        'secBoss_binaryWitch':       'The Binary Witch has already computed the outcome. It does not favor you.',
+        '_default':                  'Something ancient and hostile turns its attention toward you. Move carefully.'
+    },
+    zone_lore: {
+        'neonNexus':        'Neon Nexus: where corporate light hides corporate rot, and every alley sells something illegal.',
+        'voidSector':       'Void Sector: corrupted data made manifest, a place where reality has given up trying.',
+        'corporateStrip':   'Corporate Strip: profit margins maintained in blood, quarterly reports filed over graves.',
+        'rustMarket':       'Rust Market: everything here is broken, including the people selling it.',
+        'theUndernet':      'The Undernet: the internet\'s basement, dark and cold and full of things that crawl.',
+        'ghostDistrict':    'Ghost District: populated by signals and echoes of those who ran out of luck here.',
+        'dataHighway':      'Data Highway: information moves fast here. So do the things hunting it.',
+        'theCore':          'The Core: where the machine dreams. It does not dream of you surviving.',
+        '_default':         'Another zone. Another set of things trying to kill you. Nothing changes.'
+    },
+    run_coaching: '▸ Missed counter opportunities were your primary damage amplifier.\n▸ Adapt your spell loadout to the zone ahead — not the zone behind.\n▸ Boss phases telegraph. Watch HP thresholds at 60% and 25%.',
+    spell_commentary: 'Loadout is functional. Whether you are is another question.'
+};
+
+function getAIFallback(feature, key) {
+    const pool = AI_FALLBACKS[feature];
+    if (!pool) return null;
+    if (typeof pool === 'string') return pool;
+    return pool[key] || pool['_default'] || null;
+}
+
+const ZONE_DISPLAY_NAMES = {
+    neonNexus:      'Neon Nexus',
+    voidSector:     'Void Sector',
+    corporateStrip: 'Corporate Strip',
+    rustMarket:     'Rust Market',
+    theUndernet:    'The Undernet',
+    ghostDistrict:  'Ghost District',
+    dataHighway:    'Data Highway',
+    theCore:        'The Core'
+};
+
+// ── NarrationBox — canvas typewriter overlay for boss intros and zone lore ──
+const NarrationBox = {
+    active: false,
+    text: '',
+    displayed: '',
+    charIndex: 0,
+    charTimer: 0,
+    charInterval: 35,
+    displayTimer: 0,
+    displayDuration: 4000,
+    onComplete: null,
+    style: 'dm',
+
+    show(text, style, onComplete) {
+        this.active = true;
+        this.text = text || '';
+        this.displayed = '';
+        this.charIndex = 0;
+        this.charTimer = 0;
+        this.displayTimer = 0;
+        this.style = style || 'dm';
+        this.onComplete = onComplete || null;
+    },
+
+    update(dt) {
+        if (!this.active) return;
+        if (this.charIndex < this.text.length) {
+            this.charTimer += dt;
+            while (this.charTimer >= this.charInterval && this.charIndex < this.text.length) {
+                this.displayed += this.text[this.charIndex];
+                this.charIndex++;
+                this.charTimer -= this.charInterval;
+            }
+            return;
+        }
+        // Full text shown — auto-dismiss after displayDuration
+        this.displayTimer += dt;
+        if (this.displayTimer >= this.displayDuration) {
+            this.active = false;
+            if (this.onComplete) this.onComplete();
+        }
+    },
+
+    skip() {
+        if (!this.active) return false;
+        if (this.charIndex < this.text.length) {
+            // Skip typewriter — show full text immediately
+            this.displayed = this.text;
+            this.charIndex = this.text.length;
+            return true;
+        }
+        // Already fully shown — dismiss
+        this.active = false;
+        if (this.onComplete) this.onComplete();
+        return true;
+    },
+
+    render(ctx, cw, ch) {
+        if (!this.active || !this.displayed) return;
+        const isDM = this.style === 'dm';
+        const boxH = 80;
+        const boxY = isDM ? 20 : ch - boxH - 20;
+        const padding = 16;
+        ctx.save();
+        // Background
+        ctx.fillStyle = 'rgba(5,5,20,0.92)';
+        ctx.fillRect(0, boxY, cw, boxH);
+        // Border
+        ctx.strokeStyle = isDM ? '#ff00ff' : '#00ffff';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(0, boxY, cw, boxH);
+        // Prefix label
+        ctx.font = '7px "Press Start 2P"';
+        ctx.fillStyle = isDM ? '#ff00ff' : '#00ffff';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'alphabetic';
+        ctx.fillText(isDM ? '> DM:' : '> LORE:', padding, boxY + 18);
+        // Narration text with word wrap
+        ctx.font = '8px "Share Tech Mono"';
+        ctx.fillStyle = isDM ? '#ffffff' : '#00ffff';
+        const maxWidth = cw - padding * 2 - 60;
+        const words = this.displayed.split(' ');
+        let line = '';
+        let lineY = boxY + 36;
+        words.forEach(word => {
+            const test = line + word + ' ';
+            if (ctx.measureText(test).width > maxWidth && line !== '') {
+                ctx.fillText(line, padding + 60, lineY);
+                line = word + ' ';
+                lineY += 16;
+            } else {
+                line = test;
+            }
+        });
+        if (line) ctx.fillText(line, padding + 60, lineY);
+        // Blinking cursor while typing
+        if (this.charIndex < this.text.length) {
+            if (Math.floor(Date.now() / 400) % 2 === 0) {
+                ctx.fillText('_', padding + 60 + ctx.measureText(line).width, lineY);
+            }
+        }
+        // Dismiss hint when fully revealed
+        if (this.charIndex >= this.text.length) {
+            ctx.font = '6px "Press Start 2P"';
+            ctx.fillStyle = '#555577';
+            ctx.textAlign = 'right';
+            ctx.fillText('[CLICK TO DISMISS]', cw - padding, boxY + boxH - 8);
+        }
+        ctx.restore();
+    }
+};
+
+// ── Boss intro narration — async fetch then typewriter display ──
+async function showBossIntroNarration(boss, onComplete) {
+    const player = GameState.player;
+    const payload = {
+        bossName:     boss.name,
+        zoneName:     ZONE_DISPLAY_NAMES[GameState.currentZoneId] || GameState.currentZoneId || 'Unknown Zone',
+        playerClass:  player ? (player.className || player.type || 'Runner') : 'Runner',
+        playerSpells: player ? (player.spells || []).map(s => s.name).filter(Boolean) : []
+    };
+    const narration = await AIService.call('boss_narration', payload)
+        || getAIFallback('boss_narration', boss.id);
+    if (!narration) {
+        if (onComplete) onComplete();
+        return;
+    }
+    NarrationBox.show(narration, 'dm', onComplete);
+}
+
+// ── Zone lore — fetched once per session per zone, cached ──
+const _zoneLoreCache = {};
+
+async function fetchZoneLore(zoneId) {
+    if (_zoneLoreCache[zoneId] !== undefined) {
+        _updateZoneLoreDOM(zoneId);
+        return;
+    }
+    _zoneLoreCache[zoneId] = ''; // mark in-flight so we don't double-fetch
+    const zoneName = ZONE_DISPLAY_NAMES[zoneId] || zoneId;
+    const lore = await AIService.call('zone_lore', { zoneName })
+        || getAIFallback('zone_lore', zoneId);
+    _zoneLoreCache[zoneId] = lore || '';
+    _updateZoneLoreDOM(zoneId);
+}
+
+function _updateZoneLoreDOM(zoneId) {
+    const el = document.getElementById('wmAiLore');
+    if (el && _zoneLoreCache[zoneId]) el.textContent = _zoneLoreCache[zoneId];
+}
+
+// ── Spell commentary — one-liner on spell swap screen ──
+async function fetchSpellCommentary(spells) {
+    const spellNames = (spells || []).map(s => s.name).filter(Boolean);
+    if (spellNames.length === 0) return null;
+    return await AIService.call('spell_commentary', { spells: spellNames })
+        || getAIFallback('spell_commentary', null);
+}
+
+// ═══════════════════════════════════════════════════════════════
 // DIALOG ENGINE — typewriter dialog box with trigger system
 // ═══════════════════════════════════════════════════════════════
 const ENEMY_PORTRAITS={
@@ -8776,7 +9024,7 @@ const Game={
           DM.say('⚠ BOSS CHAMBER! PREPARE FOR TRIAL!');
           Arena.triggerBossIntro(boss,()=>{
             DialogEngine.showFloorEvent(fl);
-            Combat.start();
+            showBossIntroNarration(boss,()=>Combat.start()); // Phase 4.1 — narration before combat
           });
         }else{
           const fe=DM.floorEvent(fl);
@@ -9556,6 +9804,18 @@ const VictoryScreen = {
     this._render();
     UI.show('sVIC');
     setTimeout(()=>VaporBg.start(),100);
+    // Phase 4.1 — spell commentary: fetch once on open, inject below stats line
+    {
+      const commentEl = document.createElement('div');
+      commentEl.id = 'vicAiComment';
+      commentEl.style.cssText = 'font-family:"Share Tech Mono",monospace;font-size:10px;color:#557755;text-align:center;padding:2px 16px 4px;opacity:0.85;';
+      const statsEl = document.getElementById('vicStatsLine');
+      if (statsEl && statsEl.parentNode) statsEl.parentNode.insertBefore(commentEl, statsEl.nextSibling);
+      fetchSpellCommentary(GameState.player?.spells).then(text => {
+        const el = document.getElementById('vicAiComment');
+        if (el && text) el.textContent = text;
+      });
+    }
   },
 
   _render() {
