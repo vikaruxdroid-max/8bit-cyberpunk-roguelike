@@ -647,21 +647,6 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
 }
 #comboEdge.show{opacity:1;}
 
-/* ══ TURN ORDER DISPLAY ══ */
-#turnOrder{
-  position:absolute;top:6px;right:130px;z-index:30;
-  background:rgba(2,2,20,.88);border:1px solid rgba(0,255,255,.22);
-  padding:4px 8px;display:flex;align-items:center;gap:5px;
-}
-.to-label{font-family:'Press Start 2P',monospace;font-size:clamp(5px,0.55vw,7px);color:rgba(0,255,255,.5);letter-spacing:1px;margin-right:2px;}
-.to-icon{
-  width:20px;height:20px;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  font-size:10px;border:1px solid rgba(255,255,255,.25);
-  flex-shrink:0;
-}
-.to-icon.player{background:rgba(0,100,255,.4);border-color:var(--C);}
-.to-icon.enemy{background:rgba(200,0,0,.4);border-color:var(--RD);}
 
 /* ══ BLOCK BUTTON ══ */
 #blockBtn{
@@ -1242,7 +1227,6 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
       <span id="kbadge" style="display:none">KILLS:0</span>
       <span id="dbadge" style="display:none">DMG:0</span>
       <span id="tbadge" style="display:none">TURN:0</span>
-      <span id="dpsBadge" style="display:none">DPS:0</span>
     </div>
     <!-- Full-width arena -->
     <div class="cmain">
@@ -1253,7 +1237,6 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
           <div id="blockBubble"></div>
           <div id="comboDisplay"><div id="comboCount">3x</div><div id="comboLabel">COMBO</div><div id="comboBonus">+10% DMG</div></div>
           <div id="comboEdge"></div>
-          <div id="turnOrder"><span class="to-label">NEXT:</span></div>
           <!-- DM toast message — slim bar at top of arena -->
           <div id="dmToast" style="position:absolute;top:0;left:0;right:0;z-index:40;background:linear-gradient(180deg,rgba(2,2,16,.92),rgba(2,2,16,.6));padding:clamp(4px,0.5vh,8px) clamp(10px,1vw,16px);font-family:'Share Tech Mono',monospace;font-size:clamp(9px,1vw,13px);color:var(--C);text-shadow:0 0 6px var(--C);text-align:center;pointer-events:none;opacity:0;transition:opacity .3s;">
             <span id="dmTxt"></span>
@@ -1661,31 +1644,31 @@ const SPR = {
   warrior(ctx, ox, oy, flip, t=0) {
     const w=14*P, h=26*P;
     if(!_drawSS('heroMan',ctx,ox,oy,w,h,flip)){
-      _drawSS('warrior',ctx,ox,oy,w,22*P,flip)||_fbrect(ctx,ox,oy,w,h,'#445577');
+      _drawSS('warrior',ctx,ox,oy,w,22*P,flip)||_drawHeroFallback(ctx,ox,oy,w,h,'#445577');
     }
   },
   rogue(ctx, ox, oy, flip, t=0) {
     const w=16*P, h=26*P;
     if(!_drawSS('heroWoman',ctx,ox,oy,w,h,flip)){
-      _drawSS('rogue',ctx,ox,oy,14*P,20*P,flip)||_fbrect(ctx,ox,oy,w,h,'#cc4444');
+      _drawSS('rogue',ctx,ox,oy,14*P,20*P,flip)||_drawHeroFallback(ctx,ox,oy,w,h,'#cc4444');
     }
   },
   sage(ctx, ox, oy, flip, t=0) {
     const w=17*P, h=26*P;
     if(!_drawSS('heroSage',ctx,ox,oy,w,h,flip)){
-      _drawSS('druid',ctx,ox,oy,14*P,22*P,flip)||_fbrect(ctx,ox,oy,w,h,'#4488cc');
+      _drawSS('druid',ctx,ox,oy,14*P,22*P,flip)||_drawHeroFallback(ctx,ox,oy,w,h,'#4488cc');
     }
   },
   shadow(ctx, ox, oy, flip, t=0) {
     const w=19*P, h=26*P;
     if(!_drawSS('heroShadow',ctx,ox,oy,w,h,flip)){
-      _drawSS('netrunner',ctx,ox,oy,14*P,20*P,flip)||_fbrect(ctx,ox,oy,w,h,'#334455');
+      _drawSS('netrunner',ctx,ox,oy,14*P,20*P,flip)||_drawHeroFallback(ctx,ox,oy,w,h,'#334455');
     }
   },
   druid(ctx, ox, oy, flip, t=0) {
     const w=21*P, h=26*P;
     if(!_drawSS('heroRobot',ctx,ox,oy,w,h,flip)){
-      _drawSS('druid',ctx,ox,oy,14*P,22*P,flip)||_fbrect(ctx,ox,oy,w,h,'#44aa88');
+      _drawSS('druid',ctx,ox,oy,14*P,22*P,flip)||_drawHeroFallback(ctx,ox,oy,w,h,'#44aa88');
     }
   },
 
@@ -1697,15 +1680,87 @@ const SPR = {
   neonGolem(ctx, ox, oy, flip, t=0) { _drawSS('neonGolem',ctx,ox,oy,14*P,22*P,flip)||drawEnemyFallback(ctx,ox,oy,14*P,22*P,'#8800ff'); },
   voidSpecter(ctx, ox, oy, flip, t=0) { _drawSS('voidSpecter',ctx,ox,oy,12*P,17*P,flip)||drawEnemyFallback(ctx,ox,oy,12*P,17*P,'#aa44ff'); },
   cyberOgre(ctx, ox, oy, flip, t=0) { _drawSS('cyberOgre',ctx,ox,oy,14*P,22*P,flip)||drawEnemyFallback(ctx,ox,oy,14*P,22*P,'#ff6600'); },
-  dataWraith(ctx, ox, oy, flip, t=0) { _drawSS('dataWraith',ctx,ox,oy,12*P,18*P,flip)||drawEnemyFallback(ctx,ox,oy,12*P,18*P,'#00ffff'); },
+  dataWraith(ctx, ox, oy, flip, t=0) {
+    if(_drawSS('dataWraith',ctx,ox,oy,12*P,18*P,flip))return;
+    ctx.save();
+    if(flip){ctx.translate(ox+12*P,oy);ctx.scale(-1,1);ox=0;oy=0;}
+    const gA=0.6+0.2*Math.sin(t*0.04);
+    // Skull/head
+    ctx.globalAlpha=gA;
+    ctx.fillStyle='#1a0022';ctx.fillRect(ox+3*P,oy+1*P,6*P,5*P);
+    // Eye sockets — magenta
+    ctx.fillStyle='#ff00ff';ctx.fillRect(ox+4*P,oy+2*P,1*P,1*P);ctx.fillRect(ox+7*P,oy+2*P,1*P,1*P);
+    ctx.globalAlpha=gA*0.6;ctx.fillStyle='#ff44ff';ctx.fillRect(ox+4*P,oy+2*P,1*P,1*P);ctx.fillRect(ox+7*P,oy+2*P,1*P,1*P);
+    ctx.globalAlpha=gA;
+    // Body — ethereal core
+    ctx.fillStyle='#2a0033';ctx.fillRect(ox+2*P,oy+6*P,8*P,8*P);
+    ctx.fillStyle='#ff00ff';ctx.fillRect(ox+4*P,oy+7*P,4*P,5*P);
+    ctx.globalAlpha=gA*0.45;ctx.fillStyle='#ff88ff';ctx.fillRect(ox+5*P,oy+8*P,2*P,3*P);
+    ctx.globalAlpha=gA;
+    // Tendrils
+    ctx.fillStyle='#440055';
+    ctx.fillRect(ox+2*P,oy+14*P,2*P,3*P);
+    ctx.fillRect(ox+5*P,oy+15*P,2*P,2*P);
+    ctx.fillRect(ox+8*P,oy+14*P,2*P,3*P);
+    // Glow outline
+    ctx.globalAlpha=gA*0.3;ctx.strokeStyle='#ff00ff';ctx.lineWidth=1;ctx.strokeRect(ox+0.5,oy+0.5,12*P-1,18*P-1);
+    ctx.restore();
+  },
   pulseHound(ctx, ox, oy, flip, t=0) { _drawSS('pulseHound',ctx,ox,oy,14*P,17*P,flip)||drawEnemyFallback(ctx,ox,oy,14*P,17*P,'#ff2244'); },
   circuitLich(ctx, ox, oy, flip, t=0) { _drawSS('circuitLich',ctx,ox,oy,14*P,22*P,flip)||drawEnemyFallback(ctx,ox,oy,14*P,22*P,'#39ff14'); },
   quantumBoss(ctx, ox, oy, flip, t=0) { _drawSS('quantumBoss',ctx,ox,oy,14*P,22*P,flip)||drawEnemyFallback(ctx,ox,oy,14*P,22*P,'#ff00ff'); },
-  netrunner(ctx, ox, oy, flip, t=0) { _drawSS('netrunner',ctx,ox,oy,14*P,20*P,flip)||drawEnemyFallback(ctx,ox,oy,14*P,20*P,'#00ffff'); },
+  netrunner(ctx, ox, oy, flip, t=0) {
+    if(_drawSS('netrunner',ctx,ox,oy,14*P,20*P,flip))return;
+    ctx.save();
+    if(flip){ctx.translate(ox+14*P,oy);ctx.scale(-1,1);ox=0;oy=0;}
+    // Hood/head
+    ctx.fillStyle='#112233';ctx.fillRect(ox+3*P,oy+1*P,8*P,7*P);
+    // Visor — cyan
+    ctx.fillStyle='#00ffff';ctx.fillRect(ox+3*P,oy+3*P,8*P,2*P);
+    ctx.globalAlpha=0.35;ctx.fillStyle='#00ffff';ctx.fillRect(ox+4*P,oy+5*P,6*P,1*P);
+    ctx.globalAlpha=1;
+    // Neck
+    ctx.fillStyle='#0d1b2a';ctx.fillRect(ox+6*P,oy+8*P,2*P,1*P);
+    // Coat body
+    ctx.fillStyle='#0d1b2a';ctx.fillRect(ox+2*P,oy+9*P,10*P,9*P);
+    // Coat lapels
+    ctx.fillStyle='#1a3344';ctx.fillRect(ox+5*P,oy+9*P,4*P,3*P);
+    // Arms
+    ctx.fillStyle='#0a1522';ctx.fillRect(ox+0*P,oy+9*P,2*P,7*P);ctx.fillRect(ox+12*P,oy+9*P,2*P,7*P);
+    // Legs
+    ctx.fillStyle='#091318';ctx.fillRect(ox+3*P,oy+18*P,3*P,2*P);ctx.fillRect(ox+8*P,oy+18*P,3*P,2*P);
+    // Glow outline
+    const gA=0.25+0.15*Math.sin(t*0.05);
+    ctx.globalAlpha=gA;ctx.strokeStyle='#00ffff';ctx.lineWidth=1;ctx.strokeRect(ox+0.5,oy+0.5,14*P-1,20*P-1);
+    ctx.restore();
+  },
   // DM sprite (not in spritesheet — keep simple)
   dm(ctx,ox,oy,flip,t=0) { _fbrect(ctx,ox,oy,12*P,14*P,'#8888aa'); }
 };
 function _fbrect(ctx,x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(x,y,w,h);}
+function _drawHeroFallback(ctx,x,y,w,h,c){
+  ctx.save();
+  const cx=x+w/2;
+  // Head
+  const hd=Math.max(P*2,Math.round(w*0.35));
+  ctx.fillStyle=c;ctx.fillRect(cx-hd/2,y,hd,hd);
+  // Visor
+  ctx.fillStyle='rgba(0,255,255,0.7)';ctx.fillRect(cx-hd/2+P,y+Math.round(hd*0.35),hd-P*2,Math.max(1,Math.round(P*0.7)));
+  // Body
+  const bw=Math.round(w*0.6),bh=Math.round(h*0.38),by=y+hd+P;
+  ctx.fillStyle=c;ctx.fillRect(cx-bw/2,by,bw,bh);
+  // Arms
+  const aw=Math.round(w*0.18),ah=Math.round(bh*0.75);
+  ctx.globalAlpha=0.7;ctx.fillRect(cx-bw/2-aw,by,aw,ah);ctx.fillRect(cx+bw/2,by,aw,ah);
+  ctx.globalAlpha=1;
+  // Legs
+  const lw=Math.round(bw*0.35),lh=Math.round(h*0.25),ly=by+bh+1;
+  ctx.fillRect(cx-bw/2,ly,lw,lh);ctx.fillRect(cx+bw/2-lw,ly,lw,lh);
+  // Glow outline
+  ctx.globalAlpha=0.35;ctx.strokeStyle=c;ctx.lineWidth=1;
+  ctx.strokeRect(x+0.5,y+0.5,w-1,h-1);
+  ctx.restore();
+}
 function drawEnemyFallback(ctx,x,y,w,h,c){
   ctx.fillStyle='rgba(0,0,0,0.6)';ctx.fillRect(x,y,w,h);
   ctx.strokeStyle=c;ctx.lineWidth=1;
@@ -5910,7 +5965,7 @@ function renderSpellBar(ctx, spells, cw, ch) {
   const slotW = 90, slotH = 72, gap = 10;
   const totalW = 4 * slotW + 3 * gap;
   const startX = cw/2 - totalW/2;
-  const startY = ch - slotH - 8;
+  const startY = ch - slotH - 72;
 
   spells.forEach((spell, i) => {
     if (!spell) return;
@@ -5976,7 +6031,7 @@ function getSpellSlotAt(mx, my, cw, ch) {
   const slotW = 90, slotH = 72, gap = 10;
   const totalW = 4 * slotW + 3 * gap;
   const startX = cw/2 - totalW/2;
-  const startY = ch - slotH - 8;
+  const startY = ch - slotH - 72;
   for (let i = 0; i < 4; i++) {
     const x = startX + i * (slotW + gap);
     if (mx >= x && mx <= x + slotW && my >= startY && my <= startY + slotH) return i;
@@ -6849,18 +6904,6 @@ function cancelCombatIntroTimers() {
 }
 
 const Combat = {
-  _dpsWindow:[],_dpsVal:0,
-  _trackDPS(dmg){
-    const now=Date.now();
-    this._dpsWindow.push({t:now,d:dmg});
-    // Keep last 5 seconds — trim from front
-    while(this._dpsWindow.length&&now-this._dpsWindow[0].t>=5000)this._dpsWindow.shift();
-    const totalDmg=this._dpsWindow.reduce((s,e)=>s+e.d,0);
-    const elapsed=Math.max(1,(now-(this._dpsWindow[0]?.t||now))/1000);
-    this._dpsVal=elapsed>0.5?Math.round(totalDmg/elapsed):0;
-    if(!this._dpsEl)this._dpsEl=document.getElementById('dpsBadge');
-    if(this._dpsEl){this._dpsEl.textContent='DPS:'+this._dpsVal;this._dpsEl.style.display='';}
-  },
   lowestHp(en){return en.filter(e=>e.hp>0).sort((a,b)=>a.hp-b.hp)[0]||null;},
   deal(enemy,amount,isCrit=false,tags=[]){
     // Evasion check (e.g. Netrunner)
@@ -6912,7 +6955,6 @@ const Combat = {
     enemy.hp=Math.max(0,enemy.hp-dmg);
     GameState.totalDmg+=dmg;
     if(GameState.runStats)GameState.runStats.damageDealt=(GameState.runStats.damageDealt||0)+dmg;
-    this._trackDPS(dmg);
     QM.track('totalDmg',dmg); QM.track('dmgBlocked',blocked);
     Audio.play(isCrit?'crit':'hit');
     const hurtSev=(dmg/enemy.maxHp>0.15)?'knockback':'flinch';
@@ -6975,7 +7017,6 @@ const Combat = {
     DM.say(`${en.name} destroyed!`);
     // COMBAT-UI-2: kill callout floating text
     if(idx>=0){const pos=Arena.getEnemyPos(idx);Arena.spawnText(getKillCallout(),pos.x,pos.y-30,'#00ff41',9);}
-    DialogEngine.showDeath(en);
     // Loot collection
     const drops=LootSystem.genLoot(en,GameState.floor);
     const gold=LootSystem.goldFromEnemy(en,GameState.floor);
@@ -7262,8 +7303,6 @@ const Combat = {
       }
       if(p.hp<=0){this.endCombat(false);return;}
     }
-    // Update turn order display
-    UI.updateTurnOrder();
     UI.updateBars();UI.updateSpells();UI.renderBuffs();
     const _db=document.getElementById('dbadge');if(_db)_db.textContent='DMG:'+GameState.totalDmg;
     const _kb=document.getElementById('kbadge');if(_kb)_kb.textContent='KILLS:'+GameState.totalKills;
@@ -7386,7 +7425,7 @@ const Combat = {
     GameState.combo=0;GameState.blockCd=0;GameState.isBlocking=false;
     GameState._damageTakenThisCombat=0; // 5.3 — reset per-combat for no_dmg_boss
     QM._cleanRun=true;
-    UI.updateCombo();UI.updateBlock();UI.updateTurnOrder();
+    UI.updateCombo();UI.updateBlock();
     Arena.resize(); // ensure canvas is properly sized before first render
     if(GameState.combatInterval)clearInterval(GameState.combatInterval);
     GameState.combatInterval=setInterval(()=>Combat.tick(),Game._combatSpeed||1200);
@@ -8160,7 +8199,7 @@ const UI={
     const disp=document.getElementById('comboDisplay');
     const edge=document.getElementById('comboEdge');
     if(!disp)return;
-    if(c<3){disp.classList.remove('show');if(edge)edge.classList.remove('show');return;}
+    if(c<2){disp.classList.remove('show');if(edge)edge.classList.remove('show');return;}
     disp.classList.add('show');
     const cnt=document.getElementById('comboCount');
     const lbl=document.getElementById('comboLabel');
@@ -8186,26 +8225,6 @@ const UI={
       ov.style.display=cd>0?'flex':'none';
       ov.textContent=cd>0?`${cd}CD`:'';
     }
-  },
-  // Turn order display
-  updateTurnOrder(){
-    const el=document.getElementById('turnOrder');if(!el)return;
-    const p=GameState.player;const enemies=GameState.enemies||[];
-    if(!p||!enemies.length){el.innerHTML='<span class="to-label">NEXT:</span>';return;}
-    // Build action order for next 3 ticks
-    const units=[
-      {name:'P',isPlayer:true,ac:p.actionCounter,spd:p.spd},
-      ...enemies.filter(e=>e.hp>0).map(e=>({name:e.name.slice(0,4),isPlayer:false,ac:e.actionCounter,spd:e.spd}))
-    ];
-    const order=[];
-    const sim=units.map(u=>({...u}));
-    for(let i=0;i<4;i++){
-      sim.forEach(u=>u.ac+=u.spd);
-      const acting=sim.filter(u=>u.ac>=100);
-      acting.forEach(u=>{u.ac-=100;order.push(u);});
-    }
-    el.innerHTML='<span class="to-label">NEXT:</span>'+
-      order.slice(0,4).map(u=>`<div class="to-icon ${u.isPlayer?'player':'enemy'}">${u.isPlayer?'⚔':'💀'}</div>`).join('');
   },
   // Quest notification banner
   showQuestBanner(q){
