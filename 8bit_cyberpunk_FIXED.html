@@ -1987,6 +1987,7 @@ const Arena = {
     NarrationBox.update(effectiveDt); // Phase 4.1 — typewriter tick
     AchToast.update(effectiveDt);     // Phase 5.3 — achievement toast
     GlitchTransition.update();
+    if(GameState._reactionPhase&&GameState._reactionPhase.active)updateReactionPhase();
     this.render();
     requestAnimationFrame(ts=>this.loop(ts));
   },
@@ -7299,7 +7300,7 @@ const Combat = {
     // Phase banner pause — hold combat during boss phase transition
     if(GameState._phaseBanner&&GameState._phaseBanner.active)return;
     // Reaction phase update — pause combat turns while active (Phase 1.4)
-    if(GameState._reactionPhase&&GameState._reactionPhase.active){updateReactionPhase();return;}
+    if(GameState._reactionPhase&&GameState._reactionPhase.active)return;
     const p=GameState.player,enemies=GameState.enemies||[];
     if(!p||p.hp<=0)return;
     GameState.turnCount++;GameState.floorTurns++;
