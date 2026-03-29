@@ -443,8 +443,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#060618;font-family:
   font-family:'Share Tech Mono',monospace;font-size:11px;color:#dde;pointer-events:none;
   box-shadow:0 0 12px rgba(0,255,255,.3);border-radius:3px;}
 .eqslot:hover .eq-tip{display:block;}
-#sVIC{background:#030312;overflow:hidden;position:relative;height:100%;}
-#sVIC.on{display:flex;flex-direction:column;height:100%;}
 #vicVaporBg{position:absolute;inset:0;z-index:0;pointer-events:none;}
 #sVIC>*:not(#vicVaporBg):not(.vic-scanlines){position:relative;z-index:1;}
 .vic-scanlines{position:absolute;inset:0;pointer-events:none;z-index:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,255,255,.012) 3px);}
@@ -573,8 +571,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#060618;font-family:
    VICTORY SCREEN OVERHAUL
    ══════════════════════════════════════════════════ */
 
-#sVIC{background:#020210;display:flex;flex-direction:column;align-items:center;padding:0;overflow:hidden;position:relative;}
-#sVIC.on{display:flex;flex-direction:column;height:100%;}
+#sVIC{background:#020210;overflow:hidden;position:relative;height:100%;}
+#sVIC.on{display:flex;flex-direction:column;height:100%;align-items:stretch;}
 
 /* ── HEADER ─────────────────────────────────────── */
 #vsHeader{width:100%;padding:18px 0 10px;text-align:center;border-bottom:1px solid rgba(0,255,255,0.2);background:linear-gradient(180deg,rgba(0,255,255,0.06) 0%,transparent 100%);position:relative;z-index:10;flex-shrink:0;}
@@ -584,7 +582,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#060618;font-family:
 #vsAiComment{font-family:'Share Tech Mono',monospace;font-size:10px;color:#556655;font-style:italic;margin-top:4px;min-height:14px;}
 
 /* ── MAIN BODY ──────────────────────────────────── */
-#vsBody{display:flex;flex:1;width:100%;gap:0;overflow:hidden;position:relative;z-index:10;}
+#vsBody{display:flex;flex:1;width:100%;gap:0;overflow:hidden;position:relative;z-index:10;background:#020210;}
 
 /* ── LEFT: LOOT ZONE ────────────────────────────── */
 #vsLootZone{flex:1;padding:16px;border-right:1px solid rgba(0,255,255,0.1);display:flex;flex-direction:column;gap:10px;overflow-y:auto;}
@@ -616,7 +614,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#060618;font-family:
 #vsLootAi{font-family:'Share Tech Mono',monospace;font-size:9px;color:#445544;font-style:italic;padding:6px 0;min-height:30px;border-top:1px solid #111122;}
 
 /* ── RIGHT: SPELL SWAP ZONE ─────────────────────── */
-#vsSpellZone{width:420px;padding:16px;display:flex;flex-direction:column;gap:10px;overflow-y:auto;}
+#vsSpellZone{width:420px;padding:16px;display:flex;flex-direction:column;gap:10px;overflow-y:auto;background:#020210;}
 #vsSpellTitle{font-family:'Press Start 2P',monospace;font-size:8px;color:#00ffff;letter-spacing:3px;margin-bottom:4px;}
 #vsSpellInstruction{font-family:'Share Tech Mono',monospace;font-size:9px;color:#334455;margin-bottom:8px;}
 
