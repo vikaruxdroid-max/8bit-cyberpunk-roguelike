@@ -569,6 +569,107 @@ html,body{width:100%;height:100%;overflow:hidden;background:#060618;font-family:
 @keyframes btnPulse{0%,100%{box-shadow:0 0 18px rgba(0,255,255,.1),inset 0 0 8px rgba(0,255,65,.03);}50%{box-shadow:0 0 38px rgba(0,255,255,.25),inset 0 0 18px rgba(0,255,65,.08);}}
 #vicContinueBtn.active:hover{background:#00ffff;color:#020210;box-shadow:0 0 50px rgba(0,255,255,.5);text-shadow:none;animation:none;}
 
+/* ══════════════════════════════════════════════════
+   VICTORY SCREEN OVERHAUL
+   ══════════════════════════════════════════════════ */
+
+#sVIC{background:#020210;display:flex;flex-direction:column;align-items:center;padding:0;overflow:hidden;position:relative;}
+#sVIC.on{display:flex;flex-direction:column;height:100%;}
+
+/* ── HEADER ─────────────────────────────────────── */
+#vsHeader{width:100%;padding:18px 0 10px;text-align:center;border-bottom:1px solid rgba(0,255,255,0.2);background:linear-gradient(180deg,rgba(0,255,255,0.06) 0%,transparent 100%);position:relative;z-index:10;flex-shrink:0;}
+#vsHeaderTitle{font-family:'Press Start 2P',monospace;font-size:18px;color:#00ffff;letter-spacing:6px;text-shadow:0 0 20px rgba(0,255,255,0.8),0 0 40px rgba(0,255,255,0.4);animation:vsHeaderPulse 2s ease-in-out infinite;}
+@keyframes vsHeaderPulse{0%,100%{text-shadow:0 0 20px rgba(0,255,255,0.8),0 0 40px rgba(0,255,255,0.4);}50%{text-shadow:0 0 30px rgba(0,255,255,1.0),0 0 60px rgba(0,255,255,0.6);}}
+#vsHeaderStats{font-family:'Share Tech Mono',monospace;font-size:10px;color:#334455;letter-spacing:2px;margin-top:6px;}
+#vsAiComment{font-family:'Share Tech Mono',monospace;font-size:10px;color:#556655;font-style:italic;margin-top:4px;min-height:14px;}
+
+/* ── MAIN BODY ──────────────────────────────────── */
+#vsBody{display:flex;flex:1;width:100%;gap:0;overflow:hidden;position:relative;z-index:10;}
+
+/* ── LEFT: LOOT ZONE ────────────────────────────── */
+#vsLootZone{flex:1;padding:16px;border-right:1px solid rgba(0,255,255,0.1);display:flex;flex-direction:column;gap:10px;overflow-y:auto;}
+#vsLootTitle{font-family:'Press Start 2P',monospace;font-size:8px;color:#ffd700;letter-spacing:3px;margin-bottom:4px;}
+
+.vs-loot-card{background:rgba(5,5,25,0.95);border:1px solid #223344;padding:10px 12px;cursor:pointer;position:relative;transition:border-color 0.15s,background 0.15s;display:flex;align-items:center;gap:12px;}
+.vs-loot-card:hover{border-color:#00ffff;background:rgba(0,255,255,0.06);}
+.vs-loot-card.taken{border-color:#00ff41;background:rgba(0,255,65,0.06);opacity:0.6;pointer-events:none;}
+.vs-loot-card.discarded{border-color:#221122;opacity:0.3;pointer-events:none;}
+.vs-loot-icon{font-size:22px;min-width:32px;text-align:center;}
+.vs-loot-info{flex:1;}
+.vs-loot-name{font-family:'Press Start 2P',monospace;font-size:7px;color:#ffffff;margin-bottom:3px;}
+.vs-loot-stat{font-family:'Share Tech Mono',monospace;font-size:10px;color:#00ff41;margin-bottom:2px;}
+.vs-loot-slot{font-family:'Share Tech Mono',monospace;font-size:9px;color:#334455;}
+.vs-loot-compare{font-family:'Share Tech Mono',monospace;font-size:9px;color:#888800;font-style:italic;}
+.vs-loot-rarity{font-family:'Press Start 2P',monospace;font-size:5px;padding:2px 5px;border:1px solid currentColor;position:absolute;top:6px;right:8px;}
+.vs-loot-rarity.common{color:#556677;}.vs-loot-rarity.uncommon{color:#00aaff;}.vs-loot-rarity.rare{color:#aa00ff;}.vs-loot-rarity.legendary{color:#ffd700;}
+.vs-loot-actions{display:flex;gap:6px;margin-top:6px;}
+.vs-btn-take{font-family:'Press Start 2P',monospace;font-size:6px;padding:5px 10px;background:rgba(0,255,65,0.1);border:1px solid #00ff41;color:#00ff41;cursor:pointer;letter-spacing:1px;transition:background 0.15s;}
+.vs-btn-take:hover{background:rgba(0,255,65,0.25);}
+.vs-btn-discard{font-family:'Press Start 2P',monospace;font-size:6px;padding:5px 8px;background:none;border:1px solid #221122;color:#443344;cursor:pointer;letter-spacing:1px;transition:border-color 0.15s,color 0.15s;}
+.vs-btn-discard:hover{border-color:#ff4444;color:#ff4444;}
+
+.vs-relic-card{background:rgba(255,215,0,0.04);border:1px solid #443300;padding:8px 12px;display:flex;align-items:center;gap:10px;}
+.vs-relic-icon{font-size:18px;}
+.vs-relic-name{font-family:'Press Start 2P',monospace;font-size:6px;color:#ffd700;margin-bottom:2px;}
+.vs-relic-desc{font-family:'Share Tech Mono',monospace;font-size:9px;color:#886600;}
+
+#vsLootAi{font-family:'Share Tech Mono',monospace;font-size:9px;color:#445544;font-style:italic;padding:6px 0;min-height:30px;border-top:1px solid #111122;}
+
+/* ── RIGHT: SPELL SWAP ZONE ─────────────────────── */
+#vsSpellZone{width:420px;padding:16px;display:flex;flex-direction:column;gap:10px;overflow-y:auto;}
+#vsSpellTitle{font-family:'Press Start 2P',monospace;font-size:8px;color:#00ffff;letter-spacing:3px;margin-bottom:4px;}
+#vsSpellInstruction{font-family:'Share Tech Mono',monospace;font-size:9px;color:#334455;margin-bottom:8px;}
+
+#vsCurrentSpells{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.vs-spell-slot{background:rgba(5,5,20,0.95);border:1px solid #1a1a3a;padding:8px 10px;cursor:pointer;transition:border-color 0.15s,background 0.15s;position:relative;min-height:64px;}
+.vs-spell-slot:hover{border-color:#ff00ff;background:rgba(255,0,255,0.06);}
+.vs-spell-slot:hover::after{content:'CLICK TO SWAP';position:absolute;bottom:3px;right:4px;font-family:'Press Start 2P',monospace;font-size:4px;color:#ff00ff;}
+.vs-spell-slot.selected{border-color:#ffd700;background:rgba(255,215,0,0.08);}
+.vs-spell-slot.swapped{border-color:#00ff41;background:rgba(0,255,65,0.06);}
+.vs-spell-slot-name{font-family:'Press Start 2P',monospace;font-size:6px;color:#ffffff;margin-bottom:4px;line-height:1.4;}
+.vs-spell-slot-desc{font-family:'Share Tech Mono',monospace;font-size:8px;color:#445566;}
+.vs-spell-slot-meta{font-family:'Share Tech Mono',monospace;font-size:8px;color:#334455;margin-top:2px;}
+.vs-spell-ex-badge{position:absolute;top:4px;right:4px;font-family:'Press Start 2P',monospace;font-size:5px;color:#ffd700;}
+
+#vsSwapArrow{text-align:center;font-size:18px;color:#223344;margin:2px 0;letter-spacing:4px;}
+
+#vsOfferedSpell{background:rgba(5,5,25,0.95);border:1px solid #334455;padding:12px 14px;position:relative;}
+#vsOfferedSpell.attack-spell{border-color:#ff4444;}
+#vsOfferedSpell.defense-spell{border-color:#00aaff;}
+#vsOfferedSpell.potion-spell{border-color:#00ff41;}
+#vsOfferedLabel{font-family:'Press Start 2P',monospace;font-size:5px;color:#334455;letter-spacing:2px;margin-bottom:6px;}
+#vsOfferedName{font-family:'Press Start 2P',monospace;font-size:9px;color:#ffffff;margin-bottom:6px;}
+#vsOfferedDesc{font-family:'Share Tech Mono',monospace;font-size:10px;color:#aaaaaa;margin-bottom:4px;}
+#vsOfferedMeta{font-family:'Share Tech Mono',monospace;font-size:9px;color:#445566;}
+#vsOfferedSynergy{font-family:'Press Start 2P',monospace;font-size:5px;margin-top:6px;padding:3px 6px;border:1px solid currentColor;display:inline-block;}
+
+#vsKeepBtn{font-family:'Press Start 2P',monospace;font-size:6px;padding:8px 0;width:100%;background:none;border:1px solid #1a1a2e;color:#334455;cursor:pointer;letter-spacing:2px;transition:border-color 0.15s,color 0.15s;margin-top:4px;}
+#vsKeepBtn:hover{border-color:#334466;color:#667788;}
+
+/* ── UPGRADES (inside spell zone) ───────────────── */
+#vsUpgradeSection{margin-top:auto;border-top:1px solid rgba(136,0,255,0.15);padding-top:10px;}
+#vsUpgHdr{font-family:'Press Start 2P',monospace;font-size:clamp(7px,.8vw,10px);color:#8800ff;letter-spacing:3px;text-align:center;text-shadow:0 0 10px rgba(136,0,255,.5);margin-bottom:8px;}
+#vsUpgrades{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px;}
+
+/* ── FOOTER ─────────────────────────────────────── */
+#vsFooter{width:100%;padding:10px 20px;border-top:1px solid rgba(0,255,255,0.15);display:flex;align-items:center;gap:16px;background:rgba(0,0,5,0.8);flex-shrink:0;position:relative;z-index:10;}
+#vsXpSection{flex:1;}
+#vsXpLabel{font-family:'Press Start 2P',monospace;font-size:6px;color:#556677;margin-bottom:4px;}
+#vsXpBar{height:8px;background:#0a0a1a;border:1px solid #1a1a3a;position:relative;overflow:hidden;}
+#vsXpFill{height:100%;background:linear-gradient(90deg,#00aaff,#ff00ff);transition:width 0.8s ease-out;box-shadow:0 0 8px rgba(0,170,255,0.5);}
+#vsXpText{font-family:'Share Tech Mono',monospace;font-size:9px;color:#445566;margin-top:2px;}
+
+#vsContinueBtn{font-family:'Press Start 2P',monospace;font-size:9px;padding:12px 24px;background:rgba(0,255,255,0.06);border:2px solid #00ffff;color:#00ffff;cursor:pointer;letter-spacing:3px;transition:background 0.15s,box-shadow 0.15s;animation:continuePulse 2s ease-in-out infinite;}
+#vsContinueBtn:hover{background:rgba(0,255,255,0.15);box-shadow:0 0 20px rgba(0,255,255,0.4);animation:none;}
+#vsContinueBtn:disabled{opacity:0.3;cursor:not-allowed;animation:none;}
+@keyframes continuePulse{0%,100%{box-shadow:0 0 6px rgba(0,255,255,0.2);}50%{box-shadow:0 0 16px rgba(0,255,255,0.5);}}
+
+#vsUpgHint{font-family:'Share Tech Mono',monospace;font-size:8px;color:rgba(136,0,255,.5);letter-spacing:1px;}
+
+/* ══════════════════════════════════════════════════
+   END VICTORY SCREEN OVERHAUL
+   ══════════════════════════════════════════════════ */
+
 /* ══ SPEECH BUBBLES ══ */
 @keyframes sbIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 .speech-bubble{position:absolute;background:rgba(2,2,20,.96);border:2px solid;padding:clamp(5px,.7vh,8px) clamp(8px,1vw,12px);font-family:'Press Start 2P',monospace;font-size:clamp(6px,.72vw,10px);line-height:1.7;max-width:clamp(160px,20vw,260px);pointer-events:none;z-index:45;animation:sbIn .18s ease;transition:opacity .5s;}
@@ -1384,62 +1485,58 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
   <div class="scr" id="sVIC">
     <canvas id="vicVaporBg"></canvas>
     <div class="vic-scanlines"></div>
-    <!-- TOP BAR -->
-    <div class="vic-top">
-      <div class="vic-floor-title" id="vicFloorTitle">◆ ROOM CLEARED ◆</div>
-      <div class="vic-stats-line" id="vicStatsLine"></div>
+
+    <!-- HEADER -->
+    <div id="vsHeader">
+      <div id="vsHeaderTitle">◈ ROOM CLEARED ◈</div>
+      <div id="vsHeaderStats"></div>
+      <div id="vsAiComment">ANALYZING COMBAT DATA...</div>
     </div>
-    <!-- MAIN: 2-column — loot left, character right -->
-    <div class="vic-main" style="grid-template-columns:1fr minmax(260px,1fr);">
-      <!-- LEFT: LOOT + RELICS — equal halves -->
-      <div style="display:flex;flex-direction:column;margin:clamp(6px,.8vh,10px) 4px clamp(6px,.8vh,10px) clamp(6px,.8vw,10px);gap:clamp(6px,.8vh,10px);min-height:0;">
-        <!-- LOOT: top half -->
-        <div class="vic-loot" style="display:flex;flex-direction:column;flex:1;min-height:0;margin:0;">
-          <div class="vic-loot-hdr">
-            <div class="vic-loot-title" id="vicLootTitle">◆ LOOT ACQUIRED ◆</div>
-            <div class="vic-loot-gold" id="vicGold">⚡ 0 CREDITS EARNED</div>
-          </div>
-          <div class="vic-loot-scroll" id="vicLootItems" style="flex:1;min-height:0;"></div>
+
+    <!-- MAIN BODY -->
+    <div id="vsBody">
+
+      <!-- LEFT: LOOT -->
+      <div id="vsLootZone">
+        <div id="vsLootTitle">⚡ LOOT ACQUIRED</div>
+        <div id="vsLootCards"></div>
+        <div id="vsRelicCards"></div>
+        <div id="vsLootAi"></div>
+      </div>
+
+      <!-- RIGHT: SPELL SWAP + UPGRADES -->
+      <div id="vsSpellZone">
+        <div id="vsSpellTitle">◈ SPELL SWAP</div>
+        <div id="vsSpellInstruction">Click a spell slot to replace it with the offered spell.</div>
+        <div id="vsCurrentSpells"></div>
+        <div id="vsSwapArrow">↕</div>
+        <div id="vsOfferedSpell">
+          <div id="vsOfferedLabel">OFFERED SPELL</div>
+          <div id="vsOfferedName"></div>
+          <div id="vsOfferedDesc"></div>
+          <div id="vsOfferedMeta"></div>
+          <div id="vsOfferedSynergy" style="display:none"></div>
         </div>
-        <!-- RELICS: bottom half -->
-        <div class="vic-loot vic-relics-section" style="display:flex;flex-direction:column;flex:1;min-height:0;margin:0;border-color:rgba(255,0,255,.15);">
-          <div class="vic-loot-hdr" style="border-bottom:1px solid rgba(255,0,255,.1);background:linear-gradient(180deg,rgba(255,0,255,.03),transparent);">
-            <div class="vic-loot-title" style="color:#ff00ff;text-shadow:0 0 10px rgba(255,0,255,.4);">◆ RELICS ACQUIRED ◆</div>
-          </div>
-          <div id="vicRelicItems" class="vic-loot-scroll" style="flex:1;min-height:0;">
-            <div class="vic-no-loot" style="color:rgba(255,0,255,.15);">— NO RELICS THIS ROOM —</div>
-          </div>
+        <button id="vsKeepBtn">✓ KEEP CURRENT LOADOUT</button>
+
+        <!-- UPGRADES section (moved here from old bottom) -->
+        <div id="vsUpgradeSection">
+          <div id="vsUpgHdr">◆ CHOOSE AN UPGRADE ◆</div>
+          <div id="vsUpgrades"></div>
+          <div id="vsUpgHint">SELECT AN UPGRADE TO CONTINUE</div>
         </div>
       </div>
-      <!-- RIGHT: RUNNER PROFILE — cyberpunk paperdoll with circuit-connected gear -->
-      <div class="vic-runner-panel">
-        <div class="vic-runner-header">
-          <div class="vic-runner-name" id="vicCharName">RUNNER</div>
-          <div class="vic-runner-credits" id="vicInvGold">⚡ 0 CR</div>
-        </div>
-        <!-- Full paperdoll area: canvas bg for circuits + sprite + absolute gear slots -->
-        <div class="vic-runner-body" id="vicPdArea">
-          <canvas id="vicCircuitCV" style="position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;"></canvas>
-          <canvas id="vicPaperdollCV" width="120" height="180" style="image-rendering:pixelated;position:relative;z-index:2;"></canvas>
-        </div>
-        <!-- Hidden grids kept for game logic -->
-        <div style="display:none;"><div id="vicEquipGrid"></div><div id="vicBagGrid"></div></div>
-        <div id="vicCharStats" style="display:none;"></div>
-      </div>
+
     </div>
-    <!-- BOTTOM: SPELL SWAP + UPGRADES + CONTINUE -->
-    <div class="vic-bottom">
-      <!-- Spell swap offer -->
-      <div id="vicSpellSwap" style="display:none;margin-bottom:clamp(6px,0.8vh,10px);">
-        <div class="vic-upg-hdr" style="color:#ff00ff;text-shadow:0 0 10px rgba(255,0,255,.4);">◆ SWAP A SPELL? ◆</div>
-        <div id="vicSpellSwapContent" style="display:flex;align-items:center;justify-content:center;gap:clamp(8px,1vw,16px);padding:clamp(4px,0.6vh,8px) 0;"></div>
+
+    <!-- FOOTER -->
+    <div id="vsFooter">
+      <div id="vsXpSection">
+        <div id="vsXpLabel">EXPERIENCE</div>
+        <div id="vsXpBar"><div id="vsXpFill" style="width:0%"></div></div>
+        <div id="vsXpText"></div>
       </div>
-      <div class="vic-upg-hdr" id="vicUpgHdr">◆ CHOOSE AN UPGRADE ◆</div>
-      <div class="vic-upg-row" id="vicUpgrades"></div>
-      <div class="vic-foot">
-        <span class="vic-upg-hint" id="vicUpgHint">SELECT AN UPGRADE TO CONTINUE</span>
-        <button id="vicContinueBtn" disabled>◆ CONTINUE ◆</button>
-      </div>
+      <button id="vsContinueBtn" disabled>CONTINUE ◈</button>
     </div>
   </div>
 
@@ -9617,7 +9714,7 @@ const Game={
       if(GameState.floor>=GameState.maxFloors){UI.show('sWN');UI.renderWin();}
       else{GameState.floor++;UI.show('sRS');UI.renderResults();}
     });
-    document.getElementById('vicContinueBtn').addEventListener('click',()=>VictoryScreen._continue());
+    document.getElementById('vsContinueBtn').addEventListener('click',()=>VictoryScreen._continue());
     // Game over buttons
     const goR=document.getElementById('goRestartBtn');if(goR)goR.addEventListener('click',()=>Game.restart());
     const goM=document.getElementById('goMenuBtn');if(goM)goM.addEventListener('click',()=>Game.restart());
@@ -10411,7 +10508,7 @@ const Game={
     if(this._autoBattle){
       this._autoInterval=setInterval(()=>{
         if(GameState.currentScreen==='sVIC'){
-          const btn2=document.getElementById('vicContinueBtn');
+          const btn2=document.getElementById('vsContinueBtn');
           if(btn2&&btn2.disabled){const c=document.querySelector('.vic-upg-card:not(.selected)');if(c)c.click();}
           else if(btn2&&!btn2.disabled)btn2.click();
         }
@@ -11003,357 +11100,171 @@ const VictoryScreen = {
     this._render();
     UI.show('sVIC');
     setTimeout(()=>VaporBg.start(),100);
-    // Phase 4.1 — spell commentary: fetch once on open, inject below stats line
+    // AI spell commentary — inject into header
     {
-      const commentEl = document.createElement('div');
-      commentEl.id = 'vicAiComment';
-      commentEl.style.cssText = 'font-family:"Share Tech Mono",monospace;font-size:10px;color:#557755;text-align:center;padding:2px 16px 4px;opacity:0.85;';
-      const statsEl = document.getElementById('vicStatsLine');
-      if (statsEl && statsEl.parentNode) statsEl.parentNode.insertBefore(commentEl, statsEl.nextSibling);
+      const commentEl = document.getElementById('vsAiComment');
+      if(commentEl) commentEl.textContent = 'ANALYZING COMBAT DATA...';
       if(canCallAI('spell_commentary',5000)){fetchSpellCommentary(GameState.player?.spells).then(text => {
-        const el = document.getElementById('vicAiComment');
+        const el = document.getElementById('vsAiComment');
         if (el && text) el.textContent = text;
       });}
     }
+    // AI loot advice
+    this._fetchLootAdvice();
   },
 
   _render() {
     try{
-      this._renderTopBar();
-      this._renderCharSummary();
-      this._renderLoot();
-      this._renderRelics();
-      this._renderPaperdoll();
-      this._renderInventory();
-      this._renderSpellSwap();
-      this._renderUpgrades();
+      this._vsPopulateHeader();
+      this._vsPopulateLoot();
+      this._vsPopulateRelics();
+      this._vsPopulateSpellSwap();
+      this._vsPopulateUpgrades();
+      this._vsPopulateXP();
       this._updateContinue();
     }catch(e){
       console.error('[VictoryScreen._render] CRASH:',e);
-      // Force continue button active so game isn't stuck
-      const btn=document.getElementById('vicContinueBtn');
-      if(btn){btn.disabled=false;btn.classList.add('active');}
+      const btn=document.getElementById('vsContinueBtn');
+      if(btn){btn.disabled=false;}
       this._selectedUpgrade={name:'SKIP',apply(){}};
     }
   },
 
-  _renderCharSummary() {
-    const p=GameState.player;if(!p)return;
-    const nm=document.getElementById('vicCharName');
-    if(nm)nm.textContent=GameState.runnerName||p.className;
-    const st=document.getElementById('vicCharStats');
-    if(st)st.innerHTML=`<span style="color:#ff4444">HP:${p.hp}/${p.maxHp}</span> <span style="color:#44aaff">MP:${p.mp}/${p.maxMp}</span><br><span style="color:${OR}">ATK:${p.atk}</span> <span style="color:#4488ff">DEF:${p.def}</span> <span style="color:${GR}">SPD:${p.spd}</span><br><span style="color:#aa66ff">LV:${p.level}</span> <span style="color:${CY}">CRIT:${Math.round((p.critBonus||0)*100)}%</span>`;
-  },
-
-  _renderTopBar() {
+  _vsPopulateHeader() {
     const p = GameState.player;
-    const fl = GameState.floor;
-    const t = document.getElementById('vicFloorTitle');
-    const roomNum=GameState.currentRoomIdx+1;
-    const totalRooms=GameState.currentFloor?.rooms?.length||0;
-    if (t) t.textContent = this._isBoss?`◆ ZONE BOSS DEFEATED ◆`:`◆ ROOM ${roomNum}/${totalRooms} CLEARED ◆`;
-    const s = document.getElementById('vicStatsLine');
-    if (s) s.textContent =
-      `FLOOR:${fl}/${GameState.maxFloors} · KILLS:${GameState.totalKills} · ` +
-      `HP:${Math.max(0,p.hp)}/${p.maxHp} · MP:${Math.max(0,p.mp)}/${p.maxMp} · ` +
-      `ATK:${p.atk} DEF:${p.def} SPD:${p.spd} · ` +
-      `TOTAL DMG:${GameState.totalDmg} · QUESTS:${GameState.questsDone}`;
-    const g = document.getElementById('vicGold');
-    if (g) g.textContent = `⚡ ${this._gold} CREDITS EARNED`;
-    this._updateInvGold();
+    const roomNum = GameState.currentRoomIdx + 1;
+    const totalRooms = GameState.currentFloor?.rooms?.length || 0;
+    const titleEl = document.getElementById('vsHeaderTitle');
+    const statsEl = document.getElementById('vsHeaderStats');
+    if (titleEl) titleEl.textContent = this._isBoss ? `◈ ZONE BOSS DEFEATED ◈` : `◈ ROOM ${roomNum}/${totalRooms} CLEARED ◈`;
+    if (statsEl) {
+      const parts = [];
+      parts.push(`KILLS: ${GameState.totalKills}`);
+      parts.push(`DMG: ${GameState.totalDmg}`);
+      if (p) parts.push(`HP: ${Math.max(0,p.hp)}/${p.maxHp}`);
+      parts.push(`⚡ ${this._gold} CR`);
+      statsEl.textContent = parts.join('  ·  ');
+    }
   },
 
-  _updateInvGold() {
-    const el = document.getElementById('vicInvGold');
-    if (el) el.textContent = `⚡ ${Inventory.gold} CR`;
-  },
-
-  _renderLoot() {
-    const cont = document.getElementById('vicLootItems');
-    const titleEl = document.getElementById('vicLootTitle');
-    if (!cont) return;
-    cont.innerHTML = '';
+  _vsPopulateLoot() {
+    const container = document.getElementById('vsLootCards');
+    const titleEl = document.getElementById('vsLootTitle');
+    if (!container) return;
+    container.innerHTML = '';
     const count = this._snapshot.length;
-    if (titleEl) titleEl.textContent = count ? `◆ LOOT ACQUIRED (${count} ITEM${count===1?'':'S'}) ◆` : '◆ LOOT ACQUIRED ◆';
+    if (titleEl) titleEl.textContent = count ? `⚡ LOOT ACQUIRED (${count})` : '⚡ LOOT ACQUIRED';
     if (!count) {
-      const no = document.createElement('div');
-      no.className = 'vic-no-loot';
-      no.textContent = '— NO LOOT DROPPED —';
-      cont.appendChild(no);
+      container.innerHTML = '<div style="font-family:Share Tech Mono,monospace;font-size:10px;color:#223344;padding:8px 0">— NO LOOT THIS ROOM —</div>';
       return;
     }
-    this._snapshot.forEach((item) => {
+
+    this._snapshot.forEach((item, idx) => {
       const card = document.createElement('div');
-      card.className = 'vic-loot-card ' + item.rarity;
-      const statsHtml = Object.entries(item.bonuses).map(([k,v])=>`+${v} ${k.toUpperCase()}`).join(' · ') || '—';
-      const statLines = Object.entries(item.bonuses).map(([k,v])=>`<div class="vic-stat-line">+${v} ${k.toUpperCase()}</div>`).join('') || '<div class="vic-stat-line">—</div>';
+      card.className = 'vs-loot-card';
+      card.dataset.idx = idx;
+
+      const statsText = Object.entries(item.bonuses).map(([k,v])=>`+${v} ${k.toUpperCase()}`).join(' · ') || '—';
+      // Stat comparison with current equipped item
+      const currentItem = Inventory.equipped ? Inventory.equipped[item.slot] : null;
+      const compareText = currentItem
+        ? `replaces: ${currentItem.name} (${LootSystem.statDesc(currentItem.bonuses)})`
+        : 'empty slot';
+
       card.innerHTML = `
-        <div class="vic-card-lvl-badge">LV${item.level}</div>
-        <div class="vic-card-rar-badge ${item.rarity}">${item.rarity.toUpperCase()}</div>
-        <div class="vic-card-row">
-          <div class="vic-card-icon-wrap">
-            <div class="vic-card-icon" style="color:${item.color}">${item.icon}</div>
+        <div class="vs-loot-icon" style="color:${item.color}">${item.icon}</div>
+        <div class="vs-loot-info">
+          <div class="vs-loot-name">${item.name}</div>
+          <div class="vs-loot-stat">${statsText}</div>
+          <div class="vs-loot-slot">${item.slot.toUpperCase()} SLOT · LV${item.level}</div>
+          <div class="vs-loot-compare">${compareText}</div>
+          <div class="vs-loot-actions">
+            <button class="vs-btn-take" data-idx="${idx}">▶ TAKE</button>
+            <button class="vs-btn-discard" data-idx="${idx}">✕ DISCARD</button>
           </div>
-          <div class="vic-card-info">
-            <div class="vic-card-name">${item.name}</div>
-            <div class="vic-card-type">${item.slot.toUpperCase()} SLOT</div>
-          </div>
-          <div class="vic-card-stats-col">${statLines}</div>
         </div>
-        <div class="vic-card-btns">
-          <button class="vic-take">TAKE</button>
-          <button class="vic-disc">DISCARD</button>
-        </div>`;
-      cont.appendChild(card);
-      const take = card.querySelector('.vic-take');
-      const disc = card.querySelector('.vic-disc');
-      take.addEventListener('click', () => {
+        <div class="vs-loot-rarity ${item.rarity}">${item.rarity.toUpperCase()}</div>
+      `;
+
+      const takeBtn = card.querySelector('.vs-btn-take');
+      const discBtn = card.querySelector('.vs-btn-discard');
+
+      const doTake = () => {
         if (this._takenItem) return;
         if (!Inventory.addItem(item)) { DM.say('Bag full!'); return; }
         this._takenItem = item;
         this._takenSlot = item.slot;
         if(item.rarity==='legendary')QM.track('legendaryFound',1);
-        take.classList.add('taken'); take.textContent = '✓ TAKEN';
-        disc.disabled = true;
-        // Disable all other TAKE buttons
-        cont.querySelectorAll('.vic-take').forEach(b => { if (b !== take) b.disabled = true; });
-        this._renderPaperdoll();
-        this._renderInventory();
+        card.classList.add('taken');
+        takeBtn.textContent = '✓ TAKEN';
+        // Disable all other cards
+        container.querySelectorAll('.vs-loot-card:not(.taken)').forEach(c => {
+          c.querySelectorAll('.vs-btn-take').forEach(b => b.disabled = true);
+        });
+        DM.say(`EQUIPPED: ${item.name}`, 'system');
+      };
+
+      takeBtn.addEventListener('click', (e) => { e.stopPropagation(); doTake(); });
+      discBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        card.classList.add('discarded');
       });
-      disc.addEventListener('click', () => {
-        if (disc.disabled) return;
-        card.style.opacity = '.35';
-        take.disabled = true; disc.disabled = true; disc.textContent = '✗ GONE';
+      // Click card itself = take
+      card.addEventListener('click', () => {
+        if (!card.classList.contains('taken') && !card.classList.contains('discarded')) doTake();
       });
+
+      container.appendChild(card);
     });
   },
 
-  _renderRelics() {
-    const cont = document.getElementById('vicRelicItems');
-    if (!cont) return;
+  _vsPopulateRelics() {
+    const container = document.getElementById('vsRelicCards');
+    if (!container) return;
     const relics = GameState.runRelics || [];
-    if (!relics.length) {
-      cont.innerHTML = '<div class="vic-no-loot" style="padding:clamp(14px,2vh,30px) 0;">— NO RELICS THIS ROOM —</div>';
-      return;
-    }
-    cont.innerHTML = '';
+    container.innerHTML = '';
+    if (!relics.length) return; // Hide section entirely — no placeholder
     relics.forEach(r => {
       const card = document.createElement('div');
-      card.className = 'vic-loot-card';
-      card.style.cssText = 'border-color:rgba(255,225,0,.3);';
+      card.className = 'vs-relic-card';
       card.innerHTML = `
-        <div class="vic-card-rar-badge" style="color:var(--CY);">RELIC</div>
-        <div class="vic-card-row">
-          <div class="vic-card-icon-wrap" style="border-color:rgba(255,225,0,.2);background:rgba(255,225,0,.03);">
-            <div class="vic-card-icon" style="color:var(--CY);">${r.icon}</div>
-          </div>
-          <div class="vic-card-info">
-            <div class="vic-card-name">${r.name}</div>
-            <div class="vic-card-type" style="color:var(--CY);font-size:clamp(7px,.7vw,10px);">${r.desc}</div>
-          </div>
-        </div>`;
-      cont.appendChild(card);
+        <div class="vs-relic-icon">${r.icon}</div>
+        <div>
+          <div class="vs-relic-name">${r.name}</div>
+          <div class="vs-relic-desc">${r.desc}</div>
+        </div>
+      `;
+      container.appendChild(card);
     });
   },
 
-  // Paperdoll: draw player sprite centered + circuit-connected gear slots
-  _renderPaperdoll() {
-    const cv = document.getElementById('vicPaperdollCV');
-    const area = document.getElementById('vicPdArea');
-    if (!cv || !area) return;
-    const p = GameState.player;
-    const aw = area.clientWidth || 300;
-    const ah = area.clientHeight || 400;
-    const sprW = 14 * P, sprH = 22 * P;
-    // Sprite canvas sized to sprite
-    const cvW = sprW + 16; const cvH = sprH + 16;
-    cv.width = cvW; cv.height = cvH;
-    const ctx = cv.getContext('2d');
-    ctx.clearRect(0, 0, cvW, cvH);
-    if (SPR[p.sprite]) {
-      SPR[p.sprite](ctx, 8, 8, false, Date.now() * 0.05);
-    }
-    // Draw circuit lines on overlay canvas
-    const ccv = document.getElementById('vicCircuitCV');
-    if (ccv) {
-      ccv.width = aw; ccv.height = ah;
-      const cx = ccv.getContext('2d');
-      cx.clearRect(0, 0, aw, ah);
-      const midX = aw / 2, midY = ah / 2;
-      // Hex glow ring around sprite
-      cx.save();
-      cx.strokeStyle = 'rgba(136,0,255,0.15)';cx.lineWidth = 1;
-      for (let r = 0; r < 3; r++) {
-        const rad = 50 + r * 25;
-        cx.globalAlpha = 0.15 - r * 0.04;
-        cx.beginPath();
-        for (let a = 0; a < 6; a++) { const ang = Math.PI / 3 * a - Math.PI / 6; cx.lineTo(midX + Math.cos(ang) * rad, midY + Math.sin(ang) * rad); }
-        cx.closePath(); cx.stroke();
-      }
-      // Circuit lines from center to slot positions
-      const slotPositions = [
-        { x: midX, y: ah * 0.04 + 25 },          // HEAD top
-        { x: aw * 0.04 + 25, y: ah * 0.28 + 20 }, // WEAPON left
-        { x: aw * 0.96 - 25, y: ah * 0.28 + 20 }, // CHEST right
-        { x: aw * 0.04 + 25, y: ah * 0.72 - 10 }, // RING left
-        { x: aw * 0.96 - 25, y: ah * 0.72 - 10 }, // ACCESS right
-        { x: midX, y: ah * 0.96 - 15 },            // BOOTS bottom
-      ];
-      const slotColors = ['#ffe100','#ff6600','#00ffff','#ff00ff','#8800ff','#39ff14'];
-      slotPositions.forEach((sp, i) => {
-        cx.globalAlpha = 0.35;
-        cx.strokeStyle = slotColors[i]; cx.lineWidth = 1.5;
-        cx.setLineDash([4, 6]);
-        cx.beginPath(); cx.moveTo(midX, midY);
-        // L-shaped circuit path
-        const mx = (midX + sp.x) / 2;
-        if (Math.abs(sp.x - midX) > 20) {
-          cx.lineTo(mx, midY); cx.lineTo(mx, sp.y); cx.lineTo(sp.x, sp.y);
-        } else {
-          cx.lineTo(sp.x, sp.y);
-        }
-        cx.stroke();
-        // Node dot at connection point
-        cx.setLineDash([]);
-        cx.globalAlpha = 0.5;
-        cx.fillStyle = slotColors[i];
-        cx.beginPath(); cx.arc(sp.x, sp.y, 3, 0, Math.PI * 2); cx.fill();
-      });
-      // Subtle radial pulse from center
-      const grad = cx.createRadialGradient(midX, midY, 0, midX, midY, 60);
-      grad.addColorStop(0, 'rgba(136,0,255,0.06)');
-      grad.addColorStop(1, 'transparent');
-      cx.globalAlpha = 1; cx.fillStyle = grad;
-      cx.fillRect(0, 0, aw, ah);
-      cx.restore();
-    }
-    this._renderEquipSlots(area, 70);
-  },
+  // Equipment doll removed — stat comparison is inline in loot cards
+  // Hidden grids no longer in DOM but kept as no-ops for safety
+  _renderPaperdoll() {},
+  _renderEquipSlots() {},
+  _renderInventory() {},
+  _renderEquipGrid() {},
+  _renderBagGrid() {},
 
-  _renderEquipSlots(area, slotW) {
-    area.querySelectorAll('.vic-slot').forEach(s => s.remove());
-    const SLOTS = [
-      { id:'head',      icon:'⛑', lbl:'HEAD',   pos:'top:4%;left:50%;transform:translateX(-50%);' },
-      { id:'weapon',    icon:'⚔', lbl:'WPN',     pos:'top:28%;left:4%;' },
-      { id:'chest',     icon:'🧥', lbl:'CHST',   pos:'top:28%;right:4%;' },
-      { id:'ring',      icon:'💍', lbl:'RING',    pos:'bottom:28%;left:4%;' },
-      { id:'accessory', icon:'📿', lbl:'ACC',    pos:'bottom:28%;right:4%;' },
-      { id:'boots',     icon:'👟', lbl:'BOOTS',   pos:'bottom:4%;left:50%;transform:translateX(-50%);' },
-    ];
-    const slotRef = this._takenSlot;
-    const takenItem = this._takenItem;
-    SLOTS.forEach(s => {
-      const item = Inventory.equipped[s.id];
-      const canEquip = slotRef === s.id && takenItem && !item;
-      const div = document.createElement('div');
-      let cls = 'vic-slot';
-      if (canEquip) cls += ' can-equip';
-      else if (item) cls += ' filled ' + item.rarity;
-      div.className = cls;
-      div.style.cssText = s.pos;
-      if (item) {
-        div.innerHTML = `<div class="vic-slot-icon" style="color:${item.color}">${item.icon}</div><div class="vic-slot-lbl">${item.name.slice(0,6)}</div>`;
-        div.title = `${item.name}\n${LootSystem.statDesc(item.bonuses)}`;
-      } else if (canEquip) {
-        div.innerHTML = `<div class="vic-slot-icon">${takenItem.icon}</div><div class="vic-slot-lbl">EQUIP?</div>`;
-        div.title = `Click to equip ${takenItem.name}`;
-        div.addEventListener('click', () => {
-          const bagIdx = Inventory.items.findIndex(i => i === takenItem);
-          if (bagIdx >= 0) {
-            Inventory.equipFromBag(bagIdx);
-            this._takenSlot = null;
-            this._renderPaperdoll();
-            this._renderInventory();
-          }
-        });
-      } else {
-        div.innerHTML = `<div class="vic-slot-icon" style="opacity:.28">${s.icon}</div><div class="vic-slot-lbl">${s.lbl}</div>`;
-      }
-      area.appendChild(div);
-    });
-  },
-
-  _renderInventory() {
-    this._renderEquipGrid();
-    this._renderBagGrid();
-    this._updateInvGold();
-  },
-
-  _renderEquipGrid() {
-    const grid = document.getElementById('vicEquipGrid');
-    if (!grid) return;
-    grid.innerHTML = '';
-    const SLOTS = [
-      {id:'head',icon:'⛑',lbl:'HEAD'},{id:'weapon',icon:'⚔',lbl:'WPN'},
-      {id:'chest',icon:'🧥',lbl:'CHST'},{id:'ring',icon:'💍',lbl:'RING'},
-      {id:'boots',icon:'👟',lbl:'BOOT'},{id:'accessory',icon:'📿',lbl:'ACC'},
-    ];
-    SLOTS.forEach(s => {
-      const item = Inventory.equipped[s.id];
-      const div = document.createElement('div');
-      div.className = 'vic-eqslot' + (item ? ' filled ' + item.rarity : '');
-      if (item) {
-        div.innerHTML = `<div class="vic-eqslot-icon" style="color:${item.color}">${item.icon}</div><div class="vic-eqslot-lbl">${s.lbl}</div>`;
-        div.title = item.name;
-      } else {
-        div.innerHTML = `<div class="vic-eqslot-icon" style="opacity:.25">${s.icon}</div><div class="vic-eqslot-lbl">${s.lbl}</div>`;
-      }
-      grid.appendChild(div);
-    });
-  },
-
-  _renderBagGrid() {
-    const grid = document.getElementById('vicBagGrid');
-    if (!grid) return;
-    grid.innerHTML = '';
-    for (let i = 0; i < 24; i++) {
-      const item = Inventory.items[i];
-      const div = document.createElement('div');
-      div.className = 'vic-bag-slot' + (item ? ' filled ' + item.rarity : '');
-      if (item) {
-        div.style.color = item.color;
-        div.textContent = item.icon;
-        div.title = `${item.name} Lv${item.level} [${item.rarity.toUpperCase()}]`;
-      }
-      grid.appendChild(div);
-    }
-  },
-
-  _renderUpgrades() {
-    const grid = document.getElementById('vicUpgrades');
-    const hdr = grid?.previousElementSibling;
+  _vsPopulateUpgrades() {
+    const grid = document.getElementById('vsUpgrades');
+    const hdr = document.getElementById('vsUpgHdr');
+    const section = document.getElementById('vsUpgradeSection');
     if (!grid) return;
     const p = GameState.player;
     const hasLevelUp = GameState.levelUpPending;
 
     if (!hasLevelUp && !this._isBoss) {
-      // No level up — show XP progress bar
-      grid.innerHTML = '';
-      if(hdr) hdr.textContent = '◆ EXPERIENCE ◆';
-      const xpPct = p ? Math.min(100, Math.round(p.xp / p.xpToNext * 100)) : 0;
-      const relics=GameState.runRelics||[];
-      const relicIcons=relics.map(r=>`<span class="vic-relics-total-item" title="${r.name}: ${r.desc}">${r.icon}</span>`).join('');
-      grid.innerHTML = `<div style="display:flex;gap:clamp(12px,1.5vw,24px);align-items:center;width:100%;">
-        <div style="flex:1;max-width:500px;font-family:'Share Tech Mono',monospace;">
-          <div style="display:flex;justify-content:space-between;font-size:clamp(8px,0.9vw,12px);color:#99a;margin-bottom:4px;">
-            <span>LEVEL ${p?.level||1}</span><span>${p?.xp||0} / ${p?.xpToNext||50} XP</span></div>
-          <div style="background:#0a0a14;border:1px solid rgba(0,255,255,.15);height:clamp(14px,1.8vh,20px);overflow:hidden;">
-            <div style="height:100%;width:${xpPct}%;background:linear-gradient(90deg,#8800ff,#00ffff);transition:width .4s;"></div></div>
-        </div>
-        <div class="vic-relics-total" style="flex:0 0 auto;">
-          <span class="vic-relics-total-label">◆ RELICS</span>
-          <div class="vic-relics-total-items">${relics.length?relicIcons:'<span style="font-family:Share Tech Mono,monospace;font-size:clamp(7px,.8vw,10px);color:rgba(255,0,255,.2);">NONE</span>'}</div>
-        </div>
-      </div>`;
+      // No level up — hide upgrade section
+      if (section) section.style.display = 'none';
       this._selectedUpgrade = {name:'SKIP',apply(){}};
       return;
     }
 
-    // Level up OR boss — show upgrade choices
-    if(hdr) hdr.textContent = hasLevelUp ? `◆ LEVEL ${p.level}! CHOOSE AN UPGRADE ◆` : '◆ CHOOSE AN UPGRADE ◆';
+    if (section) section.style.display = '';
+    if (hdr) hdr.textContent = hasLevelUp ? `◆ LEVEL ${p.level}! CHOOSE AN UPGRADE ◆` : '◆ CHOOSE AN UPGRADE ◆';
     this._upgrades = Rogue.genUpgrades();
     grid.innerHTML = '';
-    // Add stat preview to each upgrade
     this._upgrades.forEach(u => {
       let preview='';
       const s=u.name;
@@ -11380,86 +11291,180 @@ const VictoryScreen = {
     });
   },
 
-  _renderSpellSwap() {
-    const wrap = document.getElementById('vicSpellSwap');
-    const cont = document.getElementById('vicSpellSwapContent');
-    if (!wrap || !cont) return;
+  _vsPopulateXP() {
     const p = GameState.player;
-    if (!p || !p.spells || p.spells.length < 2) { wrap.style.display = 'none'; return; }
+    if (!p) return;
+    const fillEl = document.getElementById('vsXpFill');
+    const textEl = document.getElementById('vsXpText');
+    const xpPct = Math.min(100, Math.round(p.xp / p.xpToNext * 100));
+    if (fillEl) {
+      fillEl.style.width = '0%';
+      setTimeout(() => { fillEl.style.width = `${xpPct}%`; }, 300);
+    }
+    if (textEl) textEl.textContent = `LEVEL ${p.level}  ·  ${p.xp} / ${p.xpToNext} XP`;
+  },
 
-    // SPELL_LOCKED daily modifier — show locked state, no swap
+  _vsPopulateSpellSwap() {
+    const spellZone = document.getElementById('vsSpellZone');
+    const grid = document.getElementById('vsCurrentSpells');
+    const instrEl = document.getElementById('vsSpellInstruction');
+    const keepBtn = document.getElementById('vsKeepBtn');
+    if (!spellZone || !grid) return;
+    const p = GameState.player;
+    if (!p || !p.spells || p.spells.length < 2) {
+      spellZone.querySelector('#vsSpellTitle').textContent = '◈ NO SPELL SWAP';
+      grid.innerHTML = '';
+      if(instrEl) instrEl.textContent = '';
+      if(keepBtn) keepBtn.style.display = 'none';
+      document.getElementById('vsOfferedSpell').style.display = 'none';
+      document.getElementById('vsSwapArrow').style.display = 'none';
+      return;
+    }
+
+    // SPELL_LOCKED daily modifier
     if (GameState.spellSwapLocked) {
-        wrap.style.display = 'block';
-        cont.innerHTML = `<div style="font-family:'Share Tech Mono',monospace;font-size:clamp(9px,1vw,13px);color:#ff00ff;text-align:center;padding:12px;">⚠ SPELL LOCKED — DAILY CHALLENGE MODIFIER ACTIVE ⚠</div>`;
-        return;
+      grid.innerHTML = '';
+      if(instrEl) instrEl.textContent = '⚠ SPELL LOCKED — DAILY CHALLENGE MODIFIER ACTIVE ⚠';
+      instrEl.style.color = '#ff00ff';
+      if(keepBtn) keepBtn.style.display = 'none';
+      document.getElementById('vsOfferedSpell').style.display = 'none';
+      document.getElementById('vsSwapArrow').style.display = 'none';
+      this._swapDecision = 'keep';
+      return;
     }
 
     // Pick a random spell slot to offer a swap for
     const slotIdx = Math.floor(rng() * p.spells.length);
     const currentSpell = p.spells[slotIdx];
     const poolInfo = getSpellPool(currentSpell.id);
-    if (!poolInfo) { wrap.style.display = 'none'; return; }
+    if (!poolInfo) { this._swapDecision = 'keep'; return; }
 
-    // Pick a random replacement from the same pool (excluding current spells)
     const currentIds = new Set(p.spells.map(s => s.id));
     const candidates = poolInfo.pool.filter(s => !currentIds.has(s.id));
-    if (!candidates.length) { wrap.style.display = 'none'; return; }
+    if (!candidates.length) { this._swapDecision = 'keep'; return; }
     const offered = candidates[Math.floor(rng() * candidates.length)];
 
     this._swapOffer = { slotIdx, currentSpell, offered, poolType: poolInfo.type };
-    wrap.style.display = 'block';
 
-    const F = "font-family:'Share Tech Mono',monospace;";
+    // Dynamic instruction text (Step 9)
     const typeLabel = { active: 'ATTACK', defensive: 'DEFENSE', potion: 'POTION' }[poolInfo.type] || 'SPELL';
+    if (instrEl) instrEl.textContent = `◈ OFFERED ${typeLabel} — CLICK ANY SLOT TO REPLACE IT`;
 
-    const synergyDelta = getSwapSynergyDelta(p.spells, offered, slotIdx);
-    const makeCard = (spell, label, borderClr, synergyHint) => {
-      const evolved = spell.evolved ? ' [EX]' : '';
-      const casts = spell.castCount ? ` (${spell.castCount} casts)` : '';
-      const synBadge = synergyHint ? `<div style="${F}font-size:clamp(7px,0.7vw,9px);color:${synergyHint.color};font-weight:bold;text-align:center;padding-top:4px;text-shadow:0 0 6px ${synergyHint.color};">${synergyHint.label}</div>` : '';
-      return `<div style="flex:1;max-width:280px;border:1.5px solid ${borderClr};border-radius:6px;padding:clamp(8px,1vh,14px) clamp(10px,1.2vw,16px);background:rgba(10,10,30,.85);display:flex;flex-direction:column;gap:4px;">
-        <div style="${F}font-size:clamp(7px,0.7vw,9px);color:${borderClr};text-transform:uppercase;letter-spacing:1px;">${label}</div>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span style="font-size:clamp(18px,2vw,26px);">${spell.icon}</span>
-          <div style="flex:1;min-width:0;">
-            <div style="${F}font-size:clamp(9px,1vw,13px);color:#ffe100;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${spell.name}${evolved}</div>
-            <div style="${F}font-size:clamp(7px,0.75vw,10px);color:#99a;line-height:1.4;">${spell.desc}</div>
-          </div>
-          <div style="${F}font-size:clamp(7px,0.7vw,9px);color:#776;text-align:right;white-space:nowrap;line-height:1.5;">MP:${spell.mp}<br>CD:${spell.maxCd}${casts}</div>
-        </div>
-        ${synBadge}
-      </div>`;
-    };
+    // Populate current spell slots — 2x2 grid, click to swap
+    grid.innerHTML = '';
+    p.spells.forEach((spell, i) => {
+      if (!spell) return;
+      const slot = document.createElement('div');
+      slot.className = 'vs-spell-slot';
+      slot.dataset.slotIndex = i;
+      const isEX = spell.evolved;
 
-    cont.innerHTML = `
-      ${makeCard(currentSpell, 'CURRENT ' + typeLabel, '#00ffff', null)}
-      <div style="display:flex;flex-direction:column;gap:6px;align-items:center;flex-shrink:0;">
-        <button id="vicSwapBtn" style="${F}font-size:clamp(8px,0.9vw,12px);padding:6px 14px;background:rgba(255,0,255,.15);border:1px solid #ff00ff;color:#ff00ff;cursor:pointer;border-radius:4px;">⟲ SWAP</button>
-        <button id="vicKeepBtn" style="${F}font-size:clamp(8px,0.9vw,12px);padding:6px 14px;background:rgba(0,255,255,.08);border:1px solid rgba(0,255,255,.3);color:#00ffff;cursor:pointer;border-radius:4px;">✓ KEEP</button>
-      </div>
-      ${makeCard(offered, 'OFFERED ' + typeLabel, '#ff00ff', synergyDelta)}
-    `;
+      slot.innerHTML = `
+        ${isEX ? '<div class="vs-spell-ex-badge">EX</div>' : ''}
+        <div class="vs-spell-slot-name">${spell.name || '—'}</div>
+        <div class="vs-spell-slot-desc">${spell.desc || spell.description || ''}</div>
+        <div class="vs-spell-slot-meta">MP:${spell.mp || spell.mpCost || 0}  CD:${spell.maxCd || spell.cooldown || 0}</div>
+      `;
 
-    document.getElementById('vicSwapBtn').addEventListener('click', () => {
-      // Replace the spell
-      p.spells[slotIdx] = { ...offered, effect: offered.effect, cd: 0, hackedTurns: 0, castCount: 0, evolved: false };
-      this._swapDecision = 'swap';
-      refreshSynergies();
-      cont.innerHTML = `<div style="${F}font-size:clamp(10px,1.1vw,14px);color:#ff00ff;text-shadow:0 0 10px rgba(255,0,255,.5);padding:10px;">⟲ SWAPPED: ${currentSpell.name} → ${offered.name}</div>`;
-      UI.renderSpells();
-      this._updateContinue();
+      slot.addEventListener('click', () => {
+        // Perform the swap
+        p.spells[i] = { ...offered, effect: offered.effect, cd: 0, hackedTurns: 0, castCount: 0, evolved: false };
+        this._swapDecision = 'swap';
+        refreshSynergies();
+        slot.classList.add('swapped');
+        slot.innerHTML = `
+          <div class="vs-spell-slot-name">${offered.name}</div>
+          <div class="vs-spell-slot-desc">${offered.desc || offered.description || ''}</div>
+          <div class="vs-spell-slot-meta">MP:${offered.mp || offered.mpCost || 0}  CD:${offered.maxCd || offered.cooldown || 0}</div>
+        `;
+        slot.style.borderColor = '#00ff41';
+        // Disable all other slots after swap
+        document.querySelectorAll('.vs-spell-slot').forEach(s => {
+          if (s !== slot) { s.style.pointerEvents = 'none'; s.style.opacity = '0.4'; }
+        });
+        if(keepBtn) keepBtn.style.display = 'none';
+        UI.renderSpells();
+        DM.say(`SPELL SWAPPED: slot ${i+1} → ${offered.name}`, 'system');
+        this._updateContinue();
+      });
+
+      grid.appendChild(slot);
     });
 
-    document.getElementById('vicKeepBtn').addEventListener('click', () => {
-      this._swapDecision = 'keep';
-      cont.innerHTML = `<div style="${F}font-size:clamp(10px,1.1vw,14px);color:#00ffff;text-shadow:0 0 10px rgba(0,255,255,.3);padding:10px;">✓ KEEPING: ${currentSpell.name}</div>`;
-      this._updateContinue();
-    });
+    // Offered spell card
+    const offeredEl = document.getElementById('vsOfferedSpell');
+    const nameEl = document.getElementById('vsOfferedName');
+    const descEl = document.getElementById('vsOfferedDesc');
+    const metaEl = document.getElementById('vsOfferedMeta');
+    const synEl = document.getElementById('vsOfferedSynergy');
+
+    if (offeredEl && offered) {
+      offeredEl.style.display = '';
+      offeredEl.className = '';
+      if (offered.type === 'attack' || poolInfo.type === 'active') offeredEl.classList.add('attack-spell');
+      else if (offered.type === 'defense' || poolInfo.type === 'defensive') offeredEl.classList.add('defense-spell');
+      else if (offered.type === 'potion' || poolInfo.type === 'potion') offeredEl.classList.add('potion-spell');
+
+      if (nameEl) nameEl.textContent = offered.name || '—';
+      if (descEl) descEl.textContent = offered.desc || offered.description || '';
+      if (metaEl) metaEl.textContent = `MP: ${offered.mp || offered.mpCost || 0}  ·  CD: ${offered.maxCd || offered.cooldown || 0}  ·  TYPE: ${typeLabel}`;
+
+      // Synergy delta hint
+      if (synEl && typeof getSwapSynergyDelta === 'function') {
+        let bestDelta = null;
+        p.spells.forEach((s, i) => {
+          const delta = getSwapSynergyDelta(p.spells, offered, i);
+          if (delta && (!bestDelta || delta.delta > bestDelta.delta)) bestDelta = delta;
+        });
+        if (bestDelta) {
+          synEl.textContent = bestDelta.label;
+          synEl.style.color = bestDelta.color;
+          synEl.style.display = 'inline-block';
+        } else {
+          synEl.style.display = 'none';
+        }
+      }
+    }
+
+    document.getElementById('vsSwapArrow').style.display = '';
+
+    // Wire KEEP button
+    if (keepBtn) {
+      keepBtn.style.display = '';
+      keepBtn.addEventListener('click', () => {
+        this._swapDecision = 'keep';
+        keepBtn.style.opacity = '0.4';
+        keepBtn.style.pointerEvents = 'none';
+        document.querySelectorAll('.vs-spell-slot').forEach(s => {
+          s.style.pointerEvents = 'none'; s.style.opacity = '0.5';
+        });
+        DM.say('LOADOUT KEPT.', 'system');
+        this._updateContinue();
+      });
+    }
+  },
+
+  _fetchLootAdvice() {
+    const lootEl = document.getElementById('vsLootAi');
+    if (!lootEl) return;
+    if (!this._snapshot || !this._snapshot.length) return;
+    if (typeof canCallAI !== 'function' || typeof AIService === 'undefined') return;
+    const itemNames = this._snapshot.map(i => i.name).filter(Boolean);
+    const spellNames = (GameState.player?.spells || []).map(s => s.name).filter(Boolean);
+    if (canCallAI('spell_commentary', 5000)) {
+      AIService.call('spell_commentary', { spells: [...spellNames, ...itemNames] }).then(advice => {
+        const el = document.getElementById('vsLootAi');
+        if (advice && el) {
+          el.textContent = `> ${advice}`;
+          el.style.color = '#556644';
+        }
+      }).catch(() => {});
+    }
   },
 
   _updateContinue() {
-    const btn = document.getElementById('vicContinueBtn');
-    const hint = document.getElementById('vicUpgHint');
+    const btn = document.getElementById('vsContinueBtn');
+    const hint = document.getElementById('vsUpgHint');
     if (!btn) return;
     const hasLevelUp = GameState.levelUpPending;
     const needsChoice = hasLevelUp || this._isBoss;
@@ -11467,7 +11472,6 @@ const VictoryScreen = {
     const upgDone = !needsChoice || !!this._selectedUpgrade;
     const active = swapDone && upgDone;
     btn.disabled = !active;
-    btn.classList.toggle('active', active);
     if (hint) {
       if (!swapDone) hint.textContent = 'SWAP OR KEEP YOUR SPELL TO CONTINUE';
       else if (!upgDone) hint.textContent = 'SELECT AN UPGRADE TO CONTINUE';

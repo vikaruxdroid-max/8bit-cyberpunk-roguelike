@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "game",
-      "runtimeExecutable": "powershell.exe",
-      "runtimeArgs": ["-ExecutionPolicy", "Bypass", "-File", "C:\\Users\\carlo\\OneDrive\\game\\serve.ps1"],
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["http-server", "C:\\game\\.claude\\worktrees\\quizzical-poincare", "-p", "9777", "-c-1"],
       "port": 9777,
       "autoPort": false
     }
