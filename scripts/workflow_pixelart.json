@@ -1,0 +1,90 @@
+{
+  "4": {
+    "inputs": { "ckpt_name": "counterfeitV30_v30.safetensors" },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": { "title": "Load Checkpoint" }
+  },
+  "20": {
+    "inputs": {
+      "lora_name": "pixel_f2.safetensors",
+      "strength_model": 0.8,
+      "strength_clip": 0.8,
+      "model": ["4", 0],
+      "clip": ["4", 1]
+    },
+    "class_type": "LoraLoader",
+    "_meta": { "title": "LoRA pixel_f2" }
+  },
+  "22": {
+    "inputs": {
+      "lora_name": "PixelArt_Perfect_ZIT_M_V1_epoch_2.safetensors",
+      "strength_model": 0.7,
+      "strength_clip": 0.7,
+      "model": ["20", 0],
+      "clip": ["20", 1]
+    },
+    "class_type": "LoraLoader",
+    "_meta": { "title": "LoRA PixelArt_Perfect" }
+  },
+  "6": {
+    "inputs": {
+      "text": "pixel art, 16-bit sprite, flat colors, bold black outlines, retro game character, crisp pixels, no anti-aliasing, limited color palette, arcade style",
+      "clip": ["22", 1]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": { "title": "Positive Prompt" }
+  },
+  "7": {
+    "inputs": {
+      "text": "blurry, realistic, 3D render, watermark, text, noisy, smooth gradients, photorealistic, anti-aliasing",
+      "clip": ["22", 1]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": { "title": "Negative Prompt" }
+  },
+  "14": {
+    "inputs": { "image": "input.png" },
+    "class_type": "LoadImage",
+    "_meta": { "title": "Load Input Image" }
+  },
+  "15": {
+    "inputs": {
+      "pixels": ["14", 0],
+      "vae": ["4", 2]
+    },
+    "class_type": "VAEEncode",
+    "_meta": { "title": "VAE Encode" }
+  },
+  "3": {
+    "inputs": {
+      "seed": 42,
+      "steps": 20,
+      "cfg": 7,
+      "sampler_name": "dpmpp_2m",
+      "scheduler": "karras",
+      "denoise": 0.7,
+      "model": ["22", 0],
+      "positive": ["6", 0],
+      "negative": ["7", 0],
+      "latent_image": ["15", 0]
+    },
+    "class_type": "KSampler",
+    "_meta": { "title": "KSampler (img2img)" }
+  },
+  "8": {
+    "inputs": {
+      "samples": ["3", 0],
+      "vae": ["4", 2]
+    },
+    "class_type": "VAEDecode",
+    "_meta": { "title": "VAE Decode" }
+  },
+  "9": {
+    "inputs": {
+      "filename_prefix": "pixelart",
+      "images": ["8", 0]
+    },
+    "class_type": "SaveImage",
+    "_meta": { "title": "Save Image" }
+  }
+}
