@@ -1,0 +1,195 @@
+{
+  "3": {
+    "inputs": {
+      "seed": 885357046548253,
+      "steps": 30,
+      "cfg": 7,
+      "sampler_name": "dpmpp_2m",
+      "scheduler": "karras",
+      "denoise": 1,
+      "model": [
+        "23",
+        0
+      ],
+      "positive": [
+        "6",
+        0
+      ],
+      "negative": [
+        "7",
+        0
+      ],
+      "latent_image": [
+        "5",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "4": {
+    "inputs": {
+      "ckpt_name": "counterfeitV30_v30.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": {
+      "title": "Load Checkpoint"
+    }
+  },
+  "5": {
+    "inputs": {
+      "width": 512,
+      "height": 768,
+      "batch_size": 10
+    },
+    "class_type": "EmptyLatentImage",
+    "_meta": {
+      "title": "Empty Latent Image"
+    }
+  },
+  "6": {
+    "inputs": {
+      "text": [
+        "26",
+        0
+      ],
+      "clip": [
+        "23",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Prompt)"
+    }
+  },
+  "7": {
+    "inputs": {
+      "text": "blurry, low quality, realistic, 3D render, watermark, \ntext, nsfw, revealing, background clutter, \nmultiple characters, grayscale, brown, desaturated,\nextra limbs, bad anatomy, deformed, colored background, gradient background, pink background, \ncyan background, teal background, background shapes, \ngeometric background, colored panels",
+      "clip": [
+        "23",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Prompt)"
+    }
+  },
+  "8": {
+    "inputs": {
+      "samples": [
+        "3",
+        0
+      ],
+      "vae": [
+        "4",
+        2
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "9": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "8",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "20": {
+    "inputs": {
+      "lora_name": "cyberpunk-v1.5-nai-9ep-resize.safetensors",
+      "strength_model": 0.4,
+      "strength_clip": 0.4,
+      "model": [
+        "4",
+        0
+      ],
+      "clip": [
+        "4",
+        1
+      ]
+    },
+    "class_type": "LoraLoader",
+    "_meta": {
+      "title": "Load LoRA (Model and CLIP)"
+    }
+  },
+  "21": {
+    "inputs": {
+      "lora_name": "Neon_Cyberpunk_Cyberspace_SDXL_v2.safetensors",
+      "strength_model": 0.6,
+      "strength_clip": 0.6,
+      "model": [
+        "4",
+        0
+      ],
+      "clip": [
+        "4",
+        1
+      ]
+    },
+    "class_type": "LoraLoader",
+    "_meta": {
+      "title": "Load LoRA (Model and CLIP)"
+    }
+  },
+  "22": {
+    "inputs": {
+      "lora_name": "PixelArt_Perfect_ZIT_M_V1_epoch_2.safetensors",
+      "strength_model": 0.5,
+      "strength_clip": 0.5,
+      "model": [
+        "21",
+        0
+      ],
+      "clip": [
+        "21",
+        1
+      ]
+    },
+    "class_type": "LoraLoader",
+    "_meta": {
+      "title": "Load LoRA (Model and CLIP)"
+    }
+  },
+  "23": {
+    "inputs": {
+      "lora_name": "lora-epoch-000034.chrommm.safetensors",
+      "strength_model": 0.65,
+      "strength_clip": 0.65,
+      "model": [
+        "22",
+        0
+      ],
+      "clip": [
+        "22",
+        1
+      ]
+    },
+    "class_type": "LoraLoader",
+    "_meta": {
+      "title": "Load LoRA (Model and CLIP)"
+    }
+  },
+  "26": {
+    "inputs": {
+      "text": "\"0\": \"standing relaxed pose, cyberpunk female character, blue skin, pink spiky hair, magenta and cyan mechanical suit, neon armor, full body, anime style, glowing accents, pink and blue color palette, dark background, comic book shading, flat colors, bold outlines\",\n\"1\": \"slight lean forward pose, cyberpunk female character, blue skin, pink spiky hair, magenta and cyan mechanical suit, neon armor, full body, anime style, glowing accents, pink and blue color palette, dark background, comic book shading, flat colors, bold outlines\",\n\"2\": \"lunging forward attack pose, cyberpunk female character, blue skin, pink spiky hair, magenta and cyan mechanical suit, neon armor, full body, anime style, glowing accents, pink and blue color palette, dark background, comic book shading, flat colors, bold outlines\",\n\"3\": \"uppercut punch pose, cyberpunk female character, blue skin, pink spiky hair, magenta and cyan mechanical suit, neon armor, full body, anime style, glowing accents, pink and blue color palette, dark background, comic book shading, flat colors, bold outlines\",\n\"4\": \"spinning kick pose, cyberpunk female character, blue skin, pink spiky hair, magenta and cyan mechanical suit, neon armor, full body, anime style, glowing accents, pink and blue color palette, dark background, comic book shading, flat colors, bold outlines\",\n\"5\": \"arms raised casting magic pose, cyberpunk female character, blue skin, pink spiky hair, magenta and cyan mechanical suit, neon armor, full body, anime style, glowing accents, pink and blue color palette, dark background, comic book shading, flat colors, bold outlines\",\n\"6\": \"recoiling from hit pose, cyberpunk female character, blue skin, pink spiky hair, magenta and cyan mechanical suit, neon armor, full body, anime style, glowing accents, pink and blue color palette, dark background, comic book shading, flat colors, bold outlines\",\n\"7\": \"falling backward death pose, cyberpunk female character, blue skin, pink spiky hair, magenta and cyan mechanical suit, neon armor, full body, anime style, glowing accents, pink and blue color palette, dark background, comic book shading, flat colors, bold outlines\",\n\"8\": \"arms raised victory pose, cyberpunk female character, blue skin, pink spiky hair, magenta and cyan mechanical suit, neon armor, full body, anime style, glowing accents, pink and blue color palette, dark background, comic book shading, flat colors, bold outlines\",\n\"9\": \"running forward pose, cyberpunk female character, blue skin, pink spiky hair, magenta and cyan mechanical suit, neon armor, full body, anime style, glowing accents, pink and blue color palette, dark background, comic book shading, flat colors, bold outlines\""
+    },
+    "class_type": "Text Multiline",
+    "_meta": {
+      "title": "Text Multiline"
+    }
+  }
+}

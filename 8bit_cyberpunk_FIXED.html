@@ -1070,6 +1070,15 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
   60%{opacity:1;transform:scale(.9) rotate(2deg);}100%{opacity:1;transform:scale(1) rotate(0deg);}}
 .manga-sfx.mg{color:var(--M);text-shadow:0 0 20px var(--M),0 0 40px var(--M);}
 .manga-sfx.gr{color:var(--G);text-shadow:0 0 20px var(--G),0 0 40px var(--G);}
+/* Background image in panel 1 */
+.mp-bg-img{position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;object-position:0% 50%;z-index:0;opacity:.75;
+  image-rendering:pixelated;}
+.manga-panel.reveal .mp-bg-img{
+  animation:bgPan 14s .5s linear infinite alternate;}
+@keyframes bgPan{
+  0%  {object-position:0% 50%;}
+  100%{object-position:100% 50%;}}
 /* City silhouette in panel 1 */
 .mp-city{position:absolute;bottom:0;left:0;right:0;height:45%;
   background:linear-gradient(0deg,#0a0a1a 0%,transparent 100%);z-index:1;}
@@ -1252,6 +1261,7 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
     <div class="manga-grid">
       <!-- Panel 1: Wide top — city skyline -->
       <div class="manga-panel mp-1" id="mp1">
+        <img class="mp-bg-img" src="assets/backgrounds/background.png" alt="">
         <div class="mp-glow"></div><div class="mp-halftone"></div><div class="mp-speedlines"></div>
         <div class="mp-city"></div>
         <div class="manga-narr" style="top:8%;left:5%;">NEO-SECTOR 7. Year 20XX.</div>
@@ -1498,6 +1508,7 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
 
     <!-- HEADER -->
     <div id="vsHeader">
+      <img id="vsCharSprite" src="" alt="" style="display:none;position:absolute;right:20px;top:50%;transform:translateY(-50%);height:110px;width:auto;filter:drop-shadow(0 0 10px #ff00ff);image-rendering:auto;">
       <div id="vsHeaderTitle">◈ ROOM CLEARED ◈</div>
       <div id="vsHeaderStats"></div>
       <div id="vsAiComment">ANALYZING COMBAT DATA...</div>
@@ -1899,7 +1910,7 @@ const Arena = {
   // Spell name flash
   _spellFlash:{active:false,timer:0,name:'',icon:''},
   shake:{frames:0,intensity:0}, bgPulse:{color:'',alpha:0}, screenFlash:{color:'',alpha:0},
-  hexParticles:[],
+  hexParticles:[], _sprites:{},
 
   init() {
     this.cv = document.getElementById('arenaCV');
@@ -1911,6 +1922,7 @@ const Arena = {
     this._initHexParticles();
     window.addEventListener('resize', () => this.resize());
     requestAnimationFrame(ts=>this.loop(ts));
+    this._loadPlayerSprites();
     this.cv.addEventListener('click',e=>{
       if(NarrationBox.active){NarrationBox.skip();return;} // Phase 4.1 — click to skip/dismiss
       // 5.1 — Run history screen scroll + back
@@ -2045,12 +2057,17 @@ const Arena = {
       const px2 = Math.floor(W * 0.18);
       const py2 = FLOOR_Y - sz.h;
       const ac = GameState.selectedAccent || CY;
+      // AI sprite display dimensions
+      const imgH = Math.floor(Math.min(H * 0.48, 280));
+      const imgW = Math.floor(imgH * 832 / 1248);
+      const imgX0 = Math.floor(px2 + sz.w/2 - imgW/2);
+      const imgY0 = FLOOR_Y - imgH;
 
       // Ground shadow
       ctx.save(); ctx.globalAlpha=.3; ctx.fillStyle='#000';
-      ctx.beginPath(); ctx.ellipse(px2+sz.w/2, FLOOR_Y+2, sz.w*.45, 5, 0, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(imgX0+imgW/2, FLOOR_Y+2, imgW*.35, 5, 0, 0, Math.PI*2); ctx.fill();
       ctx.restore();
-      drawGroundShadow(ctx, px2, FLOOR_Y, sz.w, 0, 255, 255);
+      drawGroundShadow(ctx, imgX0, FLOOR_Y, imgW, 0, 255, 255);
 
       // Animation — dash movement system
       let lunge=0, scaleX=1, scaleY=1, extraBob=0;
@@ -2116,7 +2133,13 @@ const Arena = {
         if(p.animTimer>1 && p.animTimer<12){
           ctx.save(); ctx.globalAlpha=0.15;
           const ghostLunge = -Math.sin((p.animTimer-2)/dodgeFrames*Math.PI)*40;
-          if(SPR[p.sprite]) SPR[p.sprite](ctx, px2+ghostLunge, py2+Math.sin((p.animTimer-2)/dodgeFrames*Math.PI)*-20, false, t);
+          const ghostBob = Math.sin((p.animTimer-2)/dodgeFrames*Math.PI)*-20;
+          const runImg = this._sprites['run'];
+          if (runImg && runImg.complete && runImg.naturalWidth > 0) {
+            ctx.drawImage(runImg, imgX0+ghostLunge, imgY0+ghostBob, imgW, imgH);
+          } else if (SPR[p.sprite]) {
+            SPR[p.sprite](ctx, px2+ghostLunge, py2+ghostBob, false, t);
+          }
           ctx.restore();
         }
         p.animTimer++;
@@ -2128,14 +2151,14 @@ const Arena = {
         const castFrames=sub==='channel'?40:30;
         lunge = Math.sin(p.animTimer / castFrames * Math.PI) * 20;
         ctx.save(); ctx.globalAlpha = .5 - p.animTimer/(castFrames*2);
-        const g = ctx.createRadialGradient(px2+sz.w/2+lunge, py2+sz.h/2, 0, px2+sz.w/2+lunge, py2+sz.h/2, sub==='channel'?100:80);
+        const g = ctx.createRadialGradient(px2+sz.w/2+lunge, imgY0+imgH/2, 0, px2+sz.w/2+lunge, imgY0+imgH/2, sub==='channel'?100:80);
         g.addColorStop(0, ac); g.addColorStop(1, 'transparent');
-        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(px2+sz.w/2+lunge, py2+sz.h/2, sub==='channel'?100:80, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(px2+sz.w/2+lunge, imgY0+imgH/2, sub==='channel'?100:80, 0, Math.PI*2); ctx.fill();
         // Channel: sustained glow ring
         if(sub==='channel' && p.animTimer>5 && p.animTimer<35){
           ctx.globalAlpha=0.3;
           ctx.strokeStyle=ac; ctx.lineWidth=2;
-          ctx.beginPath(); ctx.arc(px2+sz.w/2+lunge, py2+sz.h/2, 50+Math.sin(p.animTimer*0.3)*10, 0, Math.PI*2); ctx.stroke();
+          ctx.beginPath(); ctx.arc(px2+sz.w/2+lunge, imgY0+imgH/2, 50+Math.sin(p.animTimer*0.3)*10, 0, Math.PI*2); ctx.stroke();
         }
         ctx.restore();
         p.animTimer++; if (p.animTimer > castFrames) { p.animState = 'idle.base'; p.animTimer = 0; }
@@ -2169,117 +2192,41 @@ const Arena = {
       const bob = Math.sin(t * .04) * 3 + extraBob;
       const breathe = 1 + Math.sin(t * .03) * 0.015;
       const pDead = p.hp <= 0;
-      if (pDead) { ctx.save(); ctx.globalAlpha = .35; }
 
-      // Draw sprite outline for visibility (dark border)
+      // ── AI Sprite Image Rendering ──
       ctx.save();
-      const dx = px2 + lunge + idleExtraX, dy = py2 + bob;
-      if(scaleX!==1||scaleY!==1||breathe!==1){
-        ctx.translate(dx+sz.w/2, dy+sz.h); ctx.scale(scaleX*breathe, scaleY*breathe); ctx.translate(-(dx+sz.w/2), -(dy+sz.h));
+      const dx = imgX0 + lunge + idleExtraX;
+      const dy = imgY0 + bob;
+      if (scaleX!==1||scaleY!==1||breathe!==1) {
+        ctx.translate(dx+imgW/2, FLOOR_Y+bob); ctx.scale(scaleX*breathe, scaleY*breathe); ctx.translate(-(dx+imgW/2), -(FLOOR_Y+bob));
       }
-      // Dark silhouette backdrop for visibility (no filter for performance)
-      ctx.globalAlpha = pDead ? 0.1 : 0.3;
-      ctx.fillStyle='#000';
-      ctx.fillRect(dx+1, dy+1, sz.w, sz.h);
-      // Main sprite
-      ctx.globalAlpha = pDead ? 0.35 : 1;
-      if (SPR[p.sprite]) SPR[p.sprite](ctx, dx, dy, false, t);
-      // ── Player limb animation overlay ──
-      if(!pDead){
-        const ac2=p.accent||CY;
-        const aSub=animSub(p.animState);
-        const isAtk=p.animState.startsWith('attack');
-        const isCast=p.animState.startsWith('cast');
-        // Arm swing per animation sub-type
-        let armSwing, armR2=0;
-        if(isAtk&&aSub==='slash'){
-          armSwing=Math.sin(p.animTimer/8*Math.PI)*18; // wide horizontal sweep
-        } else if(isAtk&&aSub==='thrust'){
-          armSwing=Math.sin(p.animTimer/6*Math.PI)*4; // minimal rotation, arm extends forward
-          armR2=Math.sin(p.animTimer/6*Math.PI)*-0.6; // thrust extension angle
-        } else if(isAtk&&aSub==='overhead'){
-          armSwing=-Math.abs(Math.sin(p.animTimer/9*Math.PI))*20; // arc from top down
-        } else if(isAtk){
-          armSwing=Math.sin(p.animTimer/8*Math.PI)*12;
-        } else if(isCast&&aSub==='channel'){
-          armSwing=Math.sin(p.animTimer/20*Math.PI)*-12; // both arms raised
-        } else if(isCast){
-          armSwing=Math.sin(p.animTimer/15*Math.PI)*-8;
-        } else if(idleSub==='ready'){
-          armSwing=Math.sin(t*0.06)*2+4; // raised slightly
-        } else {
-          armSwing=Math.sin(t*0.06)*2; // idle sway
-        }
-        // Leg swing — walk cycle during attack dash/retreat
-        let legSwing;
-        if(isAtk){
-          const atkFrames=aSub==='thrust'?25:aSub==='overhead'?35:30;
-          const aProg=p.animTimer/atkFrames;
-          if(aProg<0.3||aProg>0.45){
-            legSwing=Math.sin(p.animTimer*0.8)*8; // walk cycle during movement
-          } else {
-            legSwing=Math.sin(p.animTimer/8*Math.PI)*6; // planted during strike
-          }
-        } else if(idleSub==='shift'){
-          legSwing=Math.sin(p.animTimer/15*Math.PI)*3;
-        } else {
-          legSwing=Math.sin(t*0.04)*1.5; // idle step
-        }
-        // Right arm (weapon arm)
-        ctx.fillStyle=ac2;ctx.globalAlpha=0.7;
-        ctx.save();ctx.translate(dx+sz.w-P,dy+sz.h*0.35);ctx.rotate(armSwing*0.04+armR2);
-        ctx.fillRect(0,0,P*2,P*5);
-        // Weapon glow on attack
-        if(isAtk){
-          ctx.fillStyle='#fff';ctx.globalAlpha=0.5;
-          if(aSub==='slash'){
-            // Horizontal trail
-            ctx.fillRect(-P*2,-P,P*5,P*1.5);
-          } else if(aSub==='thrust'){
-            // Point glow at tip
-            ctx.fillRect(P*0.5,-P*3,P,P*4);
-          } else if(aSub==='overhead'){
-            // Vertical trail
-            ctx.fillRect(P*0.5,-P*4,P,P*5);
-          } else {
-            ctx.fillRect(P*0.5,-P*2,P,P*3);
-          }
-        }
-        ctx.restore();
-        // Left arm — mirror for channel cast
-        ctx.fillStyle=isCast&&aSub==='channel'?ac2:'#445577';
-        ctx.globalAlpha=isCast&&aSub==='channel'?0.6:0.5;
-        ctx.save();ctx.translate(dx-P,dy+sz.h*0.38);ctx.rotate(-armSwing*0.03);
-        ctx.fillRect(-P,0,P*2,P*4);
-        // Channel: glow on left hand too
-        if(isCast&&aSub==='channel'&&p.animTimer>5&&p.animTimer<35){
-          ctx.fillStyle=ac2;ctx.globalAlpha=0.4;ctx.fillRect(-P*2,-P,P*2,P*2);
-        }
-        ctx.restore();
-        // Legs — walk cycle + idle step
-        ctx.fillStyle='#334455';ctx.globalAlpha=0.5;
-        const legTuck=p.animState==='dodge'?Math.sin(p.animTimer/18*Math.PI)*-4:0;
-        ctx.fillRect(dx+sz.w*0.25,dy+sz.h-P*3+legSwing+legTuck,P*2,P*3+legTuck);
-        ctx.fillRect(dx+sz.w*0.55,dy+sz.h-P*3-legSwing+legTuck,P*2,P*3+legTuck);
-        ctx.globalAlpha=1;
+      const spriteName = this._resolvePlayerSpriteName(p);
+      const img = this._sprites[spriteName];
+      if (pDead) ctx.globalAlpha = 0.35;
+      if (img && img.complete && img.naturalWidth > 0) {
+        ctx.shadowColor = 'rgba(0,0,0,0.55)';
+        ctx.shadowBlur = 16; ctx.shadowOffsetX = 4; ctx.shadowOffsetY = 8;
+        ctx.drawImage(img, dx, dy, imgW, imgH);
+        ctx.shadowBlur = 0; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0; ctx.shadowColor = 'transparent';
+      } else if (SPR[p.sprite]) {
+        SPR[p.sprite](ctx, px2 + lunge + idleExtraX, py2 + bob, false, t);
       }
       ctx.restore();
-      if (pDead) ctx.restore();
       if (pWasHurt) ctx.restore();
 
-      renderPlayerGlow(ctx, px2, py2, sz.w, sz.h, ac);
-      // HP bar — bigger, with colored fill
-      this.hpBar(ctx, px2-4, py2 - 16, sz.w+8, p.hp, p.maxHp, ac);
-      // Name label — readable size with dark background
+      renderPlayerGlow(ctx, imgX0, imgY0, imgW, imgH, ac);
+      // HP bar
+      this.hpBar(ctx, imgX0-4, imgY0 - 16, imgW+8, p.hp, p.maxHp, ac);
+      // Name label
       ctx.save();
       const nameText = p.className;
       ctx.font = `bold ${Math.max(8,P+2)}px 'Share Tech Mono',monospace`;
       ctx.textAlign = 'center';
       const nameW = ctx.measureText(nameText).width;
       ctx.fillStyle = 'rgba(0,0,0,0.6)';
-      ctx.fillRect(px2+sz.w/2-nameW/2-4, py2-28, nameW+8, 12);
+      ctx.fillRect(imgX0+imgW/2-nameW/2-4, imgY0-28, nameW+8, 12);
       ctx.fillStyle = ac;
-      ctx.fillText(nameText, px2+sz.w/2, py2-18);
+      ctx.fillText(nameText, imgX0+imgW/2, imgY0-18);
       ctx.restore();
     }
 
@@ -3678,7 +3625,31 @@ const Arena = {
     const sz = SPRITE_SIZE[p.sprite]||{w:56,h:88};
     const zfY={neonNexus:0.82};
     const flY=this.H*(zfY[GameState.currentZoneId]||0.73);
-    return {x: this.W*.18+sz.w/2, y: flY-sz.h/2};
+    const imgH = Math.floor(Math.min(this.H * 0.48, 280));
+    const imgW = Math.floor(imgH * 832 / 1248);
+    const px2 = Math.floor(this.W * 0.18);
+    const imgX0 = Math.floor(px2 + sz.w/2 - imgW/2);
+    return {x: imgX0+imgW/2, y: flY-imgH/2};
+  },
+
+  _loadPlayerSprites() {
+    ['idle','attack1','attack2','cast','hit','death','victory','run'].forEach(n => {
+      const img = new Image();
+      img.src = `assets/characters/${n}.png`;
+      this._sprites[n] = img;
+    });
+  },
+
+  _resolvePlayerSpriteName(p) {
+    if (!p) return 'idle';
+    if (p.hp <= 0) return 'death';
+    if (p.animState === 'victory') return 'victory';
+    if (p.animState.startsWith('attack'))
+      return p.animState.split('.')[1] === 'overhead' ? 'attack2' : 'attack1';
+    if (p.animState.startsWith('cast')) return 'cast';
+    if (p.animState.startsWith('hurt')) return 'hit';
+    if (p.animState === 'dodge') return 'run';
+    return 'idle';
   },
 
   drawMinimap() { /* removed — replaced by renderRoomProgress dot strip */ }
@@ -11109,6 +11080,9 @@ const VictoryScreen = {
     Inventory.gold += this._gold;
     Inventory._gold();
     this._render();
+    if(GameState.player) GameState.player.animState='victory';
+    const vsSprite=document.getElementById('vsCharSprite');
+    if(vsSprite){vsSprite.src='assets/characters/victory.png';vsSprite.style.display='block';}
     UI.show('sVIC');
     setTimeout(()=>VaporBg.start(),100);
     // AI spell commentary — inject into header
