@@ -1085,12 +1085,24 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
     linear-gradient(0deg,#111 2px,transparent 2px) 75% 100%/9% 55% no-repeat,
     linear-gradient(0deg,#111 2px,transparent 2px) 87% 100%/6% 65% no-repeat,
     linear-gradient(0deg,#111 2px,transparent 2px) 95% 100%/4% 80% no-repeat;}
-/* Character silhouette in panel 2 */
-.mp-char-sil{position:absolute;bottom:10%;left:50%;transform:translateX(-50%);
-  width:50px;height:80px;background:#111;clip-path:polygon(30% 0%,70% 0%,80% 15%,75% 40%,90% 45%,85% 70%,70% 100%,30% 100%,15% 70%,10% 45%,25% 40%,20% 15%);
-  box-shadow:0 0 30px rgba(255,0,255,.4);}
-.mp-char-sil::after{content:'';position:absolute;inset:-4px;
-  background:inherit;clip-path:inherit;opacity:.3;filter:blur(8px);}
+/* Character PNG in panel 2 */
+.mp-char-wrap{position:absolute;bottom:5%;left:50%;
+  transform:translateX(calc(-50% - 260px));opacity:0;z-index:2;}
+.manga-panel.reveal-slide .mp-char-wrap{
+  animation:charSlideIn .7s .25s cubic-bezier(.22,.68,.36,1.2) forwards;}
+.mp-char-img{display:block;width:clamp(70px,9vw,140px);height:auto;
+  image-rendering:pixelated;
+  filter:drop-shadow(0 0 8px rgba(255,0,255,.95)) drop-shadow(0 0 22px rgba(255,0,255,.5)) drop-shadow(0 0 40px rgba(0,255,255,.3));}
+.manga-panel.reveal-slide .mp-char-img{
+  animation:charFloat 2.8s .95s ease-in-out infinite;}
+@keyframes charSlideIn{
+  0%  {opacity:0;transform:translateX(calc(-50% - 260px));}
+  40% {opacity:1;}
+  80% {transform:translateX(calc(-50% + 9px));}
+  100%{opacity:1;transform:translateX(-50%);}}
+@keyframes charFloat{
+  0%,100%{transform:translateY(0);}
+  50%    {transform:translateY(-8px);}}
 /* Glitch scan line */
 .mp-scanline{position:absolute;inset:0;pointer-events:none;z-index:4;
   background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,255,255,.02) 2px,rgba(0,255,255,.02) 4px);}
@@ -1247,10 +1259,10 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
         <div class="manga-sfx" style="bottom:15%;right:8%;transform:rotate(-8deg);">BZZZT</div>
         <div class="mp-scanline"></div>
       </div>
-      <!-- Panel 2: Tall left — character silhouette -->
+      <!-- Panel 2: Tall left — character -->
       <div class="manga-panel mp-2" id="mp2">
         <div class="mp-glow"></div><div class="mp-halftone"></div>
-        <div class="mp-char-sil"></div>
+        <div class="mp-char-wrap"><img class="mp-char-img" src="assets/characters/player.png" alt="runner"></div>
         <div class="manga-bubble" style="top:12%;right:8%;">Another runner jacked in...</div>
         <div class="manga-bubble" style="top:35%;left:8%;border-radius:16px 16px 4px 16px;">Let's see how long this one lasts.</div>
         <div class="mp-scanline"></div>
