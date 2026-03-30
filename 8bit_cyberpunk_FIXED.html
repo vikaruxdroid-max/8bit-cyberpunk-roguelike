@@ -2268,12 +2268,12 @@ const Arena = {
             this.spawnText('★ FLATLINED ★',cx2,ey-40,'#ffe100',16);
           }
         }
-        const _isDev=en.sprite==='devil';
-        const _dIH=_isDev?Math.floor(Math.min(H*0.48,280)):0;
-        const _dIW=_isDev?Math.floor(_dIH*832/1248):0;
+        const _isDev=true; // devil sprites are the enemy visual avatar for all enemy types
+        const _dIH=Math.floor(Math.min(H*0.48,280));
+        const _dIW=Math.floor(_dIH*832/1248);
         const _dCX=ex+sz.w/2; // slot center
         const _dIY=FLOOR_Y-_dIH;
-        const _dImg=_isDev?this._sprites['devil_death']:null;
+        const _dImg=this._sprites['devil_death'];
         ctx.save();
         const dp = en.deathTimer / 65;
         if (dp > 0.72) {
@@ -2413,7 +2413,7 @@ const Arena = {
         en._idleVarTimer++;
         en._tauntCd++;
         // Devil taunt: fire every ~8s (480 frames) with small random window
-        if(en.sprite==='devil' && en._tauntCd>480 && Math.random()<0.015){
+        if(en._tauntCd>480 && Math.random()<0.015){
           en._tauntCd=0; en._idleVarTimer=0;
           en.animState='idle.taunt'; en.animTimer=0;
         } else if(en._idleVarTimer>200+i*40){
@@ -2437,7 +2437,7 @@ const Arena = {
       const eBob=bob+eExtraBob;
 
       // Draw with outline for visibility
-      const isDevil = en.sprite === 'devil';
+      const isDevil = true; // devil sprites are the enemy visual avatar for all enemy types
       const dImgH = isDevil ? Math.floor(Math.min(H * 0.48, 280)) : 0;
       const dImgW = isDevil ? Math.floor(dImgH * 832 / 1248) : 0;
       const dSlotCX = ex + sz.w / 2; // true slot center X
@@ -2549,12 +2549,8 @@ const Arena = {
       if (enWasHurt) ctx.restore();
 
       // COMBAT-UI-2: upgraded HP bar (thicker, named, shield/phase aware)
-      if(en.sprite==='devil'){
-        const _bIH=Math.floor(Math.min(H*0.48,280)),_bIW=Math.floor(_bIH*832/1248);
-        renderEnemyHPBar(ctx, en, (ex+sz.w/2)-_bIW/2, FLOOR_Y-_bIH, _bIW);
-      } else {
-        renderEnemyHPBar(ctx, en, ex, ey, sz.w);
-      }
+      {const _bIH=Math.floor(Math.min(H*0.48,280)),_bIW=Math.floor(_bIH*832/1248);
+      renderEnemyHPBar(ctx, en, (ex+sz.w/2)-_bIW/2, FLOOR_Y-_bIH, _bIW);}
       // Stun indicator
       if (en.isStunned && en.isStunned()) {
         ctx.fillStyle = '#ffff00'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign='center';
@@ -3694,11 +3690,8 @@ const Arena = {
     const ex = eStartX + aliveIdx*slotW + (slotW-sz.w)/2;
     const zfY={neonNexus:0.82};
     const flY=this.H*(zfY[GameState.currentZoneId]||0.73);
-    if(en.sprite==='devil'){
-      const dImgH=Math.floor(Math.min(this.H*0.48,280));
-      return {x: ex+sz.w/2, y: flY-dImgH/2};
-    }
-    return {x: ex+sz.w/2, y: flY-sz.h/2};
+    const dImgH=Math.floor(Math.min(this.H*0.48,280));
+    return {x: ex+sz.w/2, y: flY-dImgH/2};
   },
 
   getPlayerPos() {
@@ -7532,7 +7525,7 @@ const Combat = {
             </div>`;
           deathEl.style.display='flex';
           // Show enemy victory sprite if a devil enemy won
-          const winEnemy=(GameState.enemies||[]).find(e=>e.hp>0&&e.sprite==='devil');
+          const winEnemy=(GameState.enemies||[]).find(e=>e.hp>0);
           if(winEnemy){
             const vImg=document.createElement('img');
             vImg.src='assets/characters/devil/victory.png';
