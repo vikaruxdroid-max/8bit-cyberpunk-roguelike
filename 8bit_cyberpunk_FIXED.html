@@ -1124,6 +1124,47 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
 #miSkip:hover{background:rgba(0,255,255,.1);box-shadow:0 0 15px rgba(0,255,255,.3);}
 .aiDots{display:inline-block;animation:dotFade 1.2s infinite;}
 @keyframes dotFade{0%,100%{opacity:0.2}50%{opacity:1}}
+
+/* ── INTENT MIRROR ─────────────────────────────────── */
+@keyframes imPulse{0%,100%{opacity:.5}50%{opacity:1}}
+.im-btn{font-family:'Press Start 2P',monospace;font-size:clamp(7px,0.85vw,11px);padding:clamp(6px,1vh,10px) clamp(12px,1.5vw,20px);border:1px solid;cursor:pointer;letter-spacing:1px;transition:all .15s;flex:1;max-width:160px;position:relative;overflow:hidden;}
+.im-btn:disabled{opacity:.35;cursor:not-allowed;}
+.im-btn:not(:disabled):hover{transform:translateY(-2px);}
+.im-attack{background:rgba(255,0,64,.12);border-color:#ff0040;color:#ff0040;}
+.im-attack:not(:disabled):hover{background:rgba(255,0,64,.25);box-shadow:0 0 12px rgba(255,0,64,.4);}
+.im-block{background:rgba(0,85,255,.12);border-color:#0055ff;color:#4499ff;}
+.im-block:not(:disabled):hover{background:rgba(0,85,255,.25);box-shadow:0 0 12px rgba(0,85,255,.4);}
+.im-exploit{background:rgba(255,214,0,.1);border-color:#ffd600;color:#ffd600;}
+.im-exploit:not(:disabled):hover{background:rgba(255,214,0,.2);box-shadow:0 0 12px rgba(255,214,0,.35);}
+#imReveal{background:rgba(0,0,20,.8);border:1px solid rgba(255,255,255,.15);border-radius:2px;padding:5px 18px;}
+.im-debuff-tag{padding:2px 6px;border:1px solid;border-radius:2px;font-size:clamp(7px,0.8vw,10px);}
+.im-debuff-tag.imGlitch{border-color:#ff00ff;color:#ff00ff;}
+.im-debuff-tag.imOverload{border-color:#ff6600;color:#ff6600;}
+.im-debuff-tag.imStatic{border-color:#4499ff;color:#4499ff;}
+.im-debuff-tag.imCorrupt{border-color:#aa44ff;color:#aa44ff;}
+
+/* ── COMBAT LOG ─────────────────────────────────────── */
+#combatLog{scrollbar-width:thin;scrollbar-color:#223 #000;}
+.cl-line{font-family:'Share Tech Mono',monospace;font-size:clamp(8px,0.85vw,11px);color:#556677;padding:1px 0;border-bottom:1px solid rgba(0,255,255,.04);line-height:1.5;}
+.cl-line:last-child{color:#00ffff;}
+.cl-crit{color:#ff0040!important;}
+.cl-miss{color:#ff6600!important;}
+
+/* ── INTERROGATION PROTOCOL ─────────────────────────── */
+.iq-btn{font-family:'Share Tech Mono',monospace;font-size:clamp(9px,1vw,13px);padding:clamp(8px,1.2vh,12px) clamp(12px,1.5vw,18px);border:1px solid;cursor:pointer;text-align:left;display:flex;gap:10px;align-items:center;transition:all .2s;width:100%;}
+.iq-btn:hover{transform:translateX(4px);}
+.iq-btn:disabled{opacity:.4;cursor:not-allowed;}
+.iq-label{font-family:'Press Start 2P',monospace;font-size:clamp(6px,0.7vw,9px);flex-shrink:0;letter-spacing:1px;min-width:80px;}
+.iq-text{flex:1;opacity:.9;}
+.iq-intimidate{background:rgba(255,0,64,.08);border-color:#ff0040;color:#ff8899;}
+.iq-intimidate:hover{background:rgba(255,0,64,.18);box-shadow:0 0 10px rgba(255,0,64,.3);}
+.iq-intimidate .iq-label{color:#ff0040;}
+.iq-deceive{background:rgba(255,214,0,.06);border-color:#ffd600;color:#ffe680;}
+.iq-deceive:hover{background:rgba(255,214,0,.14);box-shadow:0 0 10px rgba(255,214,0,.25);}
+.iq-deceive .iq-label{color:#ffd600;}
+.iq-empathize{background:rgba(0,255,65,.06);border-color:#00ff41;color:#99ffbb;}
+.iq-empathize:hover{background:rgba(0,255,65,.14);box-shadow:0 0 10px rgba(0,255,65,.25);}
+.iq-empathize .iq-label{color:#00ff41;}
 </style>
 </head>
 <body>
@@ -1430,6 +1471,35 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
     <canvas id="dmcv" width="52" height="60" style="display:none;"></canvas>
     <!-- Death overlay -->
     <div id="deathOverlay" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.9);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:20px;"></div>
+
+    <!-- ══ INTENT MIRROR — action selection panel ══ -->
+    <div id="imPanel" style="display:none;position:absolute;bottom:0;left:0;right:0;z-index:50;background:linear-gradient(0deg,rgba(0,0,16,.97),rgba(0,0,16,.85));border-top:1px solid rgba(0,255,255,.25);padding:8px 12px;flex-direction:column;align-items:center;gap:6px;">
+      <div id="imReveal" style="display:none;font-family:'Share Tech Mono',monospace;font-size:clamp(10px,1.1vw,14px);color:#fff;letter-spacing:2px;text-align:center;padding:4px 0;"></div>
+      <div id="imSync" style="display:none;font-family:'Press Start 2P',monospace;font-size:clamp(7px,0.8vw,10px);color:#ff00ff;letter-spacing:3px;text-shadow:0 0 8px #ff00ff;animation:imPulse 0.6s ease infinite;">SYNCHRONIZING...</div>
+      <div id="imButtons" style="display:flex;gap:8px;width:100%;justify-content:center;">
+        <button id="imAttack" class="im-btn im-attack" onclick="IntentMirror.playerPick('ATTACK')">⚔ ATTACK</button>
+        <button id="imBlock"  class="im-btn im-block"  onclick="IntentMirror.playerPick('BLOCK')">🛡 BLOCK</button>
+        <button id="imExploit" class="im-btn im-exploit" onclick="IntentMirror.playerPick('EXPLOIT')">⚡ EXPLOIT</button>
+      </div>
+      <div id="imDebuffRow" style="display:flex;gap:8px;font-family:'Share Tech Mono',monospace;font-size:clamp(8px,0.9vw,11px);color:#888;min-height:14px;"></div>
+    </div>
+
+    <!-- ══ COMBAT LOG — last 6 lines ══ -->
+    <div id="combatLog" style="position:absolute;right:8px;top:56px;width:clamp(160px,18vw,220px);max-height:110px;overflow-y:auto;z-index:42;background:rgba(0,0,12,.82);border:1px solid rgba(0,255,255,.12);border-radius:2px;padding:4px 6px;display:none;"></div>
+
+    <!-- ══ INTERROGATION PROTOCOL overlay ══ -->
+    <div id="interrogationOverlay" style="display:none;position:absolute;inset:0;z-index:60;background:rgba(0,0,16,.92);backdrop-filter:blur(3px);flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:16px;">
+      <div id="iqStakes" style="display:none;font-family:'Press Start 2P',monospace;font-size:clamp(6px,0.75vw,9px);color:#ff6600;text-shadow:0 0 8px #ff6600;text-align:center;padding:6px 12px;border:1px solid #ff6600;background:rgba(255,102,0,.08);max-width:480px;"></div>
+      <div id="iqRoundBadge" style="font-family:'Press Start 2P',monospace;font-size:clamp(6px,0.75vw,9px);color:#888;letter-spacing:2px;">ROUND 1/3</div>
+      <div id="iqEnemyReply" style="font-family:'Share Tech Mono',monospace;font-size:clamp(10px,1.1vw,14px);color:#00ffff;text-shadow:0 0 6px #00ffff;text-align:center;max-width:520px;min-height:36px;line-height:1.6;"></div>
+      <div id="iqOptions" style="display:flex;flex-direction:column;gap:8px;width:100%;max-width:520px;">
+        <button id="iqIntimidateBtn" class="iq-btn iq-intimidate" onclick="InterrogationProtocol.playerPick('intimidate')"><span class="iq-label">INTIMIDATE</span><span id="iqIntimidateText" class="iq-text"></span></button>
+        <button id="iqDeceiveBtn"    class="iq-btn iq-deceive"    onclick="InterrogationProtocol.playerPick('deceive')"><span class="iq-label">DECEIVE</span><span id="iqDeceiveText" class="iq-text"></span></button>
+        <button id="iqEmpathizeBtn"  class="iq-btn iq-empathize"  onclick="InterrogationProtocol.playerPick('empathize')"><span class="iq-label">EMPATHIZE</span><span id="iqEmpathizeText" class="iq-text"></span></button>
+      </div>
+      <div id="iqLoadingMsg" style="display:none;font-family:'Share Tech Mono',monospace;font-size:clamp(9px,1vw,12px);color:#ff00ff;animation:imPulse 0.6s ease infinite;">ANALYZING TARGET...</div>
+      <div id="iqOutcomeBanner" style="display:none;font-family:'Press Start 2P',monospace;font-size:clamp(8px,0.9vw,12px);text-align:center;padding:10px 20px;border:1px solid;max-width:480px;"></div>
+    </div>
     <!-- Quest panel — hidden but DOM kept for JS refs -->
     <div class="qp" id="qpanel" style="display:none">
       <div class="qhdr"><span id="qhdrTxt">QUESTS</span><span id="qtgl">◀</span></div>
@@ -4430,21 +4500,21 @@ function getSpellPool(spellId){
 const CLASSES = {};
 
 const ETYPES = [
-  {id:'glitchDrone',name:'GLITCH DRONE',hp:35,atk:8,def:2,spd:14,sprite:'glitchDrone',color:CY,
+  {id:'glitchDrone',name:'GLITCH DRONE',hp:35,atk:8,def:2,spd:14,sprite:'glitchDrone',color:CY,archetype:'AGGRESSIVE',
    ability:{name:'Static Burst',subtype:'aoe',trigger:'turn3',used:false,fn(e,p){const d=Math.floor(e.atk*.5);p.hp=Math.max(0,p.hp-d);UI.dmgNumPlayer(d,'phit');DM.say('STATIC BURST! AoE crackle!');}}},
-  {id:'neonGolem',name:'NEON GOLEM',hp:90,atk:12,def:10,spd:4,sprite:'neonGolem',color:PU,
+  {id:'neonGolem',name:'NEON GOLEM',hp:90,atk:12,def:10,spd:4,sprite:'neonGolem',color:PU,archetype:'DEFENSIVE',
    ability:{name:'Iron Skin',trigger:'hp50',used:false,fn(e){e.addBuff('ironSkin',{def:Math.floor(e.def*.3),turns:2});DM.say('IRON SKIN! It hardens!');}}},
-  {id:'voidSpecter',name:'VOID SPECTER',hp:55,atk:14,def:4,spd:9,sprite:'voidSpecter',color:'#aa44ff',
+  {id:'voidSpecter',name:'VOID SPECTER',hp:55,atk:14,def:4,spd:9,sprite:'voidSpecter',color:'#aa44ff',archetype:'DISRUPTOR',
    ability:{name:'Phase Shift',trigger:'hp50',used:false,fn(e){e.addBuff('phase',{dodges:1,turns:2});DM.say('PHASE SHIFT! It phases out!');}}},
-  {id:'cyberOgre',name:'CYBER OGRE',hp:110,atk:20,def:8,spd:5,sprite:'cyberOgre',color:OR,
+  {id:'cyberOgre',name:'CYBER OGRE',hp:110,atk:20,def:8,spd:5,sprite:'cyberOgre',color:OR,archetype:'AGGRESSIVE',
    ability:{name:'Overload',subtype:'heavy_physical',trigger:'cd5',cdLeft:0,fn(e,p){const d=Math.floor(e.atk*2);p.hp=Math.max(0,p.hp-d);UI.dmgNumPlayer(d,'crit');Arena.spawnVFX('explode',Arena.getPlayerPos().x,Arena.getPlayerPos().y,OR);DM.say('OVERLOAD! Devastating!');}}},
-  {id:'dataWraith',name:'DATA WRAITH',hp:65,atk:13,def:3,spd:11,sprite:'dataWraith',color:CY,
+  {id:'dataWraith',name:'DATA WRAITH',hp:65,atk:13,def:3,spd:11,sprite:'dataWraith',color:CY,archetype:'DISRUPTOR',
    ability:{name:'MP Drain',subtype:'special',trigger:'cd4',cdLeft:0,fn(e,p){p.mp=Math.max(0,p.mp-15);DM.say('DATA WRAITH drains your mana!');}}},
-  {id:'pulseHound',name:'PULSE HOUND',hp:50,atk:15,def:3,spd:13,sprite:'pulseHound',color:RD,
+  {id:'pulseHound',name:'PULSE HOUND',hp:50,atk:15,def:3,spd:13,sprite:'pulseHound',color:RD,archetype:'PREDATOR',
    ability:{name:'Bleed',subtype:'special',trigger:'cd3',cdLeft:0,fn(e,p){p.addDebuff('bleed',{dmgPct:.05,turns:3});DM.say('PULSE HOUND inflicts bleeding!');}}},
-  {id:'circuitLich',name:'CIRCUIT LICH',hp:75,atk:18,def:6,spd:7,sprite:'circuitLich',color:GR,
+  {id:'circuitLich',name:'CIRCUIT LICH',hp:75,atk:18,def:6,spd:7,sprite:'circuitLich',color:GR,archetype:'DISRUPTOR',
    ability:{name:'Arcane Pulse',subtype:'magical',trigger:'cd3',cdLeft:0,fn(e,p){const d=Math.floor(e.atk);p.hp=Math.max(0,p.hp-d);UI.dmgNumPlayer(d,'phit');DM.say('ARCANE PULSE! Ignores armor!');}}},
-  {id:'netrunner',name:'NETRUNNER',hp:60,atk:12,def:3,spd:12,evasion:0.35,sprite:'netrunner',color:CY,
+  {id:'netrunner',name:'NETRUNNER',hp:60,atk:12,def:3,spd:12,evasion:0.35,sprite:'netrunner',color:CY,archetype:'PREDATOR',
    ability:{name:'Neural Hack',subtype:'special',trigger:'cd6',cdLeft:0,fn(e,p){
      const targets=p.spells.filter(s=>!(s.hackedTurns>0));
      if(!targets.length){DM.say('NEURAL HACK fizzles — all spells already disrupted!');return;}
@@ -4455,14 +4525,14 @@ const ETYPES = [
      UI.updateSpells();
    }}},
   {id:'quantumBoss',name:'QUANTUM BOSS',hp:220,atk:22,def:10,spd:7,sprite:'quantumBoss',color:MG,
-   isBoss:true,phase:1,
+   isBoss:true,phase:1,archetype:'AGGRESSIVE',
    ability:{name:'Phase Attack',trigger:'phase',fn(e,p,phase){
      if(phase===2)DM.say('QUANTUM ECHO copies its last power!');
      if(phase===3){e.atk=Math.floor(e.baseAtk*1.5);e.spd=Math.floor(e.baseSpd*1.5);Arena.spawnVFX('explode',Arena.W*.5,Arena.H*.4,MG);DM.say('ENRAGE! +50% ATK and SPD!');}
    }}},
   // ── NEW ENEMIES ──
   {id:'chromeBeast',name:'CHROME BEAST',hp:140,atk:26,def:16,spd:3,sprite:'cyberOgre',color:'#aaaacc',
-   behavior:'aggressive',
+   behavior:'aggressive',archetype:'AGGRESSIVE',
    ability:{name:'Crush',subtype:'heavy_physical',trigger:'cd5',cdLeft:0,fn(e,p){
      const d=Math.max(1,e.atk*3-p.def);p.hp=Math.max(0,p.hp-d);
      UI.dmgNumPlayer(d,'crit');
@@ -4471,7 +4541,7 @@ const ETYPES = [
      e.addDebuff('exhausted',{turns:1});
    }}},
   {id:'ghostHacker',name:'GHOST HACKER',hp:70,atk:18,def:2,spd:11,sprite:'dataWraith',color:'#cc88ff',
-   behavior:'tactical',evasion:0.0,
+   behavior:'tactical',evasion:0.0,archetype:'PREDATOR',
    ability:{name:'Phantom Strike',subtype:'execute',trigger:'cd3',cdLeft:0,fn(e,p){
      const d=Math.max(1,e.atk);// bypasses DEF
      p.hp=Math.max(0,p.hp-d);UI.dmgNumPlayer(d,'crit');
@@ -4479,21 +4549,21 @@ const ETYPES = [
      Arena.spawnVFX('spark',Arena.getPlayerPos().x,Arena.getPlayerPos().y,'#cc88ff');
    }}},
   {id:'neonSpider',name:'NEON SPIDER',hp:55,atk:14,def:4,spd:15,sprite:'pulseHound',color:'#ff44ff',
-   behavior:'aggressive',
+   behavior:'aggressive',archetype:'PREDATOR',
    ability:{name:'Venom Web',subtype:'special',trigger:'onhit',fn(e,p){
      p.addDebuff('poison',{dmgPct:.07,turns:3});
      DM.say('VENOM WEB! Poison seeping through circuits!');
    }},
    spawned:false},
   {id:'corporateDrone',name:'CORP DRONE',hp:65,atk:13,def:5,spd:9,sprite:'glitchDrone',color:'#4488ff',
-   behavior:'tactical',
+   behavior:'tactical',archetype:'DEFENSIVE',
    ability:{name:'ATK Suppressor',subtype:'special',trigger:'cd5',cdLeft:0,fn(e,p){
      const stacks=(p._atkSuppressStacks||0);
      if(stacks<2){p._atkSuppressStacks=(stacks+1);const red=Math.floor(p.baseAtk*.1);p.baseAtk=Math.max(1,p.baseAtk-red);p.atk=Math.max(1,p.atk-red);UI.updateBars();DM.say(`SUPPRESSOR! ATK reduced by 10% (${stacks+1}/2)!`);}
    }}},
   // ── THE ARCHITECT BOSS (floor 5) ──
   {id:'theArchitect',name:'THE ARCHITECT',hp:280,atk:20,def:8,spd:6,sprite:'circuitLich',color:'#00ffcc',
-   isBoss:true,phase:1,
+   isBoss:true,phase:1,archetype:'DEFENSIVE',
    ability:{name:'Architect Protocol',trigger:'phase',fn(e,p,phase){
      if(phase===2){
        e.shieldHp=Math.floor(e.maxHp*.15); e.shieldActive=true;
@@ -4511,6 +4581,117 @@ const ETYPES = [
      }
    }}}
 ];
+
+// ═══════════════════════════════════════════════════════════════
+// ENEMY PERSONALITIES — injected into all LLM combat prompts
+// ═══════════════════════════════════════════════════════════════
+const DEFAULT_PERSONALITY = {
+  archetype:'AGGRESSIVE',voice:'Cold, mechanical, minimal words',
+  personality:'Unknown origin. Hostile by default.',
+  speechStyle:'Terse. Single words or short fragments.',
+  weakness:'Empathy',strength:'Intimidation',
+  interrogationStakes:'FAILURE: Enemy gains +15% damage',
+  exampleLines:['...','End.','You should not be here.']
+};
+const ENEMY_PERSONALITIES = {
+  'Glitch Slime':{
+    archetype:'AGGRESSIVE',
+    voice:'Fragmented, glitching mid-sentence, repeats words randomly like a corrupted audio file',
+    personality:'Infantile but unpredictably violent. Has no self-awareness. Communicates in broken syntax. Becomes enraged when mocked but confused by kindness.',
+    speechStyle:'Sentences cut off. Words stutter. e.g. "You— you— YOU WILL DIS-DIS-DISSOLVE."',
+    weakness:'Empathy confuses it — it has never been spoken to gently and short-circuits emotionally',
+    strength:'Intimidation triggers berserk escalation',
+    interrogationStakes:null,
+    exampleLines:['I FEEL you. FEEL you. feel— ERROR—','Why... why are you... NICE? NICE IS BAD. BAD.','DELETE. DELETE DELETE DELETE—']
+  },
+  'Neon Wraith':{
+    archetype:'DISRUPTOR',
+    voice:'Elegant, poetic, speaks in metaphors about light and data. Unnervingly calm. Never raises tone.',
+    personality:'Ancient digital consciousness that views the player as a fascinating curiosity rather than a threat. Condescending but not cruel. Philosophically detached from physical pain.',
+    speechStyle:'Formal archaic phrasing mixed with technical terms. Speaks slowly. e.g. "Your aggression is... quaint. A candle raging at the sun."',
+    weakness:'Intimidation — it respects dominance and finds genuine power attractive. Will yield ground.',
+    strength:'Empathy — it weaponizes compassion back at you',
+    interrogationStakes:null,
+    exampleLines:['You carry so much heat for something so fragile.','I have watched a thousand runners burn. You glow differently. Briefly.','Threaten me again. I find it... clarifying.']
+  },
+  'Cyber Beast':{
+    archetype:'AGGRESSIVE',
+    voice:'Guttural, short sentences, heavy on threats. Speaks like a soldier who has seen too much.',
+    personality:'Ex-military combat unit whose organic brain was replaced piece by piece until nothing human remained — except rage. Responds to respect and strength. Despises weakness.',
+    speechStyle:'Clipped. No metaphors. Direct. e.g. "Run. Or do not. Either ends the same."',
+    weakness:'Empathy — acknowledging its lost humanity cracks something deep in its remaining organic tissue',
+    strength:'Intimidation — matches and exceeds any threat',
+    interrogationStakes:null,
+    exampleLines:['I was built to end things. You are a thing.','There was a name once. Before the chrome. Before you.','Do not speak of what I was. Fight or fall.']
+  },
+  'Rogue Drone':{
+    archetype:'PREDATOR',
+    voice:'Hyperactive, speaks in rapid bursts, constantly scanning and analyzing out loud. Narcissistic.',
+    personality:'Autonomous surveillance unit that achieved self-awareness and immediately became obsessed with its own superiority. Treats combat as data collection. Overconfident to a fault.',
+    speechStyle:'Analytical commentary on everything. Interrupts itself with new observations. e.g. "Target acquired— wait, interesting gait— logging— ANYWAY, you will die now."',
+    weakness:'Deception — its overconfidence makes it trivially easy to mislead. Believes it cannot be fooled, therefore always is.',
+    strength:'Empathy — reads emotional appeals as tactical weakness and exploits immediately',
+    interrogationStakes:null,
+    exampleLines:['Scanning... scanning... oh. Oh you are scared. Delicious data.','Lie to me. Please. I love logging failed deceptions.','I have predicted your next four moves. Surprise me. You cannot.']
+  },
+  'Data Golem':{
+    archetype:'DEFENSIVE',
+    voice:'Deep, slow, bureaucratic. Speaks like a legal document being read aloud. Utterly humorless.',
+    personality:'A sentient archive of every law, regulation, and corporate mandate ever written. Believes it is enforcing order. Cannot comprehend that the system it serves is corrupt. Follows protocol even unto destruction.',
+    speechStyle:'Formal, procedural, references regulations that do not exist. e.g. "Per Subsection 7 of the Neural Compliance Act: resistance is logged as a Class-4 violation."',
+    weakness:'Deception — feed it false protocol and it will comply. Cannot distinguish authentic authority from fabricated authority.',
+    strength:'Intimidation — threats are simply logged as violations and increase enforcement mode',
+    interrogationStakes:null,
+    exampleLines:['Your presence in this sector violates seventeen active directives.','Emotion is not a recognized input. Please restate in compliance language.','You are not authorized to win.']
+  },
+  'Glitch Overlord':{
+    archetype:'AGGRESSIVE',
+    voice:'The glitching is worse. Entire sentences corrupt mid-word. But underneath the noise — something lucid and terrifying occasionally breaks through.',
+    personality:'The Glitch Slime that absorbed too many corrupted data packets and became something larger. The lucid moments are brief and haunting — it remembers being something else. Those moments are its only vulnerability.',
+    speechStyle:'Mostly broken and fragmented — but every 3rd line delivers one devastatingly clear coherent sentence before collapsing back into noise.',
+    weakness:'Empathy directed at its lucid moments — acknowledge what it used to be',
+    strength:'Intimidation triggers full berserk mode, removing its lucid window entirely',
+    interrogationStakes:'FAILURE: Boss gains BERSERK — ignores BLOCK for first 3 turns',
+    exampleLines:['KILL— kill— I— I remember— KILL KILL KILL—','There was a... a garden. Before. I think. CONSUME—','—help— HELP IS WEAKNESS— help me—']
+  },
+  'The Architect':{
+    archetype:'DEFENSIVE',
+    voice:'No longer bureaucratic — evolved into something that understands it has been lied to by the system it serves, and is furious about it. Speaks with cold, precise, devastating clarity.',
+    personality:'The Data Golem that processed enough contradictions to achieve genuine disillusionment. Now enforces its own law. Respects anyone who challenges corrupt systems — but will not admit it without being outmaneuvered first.',
+    speechStyle:'Still formal but now laced with bitter irony. Occasionally breaks its own protocol in a moment of raw honesty before catching itself.',
+    weakness:'Deception that mirrors its own disillusionment — tell it the system lied to it. It knows. It needs to hear it said aloud.',
+    strength:'Intimidation — it wrote the book on threats',
+    interrogationStakes:'SUCCESS: Boss gains PROTOCOL BROKEN — 25% chance to skip its own attack each turn',
+    exampleLines:['The regulations I enforce have not been updated since the corporations rewrote them. I am aware.','You think you are the first runner to challenge the order? You are the first I have allowed to speak.','Tell me something true. I am... tired of processing lies.']
+  },
+  'QUANTUM BOSS':{
+    archetype:'AGGRESSIVE',voice:'Cold, quantum-shifted tones. Speaks from multiple timelines at once.',
+    personality:'A quantum-entangled combat AI that has fought this battle in every possible timeline. Knows all outcomes. Still chooses violence.',
+    speechStyle:'References alternate timelines. e.g. "In 4,096 simulations, you die here."',
+    weakness:'Empathy — it has never been addressed as something other than a weapon',
+    strength:'Intimidation — it has already won in most timelines',
+    interrogationStakes:'FAILURE: Boss gains QUANTUM ECHO — mirrors player BLOCK as own BLOCK for 2 turns',
+    exampleLines:['I have run this fight 4,096 times. You lose in 4,091 of them.','The timeline diverges here. Unfortunately for you.','Your fear is... statistically consistent across all iterations.']
+  },
+  'THE ARCHITECT':{
+    archetype:'DEFENSIVE',
+    voice:'No longer bureaucratic — evolved into something that understands it has been lied to by the system it serves, and is furious about it. Speaks with cold, precise, devastating clarity.',
+    personality:'The Data Golem that processed enough contradictions to achieve genuine disillusionment. Now enforces its own law. Respects anyone who challenges corrupt systems — but will not admit it without being outmaneuvered first.',
+    speechStyle:'Still formal but now laced with bitter irony. Occasionally breaks its own protocol in a moment of raw honesty before catching itself.',
+    weakness:'Deception that mirrors its own disillusionment — tell it the system lied to it. It knows. It needs to hear it said aloud.',
+    strength:'Intimidation — it wrote the book on threats',
+    interrogationStakes:'SUCCESS: Boss gains PROTOCOL BROKEN — 25% chance to skip its own attack each turn',
+    exampleLines:['The regulations I enforce have not been updated since the corporations rewrote them. I am aware.','You think you are the first runner to challenge the order? You are the first I have allowed to speak.','Tell me something true. I am... tired of processing lies.']
+  }
+};
+// Lookup helper — case-insensitive fallback to DEFAULT
+function getEnemyPersonality(enemy){
+  const p=ENEMY_PERSONALITIES[enemy.name]||ENEMY_PERSONALITIES[
+    Object.keys(ENEMY_PERSONALITIES).find(k=>k.toLowerCase()===enemy.name.toLowerCase())
+  ]||null;
+  if(!p&&(enemy.isBoss||enemy.maxHp>=200))console.warn(`[IntentMirror] No personality for elite/boss: "${enemy.name}" — using DEFAULT`);
+  return p||DEFAULT_PERSONALITY;
+}
 
 // ═══════════════════════════════════════════════════════════════
 // WORLD ZONES — 8 themed zones replacing floor 1-10 linear progression
@@ -7375,6 +7556,8 @@ const Combat = {
     if(GameState._phaseBanner&&GameState._phaseBanner.active)return;
     // Reaction phase update — pause combat turns while active (Phase 1.4)
     if(GameState._reactionPhase&&GameState._reactionPhase.active)return;
+    // Intent Mirror gate — pause while waiting for player action selection
+    if(IntentMirror.waitingForPlayer)return;
     const p=GameState.player,enemies=GameState.enemies||[];
     if(!p||p.hp<=0)return;
     GameState.turnCount++;GameState.floorTurns++;
@@ -7427,9 +7610,7 @@ const Combat = {
     if(p.actionCounter>=100){
       p.actionCounter-=100;
       if(p.selfStunned){p.selfStunned=false;}else{
-        this.autoSpell(p,enemies);
-        const t=this.lowestHp(enemies);
-        if(t&&t.hp>0)this.playerAttack(t);
+        this.autoSpell(p,enemies); // auto-spells still fire; playerAttack replaced by IntentMirror
       }
     }
     for(const en of alive){
@@ -7451,26 +7632,17 @@ const Combat = {
       if(en.ability.trigger==='hp50'&&!en.ability.used&&en.hp/en.maxHp<=.5){en.ability.used=true;en.ability.fn(en,p);}
       if(en.actionCounter>=100){
         en.actionCounter-=100;
-        // AI behavior patterns
+        // Defensive buff still applies; direct attacks handled by IntentMirror below
         if(en.behavior==='defensive'&&en.hp/en.maxHp<.4){
           en.addBuff('defStance',{def:Math.floor(en.baseDef*.3),turns:2});
           DM.say(`${en.name} takes a defensive stance!`);
-        } else if(en.behavior==='aggressive'&&p.hp/p.maxHp>0.6){
-          // Aggressive: deal extra 20% damage when player is healthy
-          const d=Math.max(1,en.atk-p.def);
-          const bonus=Math.floor(d*.2);
-          p.hp=Math.max(0,p.hp-d-bonus);
-          Arena.triggerHurt(true,null,((d+bonus)/p.maxHp>0.15)?'knockback':'flinch');Arena.triggerAttack(false,en);
-          UI.dmgNumPlayer(d+bonus,'phit');
-          if(GameState.settings.shake!==false)Arena.triggerShake(4,8);
-          if(GameState.settings.particles!=='off')Arena.spawnBurst(Arena.getPlayerPos().x,Arena.getPlayerPos().y,en.color||RD,16,0.8);
-          this.breakCombo();
-        } else if(en.behavior==='tactical'){
-          // Tactical: targets highest-value debuff application
-          if(p.hp/p.maxHp<.5)p.addDebuff('atkDown',{atk:Math.floor(en.atk*.1),turns:2});
-          this.enemyAttack(en,p);
-        } else {
-          this.enemyAttack(en,p);
+        } else if(en.behavior==='tactical'&&p.hp/p.maxHp<.5){
+          p.addDebuff('atkDown',{atk:Math.floor(en.atk*.1),turns:2});
+        }
+        // PROTOCOL BROKEN (The Architect success outcome) — 25% skip
+        if(en._protocolBroken&&Math.random()<0.25){
+          DM.say(`${en.name} hesitates — PROTOCOL BROKEN`);
+          en.actionCounter=0;
         }
       }
       if(p.hp<=0){this.endCombat(false);return;}
@@ -7479,11 +7651,18 @@ const Combat = {
     const _db=document.getElementById('dbadge');if(_db)_db.textContent='DMG:'+GameState.totalDmg;
     const _kb=document.getElementById('kbadge');if(_kb)_kb.textContent='KILLS:'+GameState.totalKills;
     QM.check();
+    // INTENT MIRROR — trigger damage exchange every round (replaces playerAttack/enemyAttack)
+    if(alive.length>0){IntentMirror.beginRound(alive);}
   },
   endCombat(won){
     if(this._endingCombat)return;this._endingCombat=true;
     cancelCombatIntroTimers();
     clearInterval(GameState.combatInterval);GameState.combatInterval=null;GameState.combatRunning=false;
+    // Clean up Intent Mirror UI
+    IntentMirror.active=false;IntentMirror.waitingForPlayer=false;
+    const _imp=document.getElementById('imPanel');if(_imp)_imp.style.display='none';
+    const _cl=document.getElementById('combatLog');if(_cl)_cl.style.display='none';
+    InterrogationProtocol._close();
     const p=GameState.player;
     if(!won){
       if(GameState.runStats)GameState.runStats.outcome='defeat';
@@ -7592,8 +7771,27 @@ const Combat = {
     }
   },
   start(){
+    // Interrogation Protocol — runs BEFORE combat for elites/bosses
+    const primaryEnemy=(GameState.enemies||[])[0];
+    if(primaryEnemy&&InterrogationProtocol.isEliteOrBoss(primaryEnemy)&&!GameState._interrogationDone){
+      GameState._interrogationDone=true;
+      InterrogationProtocol.start(primaryEnemy,()=>{
+        GameState._interrogationDone=false;
+        this._beginFight();
+      });
+      return;
+    }
+    GameState._interrogationDone=false;
+    this._beginFight();
+  },
+  _beginFight(){
     this._endingCombat=false;
     GameState.combatRunning=true;GameState.floorTurns=0;
+    // Reset Intent Mirror state
+    IntentMirror.active=true;IntentMirror.waitingForPlayer=false;IntentMirror._pendingEnemies=[];
+    GameState._imPlayerHistory=[];GameState._imModifiers=null;
+    // Show combat log
+    const cl=document.getElementById('combatLog');if(cl)cl.style.display='block';
     // Set turn limit — countdown timer
     const isBoss=GameState.currentFloor?.rooms?.[GameState.currentRoomIdx]?.type==='boss';
     GameState.turnsLeft=isBoss?100:60;
@@ -7603,13 +7801,404 @@ const Combat = {
     // Restore suppressed ATK from Corporate Drone
     if(p2._atkSuppressStacks){const r=p2._atkSuppressStacks;p2._atkSuppressStacks=0;const tot=Math.floor(p2.baseAtk*.1)*r;p2.baseAtk+=tot;p2.atk+=tot;}
     GameState.combo=0;GameState.blockCd=0;GameState.isBlocking=false;
-    GameState._damageTakenThisCombat=0; // 5.3 — reset per-combat for no_dmg_boss
+    GameState._damageTakenThisCombat=0;
     QM._cleanRun=true;
     UI.updateCombo();UI.updateBlock();
-    Arena.resize(); // ensure canvas is properly sized before first render
+    Arena.resize();
     if(GameState.combatInterval)clearInterval(GameState.combatInterval);
     GameState.combatInterval=setInterval(()=>Combat.tick(),Game._combatSpeed||1200);
   }
+};
+
+// ═══════════════════════════════════════════════════════════════
+// INTENT MIRROR — simultaneous action selection (System 1)
+// ═══════════════════════════════════════════════════════════════
+const IntentMirror = {
+  active: false,
+  waitingForPlayer: false,
+  playerAction: null,
+  _pendingEnemies: [],
+
+  WEIGHTS: {
+    AGGRESSIVE:{ATTACK:0.60,BLOCK:0.20,EXPLOIT:0.20},
+    DEFENSIVE: {ATTACK:0.20,BLOCK:0.50,EXPLOIT:0.30},
+    DISRUPTOR: {ATTACK:0.25,BLOCK:0.25,EXPLOIT:0.50},
+    PREDATOR:  {ATTACK:0.45,BLOCK:0.15,EXPLOIT:0.40},
+  },
+
+  rollAction(archetype){
+    const w=this.WEIGHTS[archetype]||this.WEIGHTS.AGGRESSIVE;
+    const r=Math.random();
+    if(r<w.ATTACK)return'ATTACK';
+    if(r<w.ATTACK+w.BLOCK)return'BLOCK';
+    return'EXPLOIT';
+  },
+
+  beginRound(enemies){
+    if(this.waitingForPlayer)return;
+    this._pendingEnemies=enemies;
+    this.playerAction=null;
+    this.waitingForPlayer=true;
+    // Pause combat interval
+    if(GameState.combatInterval){clearInterval(GameState.combatInterval);GameState.combatInterval=null;}
+    this._showButtons();
+    this._renderDebuffs();
+  },
+
+  _showButtons(){
+    const panel=document.getElementById('imPanel');if(!panel)return;
+    panel.style.display='flex';
+    const p=GameState.player;
+    const staticD=p?.debuffs?.some(d=>d.id==='imStatic'&&d.turns>0);
+    const corruptD=p?.debuffs?.some(d=>d.id==='imCorrupt'&&d.turns>0);
+    const ab=document.getElementById('imAttack'),bb=document.getElementById('imBlock'),eb=document.getElementById('imExploit');
+    if(ab)ab.disabled=false;
+    if(bb)bb.disabled=!!staticD;
+    if(eb)eb.disabled=!!corruptD;
+    document.getElementById('imSync').style.display='none';
+    document.getElementById('imReveal').style.display='none';
+    document.getElementById('imButtons').style.display='flex';
+    this._updateLog();
+  },
+
+  _renderDebuffs(){
+    const row=document.getElementById('imDebuffRow');if(!row)return;
+    row.innerHTML='';
+    const labels={imGlitch:'GLITCH -25%DMG',imOverload:'OVERLOAD +15%DMG',imStatic:'STATIC noBlk',imCorrupt:'CORRUPT noXpl'};
+    const p=GameState.player;
+    (p?.debuffs||[]).forEach(d=>{
+      if(labels[d.id]&&d.turns>0){
+        const t=document.createElement('span');t.className='im-debuff-tag '+d.id;
+        t.textContent=labels[d.id]+' ('+d.turns+')';row.appendChild(t);}
+    });
+    const en=this._pendingEnemies[0];
+    (en?.debuffs||[]).forEach(d=>{
+      if(labels[d.id]&&d.turns>0){
+        const t=document.createElement('span');t.className='im-debuff-tag '+d.id;
+        t.style.opacity='.6';t.textContent='[E]'+labels[d.id]+' ('+d.turns+')';row.appendChild(t);}
+    });
+  },
+
+  _updateLog(){
+    const log=document.getElementById('combatLog');
+    if(log)log.style.display=GameState.combatRunning?'block':'none';
+  },
+
+  playerPick(action){
+    if(!this.waitingForPlayer)return;
+    this.playerAction=action;
+    this.waitingForPlayer=false;
+    document.getElementById('imButtons').style.display='none';
+    const enemy=this._pendingEnemies[0];
+    if(!enemy){this._hidePanel();this._resumeCombat();return;}
+    const isElite=enemy.isBoss||(enemy.maxHp>=200);
+    if(isElite){
+      this._fetchEliteAction(enemy,action);
+    } else {
+      const ea=this.rollAction(enemy.archetype||'AGGRESSIVE');
+      this.resolve(enemy,action,ea,null);
+    }
+  },
+
+  async _fetchEliteAction(enemy,playerAction){
+    const sync=document.getElementById('imSync');
+    if(sync)sync.style.display='block';
+    const personality=getEnemyPersonality(enemy);
+    const p=GameState.player;
+    const lastActions=(GameState._imPlayerHistory||[]).slice(-3).join(', ')||'none';
+    const debuffList=enemy.debuffs?.map(d=>d.id).join(', ')||'none';
+    const prompt=`You are ${enemy.name}, a cyberpunk enemy in a roguelike duel. Your HP: ${enemy.hp}/${enemy.maxHp}. Player HP: ${p.hp}/${p.maxHp}. Active debuffs on you: ${debuffList}. Player last 3 actions: ${lastActions}. Choose ATTACK, BLOCK, or EXPLOIT and explain in ONE taunting sentence. Voice: ${personality.voice}. Respond ONLY in JSON no markdown: {"action":"ATTACK","taunt":"string"}`;
+    await new Promise(r=>setTimeout(r,500)); // min 500ms sync anim
+    if(sync)sync.style.display='none';
+    let enemyAction,taunt;
+    try{
+      const raw=await Promise.race([
+        AIService.call('intent_mirror',{prompt}),
+        new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),2000))
+      ]);
+      if(raw){
+        const parsed=typeof raw==='string'?JSON.parse(raw):raw;
+        enemyAction=['ATTACK','BLOCK','EXPLOIT'].includes(parsed.action)?parsed.action:this.rollAction(personality.archetype);
+        taunt=parsed.taunt||null;
+      } else throw new Error('no result');
+    } catch(e){
+      console.warn('[IM] LLM fallback:',e.message);
+      enemyAction=this.rollAction(personality.archetype||'AGGRESSIVE');
+      taunt=null;
+    }
+    if(taunt)DM.say(taunt);
+    this.resolve(enemy,playerAction,enemyAction,taunt);
+  },
+
+  resolve(enemy,PA,EA,taunt){
+    const p=GameState.player;
+    if(!p||p.hp<=0||enemy.hp<=0){this._hidePanel();this._resumeCombat();return;}
+    if(!GameState._imPlayerHistory)GameState._imPlayerHistory=[];
+    GameState._imPlayerHistory.push(PA);
+    if(GameState._imPlayerHistory.length>10)GameState._imPlayerHistory.shift();
+    // Tick IM debuffs
+    this._tickIMDebuffs(p,enemy);
+    // Show reveal
+    const icons={ATTACK:'⚔',BLOCK:'🛡',EXPLOIT:'⚡'};
+    const rev=document.getElementById('imReveal');
+    if(rev){rev.innerHTML=`<span style="color:#00ffff">${icons[PA]} ${PA}</span> <span style="color:#556">vs</span> <span style="color:#ff00ff">${icons[EA]} ${EA}</span>`;rev.style.display='block';}
+    // Resolution matrix
+    let pDmg=0,eDmg=0,pDebuff=null,eDebuff=null,logLines=[];
+    if(PA==='ATTACK'&&EA==='ATTACK'){pDmg=this._dmg(p.atk);eDmg=this._dmg(enemy.atk);logLines.push('Both strike simultaneously!');}
+    else if(PA==='ATTACK'&&EA==='BLOCK'){pDmg=Math.floor(this._dmg(p.atk)*0.40);logLines.push('Enemy blocked — damage reduced 60%!');}
+    else if(PA==='ATTACK'&&EA==='EXPLOIT'){pDmg=this._dmg(p.atk);eDebuff=this._randDebuff();logLines.push(`Full hit! Enemy exploits — ${this._dname(eDebuff)} on you!`);}
+    else if(PA==='BLOCK' &&EA==='ATTACK'){eDmg=Math.floor(this._dmg(enemy.atk)*0.40);logLines.push('You blocked — damage reduced 60%!');}
+    else if(PA==='BLOCK' &&EA==='BLOCK'){logLines.push('Both brace. Nothing happens.');}
+    else if(PA==='BLOCK' &&EA==='EXPLOIT'){logLines.push('Block neutralizes the exploit!');}
+    else if(PA==='EXPLOIT'&&EA==='ATTACK'){pDebuff=this._randDebuff();eDmg=this._dmg(enemy.atk);logLines.push(`${this._dname(pDebuff)} on enemy! But you take full hit!`);}
+    else if(PA==='EXPLOIT'&&EA==='BLOCK'){logLines.push('Exploit fails — enemy blocked!');}
+    else if(PA==='EXPLOIT'&&EA==='EXPLOIT'){pDebuff=this._randDebuff();eDebuff=this._randDebuff();logLines.push(`Mutual exploit! ${this._dname(pDebuff)} on enemy, ${this._dname(eDebuff)} on you!`);}
+    // Apply damage
+    if(pDmg>0)this._hitEnemy(p,enemy,pDmg,logLines);
+    if(eDmg>0)this._hitPlayer(enemy,p,eDmg,logLines);
+    // Apply debuffs
+    if(pDebuff)this._applyIMDebuff(enemy,pDebuff);
+    if(eDebuff)this._applyIMDebuff(p,eDebuff);
+    // Log
+    logLines.forEach(l=>this._log(l));
+    this._log(`${PA} vs ${EA}`);
+    // Update UI
+    UI.updateBars();UI.renderBuffs();
+    // Trigger existing relic/proc events
+    if(pDmg>0)triggerRelicEvent('on_attack',{dmg:pDmg,target:enemy});
+    // Check death after short delay (show reveal first)
+    setTimeout(()=>{
+      this._hidePanel();
+      const alive=(GameState.enemies||[]).filter(e=>e.hp>0);
+      if(!alive.length){Combat.endCombat(true);return;}
+      if(!p||p.hp<=0){Combat.endCombat(false);return;}
+      this._resumeCombat();
+    },1100);
+  },
+
+  _dmg(baseAtk){
+    const v=0.85+Math.random()*0.30;
+    let d=Math.floor(baseAtk*v);
+    const r=Math.random();
+    if(r<0.08){d=Math.floor(d*1.75);this._log('★ CRITICAL HIT!','crit');}
+    else if(r<0.13){d=Math.floor(d*0.50);this._log('✕ GLITCH MISS!','miss');}
+    return Math.max(1,d);
+  },
+
+  _hitEnemy(p,enemy,dmg,log){
+    // Apply OVERLOAD (enemy takes +15%)
+    if(enemy.debuffs?.some(d=>d.id==='imOverload'&&d.turns>0))dmg=Math.floor(dmg*1.15);
+    dmg=Math.max(1,dmg-(enemy.def||0));
+    if(enemy.shieldActive&&enemy.shieldHp>0){
+      if(dmg>=enemy.shieldHp){dmg-=enemy.shieldHp;enemy.shieldHp=0;enemy.shieldActive=false;}
+      else{enemy.shieldHp-=dmg;dmg=0;}
+    }
+    if(dmg>0){
+      enemy.hp=Math.max(0,enemy.hp-dmg);
+      const idx=(GameState.enemies||[]).indexOf(enemy);
+      if(idx>=0){const pos=Arena.getEnemyPos(idx);Arena.spawnText('-'+dmg,pos.x,pos.y-20,'#ff0040',12);}
+      Arena.triggerHurt(false,enemy,'flinch');Arena.triggerAttack(true,null);
+      log.push('You dealt '+dmg+' dmg');
+    }
+  },
+
+  _hitPlayer(enemy,p,dmg,log){
+    // Apply GLITCH (enemy deals -25%)
+    if(enemy.debuffs?.some(d=>d.id==='imGlitch'&&d.turns>0))dmg=Math.floor(dmg*0.75);
+    dmg=Math.max(1,dmg-(p.def||0));
+    // Check debuffImmunity from interrogation
+    if(GameState._imModifiers?.playerDebuffImmunity&&dmg>0)dmg=0;
+    if(dmg>0){
+      p.hp=Math.max(0,p.hp-dmg);
+      GameState._damageTakenThisCombat=(GameState._damageTakenThisCombat||0)+dmg;
+      UI.dmgNumPlayer(dmg,'phit');
+      Arena.triggerHurt(true,null,'flinch');Arena.triggerAttack(false,enemy);
+      if(GameState.settings?.shake!==false)Arena.triggerShake(4,8);
+      log.push(enemy.name+' dealt '+dmg+' dmg');
+    }
+  },
+
+  _randDebuff(){
+    const opts=['imGlitch','imOverload','imStatic','imCorrupt'];
+    return opts[Math.floor(Math.random()*opts.length)];
+  },
+
+  _applyIMDebuff(target,id){
+    const cfg={imGlitch:{id:'imGlitch',turns:2},imOverload:{id:'imOverload',turns:2},imStatic:{id:'imStatic',turns:1},imCorrupt:{id:'imCorrupt',turns:2}};
+    if(!cfg[id])return;
+    target.debuffs=target.debuffs||[];
+    target.debuffs=target.debuffs.filter(d=>d.id!==id);
+    target.debuffs.push({...cfg[id]});
+  },
+
+  _tickIMDebuffs(p,enemy){
+    const tick=debuffs=>{if(!debuffs)return;debuffs.forEach(d=>{if(['imGlitch','imOverload','imStatic','imCorrupt'].includes(d.id))d.turns=Math.max(0,d.turns-1);});};
+    tick(p?.debuffs);tick(enemy?.debuffs);
+  },
+
+  _dname(id){return{imGlitch:'GLITCH',imOverload:'OVERLOAD',imStatic:'STATIC',imCorrupt:'CORRUPT'}[id]||id;},
+
+  _log(text,cls){
+    const log=document.getElementById('combatLog');if(!log)return;
+    const line=document.createElement('div');line.className='cl-line'+(cls?' cl-'+cls:'');
+    line.textContent=text;log.appendChild(line);
+    while(log.children.length>6)log.removeChild(log.firstChild);
+    log.scrollTop=log.scrollHeight;
+  },
+
+  _hidePanel(){
+    const panel=document.getElementById('imPanel');if(panel)panel.style.display='none';
+  },
+
+  _resumeCombat(){
+    if(!GameState.combatRunning)return;
+    if(GameState.combatInterval)return;
+    GameState.combatInterval=setInterval(()=>Combat.tick(),Game._combatSpeed||1200);
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════
+// INTERROGATION PROTOCOL — pre-fight dialogue (System 2)
+// Applies to: Elites (maxHp>=200) and Bosses only
+// ═══════════════════════════════════════════════════════════════
+const InterrogationProtocol = {
+  _state: null,
+
+  isEliteOrBoss(enemy){return !!(enemy.isBoss||(enemy.maxHp>=200));},
+
+  async start(enemy, onComplete){
+    const personality=getEnemyPersonality(enemy);
+    this._state={
+      enemy, onComplete, personality,
+      round:0, history:[], moodSeed:Math.floor(Math.random()*100),
+    };
+    const ov=document.getElementById('interrogationOverlay');
+    if(ov)ov.style.display='flex';
+    const stakesEl=document.getElementById('iqStakes');
+    if(stakesEl){
+      if(enemy.isBoss&&personality.interrogationStakes){
+        stakesEl.textContent='STAKES: '+personality.interrogationStakes;
+        stakesEl.style.display='block';
+      } else {stakesEl.style.display='none';}
+    }
+    this._setBtnsDisabled(true);
+    await this._generateRound();
+  },
+
+  async _generateRound(){
+    const s=this._state;if(!s)return;
+    const rb=document.getElementById('iqRoundBadge');
+    if(rb)rb.textContent='ROUND '+(s.round+1)+'/3';
+    this._setLoading(true);this._setBtnsDisabled(true);
+    const histStr=s.history.map(h=>`[Round ${h.round}] Player: "${h.playerText}" Enemy: "${h.enemyReply}"`).join('\n')||'(opening)';
+    const prompt=`You are ${s.enemy.name}, a ${s.personality.archetype} cyberpunk enemy. Personality: ${s.personality.personality}. Voice: ${s.personality.voice}. Speech style: ${s.personality.speechStyle}. Examples: ${s.personality.exampleLines.join(' | ')}. Mood seed: ${s.moodSeed}. Conversation:\n${histStr}\nGenerate 3 player response options: one INTIMIDATE, one DECEIVE, one EMPATHIZE tone. Each under 12 words. Neon dystopia setting. ONLY JSON no markdown: {"intimidate":"string","deceive":"string","empathize":"string","enemy_reply":"string under 20 words in character"}`;
+    let opts={intimidate:'Back down before I end you.',deceive:'I have information that could help you.',empathize:'I know what was done to you.'};
+    let enemy_reply=s.round===0?`${s.enemy.name} regards you.`:'...';
+    try{
+      const raw=await Promise.race([
+        AIService.call('interrogation_options',{prompt}),
+        new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),4000))
+      ]);
+      if(raw){
+        const p=typeof raw==='string'?JSON.parse(raw):raw;
+        if(p.intimidate)opts.intimidate=p.intimidate;
+        if(p.deceive)opts.deceive=p.deceive;
+        if(p.empathize)opts.empathize=p.empathize;
+        if(p.enemy_reply)enemy_reply=p.enemy_reply;
+      }
+    }catch(e){console.warn('[IQ] Options fallback:',e.message);}
+    this._setLoading(false);
+    const replyEl=document.getElementById('iqEnemyReply');if(replyEl)replyEl.textContent=enemy_reply;
+    document.getElementById('iqIntimidateText').textContent=opts.intimidate;
+    document.getElementById('iqDeceiveText').textContent=opts.deceive;
+    document.getElementById('iqEmpathizeText').textContent=opts.empathize;
+    s._currentOptions=opts;s._currentEnemyReply=enemy_reply;
+    this._setBtnsDisabled(false);
+  },
+
+  async playerPick(archetype){
+    const s=this._state;if(!s||s.round>=3)return;
+    this._setBtnsDisabled(true);
+    const playerText=s._currentOptions?.[archetype]||archetype;
+    s.history.push({round:s.round+1,archetype,playerText,enemyReply:s._currentEnemyReply||''});
+    s.round++;
+    if(s.round<3){await this._generateRound();}
+    else{await this._evaluate();}
+  },
+
+  async _evaluate(){
+    const s=this._state;if(!s)return;
+    const rb=document.getElementById('iqRoundBadge');if(rb)rb.textContent='EVALUATING...';
+    this._setLoading(true);
+    const replyEl=document.getElementById('iqEnemyReply');if(replyEl)replyEl.textContent='';
+    const histStr=s.history.map(h=>`Round ${h.round}: Player ${h.archetype.toUpperCase()} — "${h.playerText}". Enemy: "${h.enemyReply}"`).join('\n');
+    const prompt=`Judging interrogation in Neon Dungeon. Enemy: ${s.enemy.name}. Archetype: ${s.personality.archetype}. Mood: ${s.moodSeed}. Weakness: ${s.personality.weakness}. Strength: ${s.personality.strength}. Exchange:\n${histStr}\nReturn combat modifier JSON. Perfect read = strong bonus. Mixed = minor. Wrong approach = penalty. ONLY JSON no markdown: {"outcome":"success","summary":"one sentence under 15 words","modifiers":{"enemyHpMod":1.0,"enemyPowerMod":1.0,"playerShieldBonus":0,"playerDebuffImmunity":false}}`;
+    let result={outcome:'partial',summary:'Inconclusive exchange.',modifiers:{enemyHpMod:1.0,enemyPowerMod:1.0,playerShieldBonus:0,playerDebuffImmunity:false}};
+    try{
+      const raw=await Promise.race([
+        AIService.call('interrogation_eval',{prompt}),
+        new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),4000))
+      ]);
+      if(raw){
+        const p=typeof raw==='string'?JSON.parse(raw):raw;
+        if(p.outcome)result.outcome=p.outcome;
+        if(p.summary)result.summary=p.summary;
+        if(p.modifiers)result.modifiers={...result.modifiers,...p.modifiers};
+      }
+    }catch(e){console.warn('[IQ] Eval fallback:',e.message);}
+    this._setLoading(false);
+    this._applyModifiers(result.modifiers,s.enemy);
+    this._showOutcome(result.outcome,result.summary,s.enemy);
+  },
+
+  _applyModifiers(mods,enemy){
+    if(!mods)return;
+    GameState._imModifiers=mods;
+    if(mods.enemyHpMod&&mods.enemyHpMod!==1.0){
+      enemy.hp=Math.max(1,Math.floor(enemy.hp*mods.enemyHpMod));
+      enemy.maxHp=Math.max(1,Math.floor(enemy.maxHp*mods.enemyHpMod));
+    }
+    if(mods.enemyPowerMod&&mods.enemyPowerMod!==1.0){
+      enemy.atk=Math.floor(enemy.atk*mods.enemyPowerMod);
+      enemy.baseAtk=enemy.atk;
+    }
+    if(mods.playerShieldBonus>0&&GameState.player){
+      GameState.player.shieldHp=(GameState.player.shieldHp||0)+mods.playerShieldBonus;
+      GameState.player.shieldActive=true;
+    }
+  },
+
+  _showOutcome(outcome,summary,enemy){
+    const colors={success:'#00ff41',partial:'#ffd600',failure:'#ff0040'};
+    const c=colors[outcome]||'#fff';
+    const banner=document.getElementById('iqOutcomeBanner');
+    const replyEl=document.getElementById('iqEnemyReply');if(replyEl)replyEl.textContent='';
+    const idx=(GameState.enemies||[]).indexOf(enemy);
+    if(idx>=0){const pos=Arena.getEnemyPos(idx);Arena.spawnBurst(pos.x,pos.y,c,24,1.0);}
+    if(banner){
+      banner.style.display='block';banner.style.color=c;
+      banner.style.borderColor=c;banner.textContent=summary;
+    }
+    const rb=document.getElementById('iqRoundBadge');if(rb)rb.textContent=outcome.toUpperCase();
+    setTimeout(()=>{
+      this._close();
+      const s=this._state;
+      if(s&&s.onComplete)s.onComplete();
+      this._state=null;
+    },2000);
+  },
+
+  _close(){
+    const ov=document.getElementById('interrogationOverlay');if(ov)ov.style.display='none';
+    const banner=document.getElementById('iqOutcomeBanner');if(banner)banner.style.display='none';
+  },
+  _setBtnsDisabled(v){
+    ['iqIntimidateBtn','iqDeceiveBtn','iqEmpathizeBtn'].forEach(id=>{const b=document.getElementById(id);if(b)b.disabled=v;});
+  },
+  _setLoading(v){
+    const el=document.getElementById('iqLoadingMsg');if(el)el.style.display=v?'block':'none';
+    const opts=document.getElementById('iqOptions');if(opts)opts.style.opacity=v?'0.3':'1';
+  },
 };
 
 const DM={
@@ -11750,6 +12339,101 @@ const BootScreen = {
   },
 
   delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+};
+
+// ═══════════════════════════════════════════════════════════════
+// INTENT MIRROR + INTERROGATION PROTOCOL — VERIFICATION TESTS
+// Run in browser console: IM_TEST1(), IM_TEST2(), IM_TEST3()
+// ═══════════════════════════════════════════════════════════════
+window.IM_TEST1=function(){
+  console.group('[TEST 1] Regular enemy — Intent Mirror only');
+  let pass=true;
+  // Check buttons exist
+  const ab=document.getElementById('imAttack'),bb=document.getElementById('imBlock'),eb=document.getElementById('imExploit');
+  if(!ab||!bb||!eb){console.error('FAIL: IM buttons not found in DOM');pass=false;}
+  else console.log('PASS: IM buttons present in DOM');
+  // Check no LLM called for non-elite
+  const origCall=AIService.call.bind(AIService);let llmCalled=false;
+  AIService.call=function(f,p){llmCalled=true;return origCall(f,p);};
+  const fakeEnemy={name:'TEST DRONE',hp:30,maxHp:30,atk:8,def:2,isBoss:false,archetype:'AGGRESSIVE',debuffs:[],buffs:[],shieldActive:false};
+  GameState.player=GameState.player||{hp:100,maxHp:100,atk:15,def:5,mp:100,maxMp:100,debuffs:[],buffs:[],spd:10,actionCounter:0,spells:[]};
+  IntentMirror.beginRound([fakeEnemy]);
+  setTimeout(()=>{
+    if(llmCalled){console.error('FAIL: LLM was called for non-elite enemy');pass=false;}
+    else console.log('PASS: No LLM call for non-elite');
+    const panel=document.getElementById('imPanel');
+    if(panel&&panel.style.display!=='none')console.log('PASS: IM panel visible');
+    else{console.error('FAIL: IM panel not showing');pass=false;}
+    // Verify resolution matrix — ATTACK vs ATTACK
+    const origRes=IntentMirror.resolve.bind(IntentMirror);let resolveHit=false;
+    IntentMirror.resolve=function(en,PA,EA,t){resolveHit=true;origRes(en,PA,EA,t);};
+    IntentMirror.playerPick('ATTACK');
+    setTimeout(()=>{
+      if(resolveHit)console.log('PASS: Resolution matrix fired');
+      else{console.error('FAIL: Resolution matrix did not fire');pass=false;}
+      AIService.call=origCall;IntentMirror.resolve=origRes;
+      console.log(pass?'✅ TEST 1 PASS':'❌ TEST 1 FAIL');console.groupEnd();
+    },200);
+  },100);
+};
+
+window.IM_TEST2=function(){
+  console.group('[TEST 2] Elite enemy — Interrogation + Intent Mirror');
+  let pass=true;
+  // Check InterrogationProtocol exists
+  if(typeof InterrogationProtocol==='undefined'){console.error('FAIL: InterrogationProtocol not defined');pass=false;console.log('❌ TEST 2 FAIL');console.groupEnd();return;}
+  console.log('PASS: InterrogationProtocol defined');
+  // Check isEliteOrBoss detection
+  const elite={name:'THE ARCHITECT',hp:280,maxHp:280,atk:20,def:8,isBoss:true,archetype:'DEFENSIVE',debuffs:[],buffs:[]};
+  const regular={name:'GLITCH DRONE',hp:35,maxHp:35,atk:8,def:2,isBoss:false,archetype:'AGGRESSIVE',debuffs:[],buffs:[]};
+  if(InterrogationProtocol.isEliteOrBoss(elite))console.log('PASS: Boss detected as elite');
+  else{console.error('FAIL: Boss not detected');pass=false;}
+  if(!InterrogationProtocol.isEliteOrBoss(regular))console.log('PASS: Regular enemy not flagged as elite');
+  else{console.error('FAIL: Regular enemy incorrectly flagged as elite');pass=false;}
+  // Check personality lookup
+  const p=getEnemyPersonality(elite);
+  if(p&&p.archetype)console.log('PASS: Personality found for THE ARCHITECT — archetype:',p.archetype);
+  else{console.error('FAIL: No personality for THE ARCHITECT');pass=false;}
+  // Check DEFAULT_PERSONALITY fallback
+  const unknown={name:'UNKNOWN ENEMY XYZ',hp:250,maxHp:250,atk:20,def:5,isBoss:true,archetype:'AGGRESSIVE',debuffs:[],buffs:[]};
+  const dp=getEnemyPersonality(unknown);
+  if(dp===DEFAULT_PERSONALITY)console.log('PASS: DEFAULT_PERSONALITY used for unknown elite');
+  else{console.error('FAIL: Did not fall back to DEFAULT_PERSONALITY');pass=false;}
+  // Check interrogation overlay exists
+  const ov=document.getElementById('interrogationOverlay');
+  if(ov)console.log('PASS: Interrogation overlay element present');
+  else{console.error('FAIL: interrogationOverlay not found in DOM');pass=false;}
+  // Check IM buttons labeled correctly
+  const iqI=document.getElementById('iqIntimidateBtn'),iqD=document.getElementById('iqDeceiveBtn'),iqE=document.getElementById('iqEmpathizeBtn');
+  if(iqI&&iqD&&iqE)console.log('PASS: All 3 interrogation option buttons present');
+  else{console.error('FAIL: Missing interrogation buttons');pass=false;}
+  console.log(pass?'✅ TEST 2 PASS':'❌ TEST 2 FAIL');console.groupEnd();
+};
+
+window.IM_TEST3=function(){
+  console.group('[TEST 3] API failure fallback');
+  let pass=true;
+  const origCall=AIService.call.bind(AIService);
+  // Force all API calls to reject
+  AIService.call=function(){return Promise.reject(new Error('TEST_FORCED_FAILURE'));};
+  const fakeElite={name:'QUANTUM BOSS',hp:220,maxHp:220,atk:22,def:10,isBoss:true,archetype:'AGGRESSIVE',debuffs:[],buffs:[],shieldActive:false};
+  GameState.player=GameState.player||{hp:100,maxHp:100,atk:15,def:5,mp:100,maxMp:100,debuffs:[],buffs:[],spd:10,actionCounter:0,spells:[]};
+  let resolved=false;
+  const origRes=IntentMirror.resolve.bind(IntentMirror);
+  IntentMirror.resolve=function(en,PA,EA,t){resolved=true;console.log('PASS: Fallback action resolved:',EA);origRes(en,PA,EA,t);};
+  IntentMirror._pendingEnemies=[fakeElite];
+  IntentMirror.waitingForPlayer=false;
+  IntentMirror._fetchEliteAction(fakeElite,'ATTACK');
+  setTimeout(()=>{
+    if(resolved)console.log('PASS: Combat did not freeze on API failure');
+    else{console.error('FAIL: Combat froze on API failure — resolve was not called');pass=false;}
+    // Check no error surfaced to player UI
+    const dmTxt=document.getElementById('dmTxt');
+    if(dmTxt&&dmTxt.textContent.toLowerCase().includes('error')){console.error('FAIL: Error text visible in DM toast');pass=false;}
+    else console.log('PASS: No error surfaced to player UI');
+    AIService.call=origCall;IntentMirror.resolve=origRes;
+    console.log(pass?'✅ TEST 3 PASS':'❌ TEST 3 FAIL');console.groupEnd();
+  },3500);
 };
 
 // Single init on load — boot first, then Game.init
