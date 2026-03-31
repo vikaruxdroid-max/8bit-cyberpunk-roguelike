@@ -13082,6 +13082,10 @@ const BootScreen = {
     this.bar.style.display='block';
 
     // ── Preload all assets with progress (min 2s so boot text is readable) ──
+    // [P2 AUDIT] All Phase 2 DOM elements (#combatHUD, #imPanel, #comboFlash, #combatDebrief) exist at parse time.
+    // HUD, CombatState, IntentMirror, checkCombos, showCombatDebrief all defined before Combat.start() reachable.
+    // Enemy sprites are canvas-drawn from sprites.png (preloaded below) — no separate PNGs needed.
+    // #comboFlash pointer-events:none confirmed in CSS. #combatHUD display:none by default. ──
     const bootMinTime = this.delay(2000);
     const assets = [];
     let loaded = 0;
