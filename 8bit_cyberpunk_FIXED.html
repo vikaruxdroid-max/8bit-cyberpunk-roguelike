@@ -1463,7 +1463,7 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
               <span id="imFlatlineNum" style="font-family:'Share Tech Mono',monospace;font-size:clamp(7px,0.8vw,10px);color:#ff4444;min-width:24px;">0</span>
             </div>
             <!-- ── SYS_MEM bar ── -->
-            <div id="imSysMemRow" style="display:flex;align-items:center;gap:5px;width:100%;justify-content:center;">
+            <div id="imSysMemRow" style="display:flex;align-items:center;gap:5px;width:100%;justify-content:center;" title="Neural interface harvests combat data to fuel quickhacks. Deal damage. Take hits. Build your arsenal.">
               <span style="font-family:'Press Start 2P',monospace;font-size:clamp(5px,0.6vw,8px);color:#00ffcc;letter-spacing:1px;white-space:nowrap;">SYS_MEM</span>
               <div id="imSysMemBar" style="display:flex;gap:2px;"></div>
               <span id="imSysMemNum" style="font-family:'Share Tech Mono',monospace;font-size:clamp(7px,0.8vw,10px);color:#00ffcc;min-width:24px;">6/8</span>
@@ -7884,7 +7884,7 @@ const Combat = {
     IntentMirror.active=true;IntentMirror.waitingForPlayer=false;IntentMirror._pendingEnemies=[];
     console.log('[IM] _beginFight called, IntentMirror.active=true');
     // Phase 1 reset
-    IntentMirror.sysMem=6;IntentMirror.flatline=0;
+    IntentMirror.sysMem=3;IntentMirror.flatline=0;
     IntentMirror._fl50Applied=false;IntentMirror._fl80Applied=false;
     IntentMirror.comboSetupActive=false;IntentMirror.ghostActive=false;IntentMirror.ghostUsedThisTurn=false;
     IntentMirror.activeDaemon=null;IntentMirror._icePickActive=false;
@@ -7972,10 +7972,13 @@ const IntentMirror = {
     if(this.sysMem<n)return false;
     this.sysMem-=n;this._renderSysMem();return true;
   },
-  _regenMem(){
-    const regen=(this.flatline>=80)?1:2;
-    this.sysMem=Math.min(this.SYS_MEM_MAX,this.sysMem+regen);
+  _gainMem(n,reason){
+    // FLATLINE 80+: all generation halved (round down, min 0)
+    const gain=(this.flatline>=80)?Math.floor(n/2):n;
+    if(gain<=0)return;
+    this.sysMem=Math.min(this.SYS_MEM_MAX,this.sysMem+gain);
     this._renderSysMem();
+    this._log(`SYS_MEM +${gain} [${reason}]`);
   },
   _renderSysMem(){
     const bar=document.getElementById('imSysMemBar'),num=document.getElementById('imSysMemNum');
@@ -8365,8 +8368,7 @@ const IntentMirror = {
       this.activeDaemon.turnsLeft--;
       if(this.activeDaemon.turnsLeft<=0)this.activeDaemon=null;
     }
-    // ── SYS_MEM regen ────────────────────────────────────────────
-    this._regenMem();
+    // ── SYS_MEM: active generation only, no passive regen ────────
     // ── Passive flatline decay ───────────────────────────────────
     if(this.flatline>0)this._reduceFlatline(3);
 
@@ -8397,8 +8399,7 @@ const IntentMirror = {
     const r=Math.random();
     if(r<0.08){
       d=Math.floor(d*1.75);this._log('★ CRITICAL HIT!','crit');
-      // Crit: +1 SYS_MEM, -10 FLATLINE
-      this.sysMem=Math.min(this.SYS_MEM_MAX,this.sysMem+1);this._renderSysMem();
+      this._gainMem(2,'crit');
       this._reduceFlatline(10);
     } else if(r<0.13){d=Math.floor(d*0.50);this._log('✕ GLITCH MISS!','miss');}
     return Math.max(1,d);
@@ -8418,6 +8419,7 @@ const IntentMirror = {
       if(idx>=0){const pos=Arena.getEnemyPos(idx);Arena.spawnText('-'+dmg,pos.x,pos.y-20,'#ff0040',12);}
       Arena.triggerHurt(false,enemy,'flinch');Arena.triggerAttack(true,null);
       log.push('You dealt '+dmg+' dmg');
+      this._gainMem(1,'hit');
     }
   },
 
@@ -8433,6 +8435,7 @@ const IntentMirror = {
       Arena.triggerHurt(true,null,'flinch');Arena.triggerAttack(false,enemy);
       if(GameState.settings?.shake!==false)Arena.triggerShake(4,8);
       log.push(enemy.name+' dealt '+dmg+' dmg');
+      this._gainMem(1,'damage received');
       // Add flatline stress
       const stressPct=(dmg/Math.max(1,p.maxHp))*100;
       this._addFlatline(Math.max(5,Math.floor(stressPct*1.5)));
@@ -8449,6 +8452,7 @@ const IntentMirror = {
       const idx=(GameState.enemies||[]).indexOf(enemy);
       if(idx>=0){const pos=Arena.getEnemyPos(idx);Arena.spawnText('-'+dot+' HEM',pos.x,pos.y-30,'#cc44ff',10);}
       this._log(`HEMORRHAGE: ${dot} dmg`,'crit');
+      this._gainMem(1,'hemorrhage');
     }
     // OVERHEAT DoT on enemy
     const ovht=enemy.debuffs?.find(d=>d.id==='imOvht'&&d.turns>0);
@@ -12893,33 +12897,49 @@ function IM_TEST3(){
 };
 
 function IM_TEST4(){
-  console.group('[TEST 4] SYS_MEM resource');
+  console.group('[TEST 4] SYS_MEM active generation');
   let pass=true;
-  // Start at 6
-  IntentMirror.sysMem=6;IntentMirror._renderSysMem();
-  if(IntentMirror.sysMem===6)console.log('PASS: sysMem starts at 6');
+  // Starts at 3
+  IntentMirror.sysMem=3;IntentMirror.flatline=0;IntentMirror._renderSysMem();
+  if(IntentMirror.sysMem===3)console.log('PASS: sysMem starts at 3');
   else{console.error('FAIL: sysMem='+IntentMirror.sysMem);pass=false;}
-  // Regen +2, cap at 8
-  IntentMirror._regenMem();
-  if(IntentMirror.sysMem===8)console.log('PASS: regen +2 → 8');
-  else{console.error('FAIL: after regen='+IntentMirror.sysMem);pass=false;}
-  IntentMirror._regenMem();
+  // No passive regen — calling _gainMem(0) should not change value
+  const before=IntentMirror.sysMem;
+  IntentMirror._gainMem(0,'test');
+  if(IntentMirror.sysMem===before)console.log('PASS: _gainMem(0) changes nothing');
+  else{console.error('FAIL: zero gain changed sysMem');pass=false;}
+  // Landing a hit gives +1
+  IntentMirror.sysMem=3;
+  IntentMirror._gainMem(1,'hit');
+  if(IntentMirror.sysMem===4)console.log('PASS: hit gives +1 → 4');
+  else{console.error('FAIL: after hit='+IntentMirror.sysMem);pass=false;}
+  // Landing a crit gives +2
+  IntentMirror.sysMem=3;
+  IntentMirror._gainMem(2,'crit');
+  if(IntentMirror.sysMem===5)console.log('PASS: crit gives +2 → 5');
+  else{console.error('FAIL: after crit='+IntentMirror.sysMem);pass=false;}
+  // Taking a hit gives +1
+  IntentMirror.sysMem=3;
+  IntentMirror._gainMem(1,'damage received');
+  if(IntentMirror.sysMem===4)console.log('PASS: taking hit gives +1 → 4');
+  else{console.error('FAIL: after hit taken='+IntentMirror.sysMem);pass=false;}
+  // Cap at 8
+  IntentMirror.sysMem=7;
+  IntentMirror._gainMem(2,'hit');
   if(IntentMirror.sysMem===8)console.log('PASS: cap at 8 holds');
   else{console.error('FAIL: cap exceeded='+IntentMirror.sysMem);pass=false;}
-  // Crit restores +1
-  IntentMirror.sysMem=5;
-  const old=IntentMirror.sysMem;
-  IntentMirror.sysMem=Math.min(IntentMirror.SYS_MEM_MAX,IntentMirror.sysMem+1);
-  if(IntentMirror.sysMem===6)console.log('PASS: crit +1 SYS_MEM');
-  else{console.error('FAIL: crit restore='+IntentMirror.sysMem);pass=false;}
-  // Insufficient memory blocks spend
-  IntentMirror.sysMem=2;
-  const blocked=!IntentMirror._spendMem(5);
-  if(blocked)console.log('PASS: insufficient memory blocks action');
-  else{console.error('FAIL: overspend not blocked');pass=false;}
-  if(IntentMirror.sysMem===2)console.log('PASS: sysMem unchanged after blocked spend');
-  else{console.error('FAIL: sysMem changed='+IntentMirror.sysMem);pass=false;}
-  IntentMirror.sysMem=6;IntentMirror._renderSysMem();
+  // FLATLINE 80+ halves generation
+  IntentMirror.sysMem=3;IntentMirror.flatline=82;
+  IntentMirror._gainMem(1,'hit');
+  if(IntentMirror.sysMem===3)console.log('PASS: FLATLINE 80+ → +1 halved to +0');
+  else{console.error('FAIL: flatline 80 halving failed, sysMem='+IntentMirror.sysMem);pass=false;}
+  IntentMirror._gainMem(2,'crit');
+  if(IntentMirror.sysMem===4)console.log('PASS: FLATLINE 80+ → +2 halved to +1');
+  else{console.error('FAIL: flatline 80 crit halving failed, sysMem='+IntentMirror.sysMem);pass=false;}
+  // No _regenMem method dependency
+  if(typeof IntentMirror._regenMem==='undefined')console.log('PASS: passive _regenMem removed');
+  else console.warn('NOTE: _regenMem still exists (may be unused)');
+  IntentMirror.sysMem=3;IntentMirror.flatline=0;IntentMirror._renderSysMem();
   console.log(pass?'✅ TEST 4 PASS':'❌ TEST 4 FAIL');console.groupEnd();
 }
 
@@ -12959,12 +12979,12 @@ function IM_TEST6(){
   else{console.error('FAIL: flatline='+IntentMirror.flatline);pass=false;}
   if(IntentMirror._fl50Applied)console.log('PASS: 50 threshold flag set');
   else{console.error('FAIL: _fl50Applied not set');pass=false;}
-  // SYS_MEM regen halves at 80
-  IntentMirror.flatline=82;IntentMirror._fl80Applied=false;
+  // SYS_MEM generation halves at 80
+  IntentMirror.flatline=82;IntentMirror._fl80Applied=false;IntentMirror.sysMem=3;
   IntentMirror._addFlatline(0); // trigger threshold check
-  const regenAt80=IntentMirror.flatline>=80?1:2;
-  if(regenAt80===1)console.log('PASS: SYS_MEM regen halves at 80+ flatline');
-  else{console.error('FAIL: regen not halved');pass=false;}
+  IntentMirror._gainMem(2,'crit'); // +2 halved to +1
+  if(IntentMirror.sysMem===4)console.log('PASS: SYS_MEM generation halves at 80+ flatline');
+  else{console.error('FAIL: generation not halved, sysMem='+IntentMirror.sysMem);pass=false;}
   if(IntentMirror._fl80Applied)console.log('PASS: 80 threshold flag set');
   else{console.error('FAIL: _fl80Applied not set');pass=false;}
   // Flag resets below threshold
