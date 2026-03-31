@@ -6283,9 +6283,9 @@ function renderRoomProgress(ctx, currentRoom, totalRooms, rightX, y) {
 // COMBAT-UI-2: CANVAS SPELL BAR
 // ============================================================
 function renderSpellBar(ctx, spells, cw, ch) {
-  if (!spells || !spells.length) return;
   // Intent Mirror active — suppress canvas spell slots, HTML buttons take over
   if (IntentMirror?.active) return;
+  if (!spells || !spells.length) return;
   const slotW = 90, slotH = 72, gap = 10;
   const totalW = 4 * slotW + 3 * gap;
   const startX = cw/2 - totalW/2;
@@ -7788,6 +7788,7 @@ const Combat = {
     GameState.combatRunning=true;GameState.floorTurns=0;
     // Reset Intent Mirror state
     IntentMirror.active=true;IntentMirror.waitingForPlayer=false;IntentMirror._pendingEnemies=[];
+    console.log('[IM] _beginFight called, IntentMirror.active=true');
     GameState._imPlayerHistory=[];GameState._imModifiers=null;
     // Show combat log
     const cl=document.getElementById('combatLog');if(cl)cl.style.display='block';
@@ -12344,7 +12345,7 @@ const BootScreen = {
 // INTENT MIRROR + INTERROGATION PROTOCOL — VERIFICATION TESTS
 // Run in browser console: IM_TEST1(), IM_TEST2(), IM_TEST3()
 // ═══════════════════════════════════════════════════════════════
-window.IM_TEST1=function(){
+function IM_TEST1(){
   console.group('[TEST 1] Regular enemy — Intent Mirror only');
   let pass=true;
   // Check buttons exist
@@ -12376,7 +12377,7 @@ window.IM_TEST1=function(){
   },100);
 };
 
-window.IM_TEST2=function(){
+function IM_TEST2(){
   console.group('[TEST 2] Elite enemy — Interrogation + Intent Mirror');
   let pass=true;
   // Check InterrogationProtocol exists
@@ -12409,7 +12410,7 @@ window.IM_TEST2=function(){
   console.log(pass?'✅ TEST 2 PASS':'❌ TEST 2 FAIL');console.groupEnd();
 };
 
-window.IM_TEST3=function(){
+function IM_TEST3(){
   console.group('[TEST 3] API failure fallback');
   let pass=true;
   const origCall=AIService.call.bind(AIService);
@@ -12434,6 +12435,10 @@ window.IM_TEST3=function(){
     console.log(pass?'✅ TEST 3 PASS':'❌ TEST 3 FAIL');console.groupEnd();
   },3500);
 };
+
+window.IM_TEST1 = IM_TEST1;
+window.IM_TEST2 = IM_TEST2;
+window.IM_TEST3 = IM_TEST3;
 
 // Single init on load — boot first, then Game.init
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',()=>BootScreen.run());}
