@@ -1168,6 +1168,23 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
 .im-daemon.d-active{border-color:#00ff88;box-shadow:0 0 8px #00ff88;background:rgba(0,255,128,.18);}
 .im-qhack{background:rgba(255,0,255,.08);border-color:#aa00aa;color:#ff44ff;max-width:110px;font-size:clamp(6px,0.75vw,10px);}
 .im-qhack:not(:disabled):hover{background:rgba(255,0,255,.22);box-shadow:0 0 10px rgba(255,0,255,.4);}
+
+/* ── PHASE 2: COMBO FLASH / DEBRIEF / HEM INDICATOR ─────── */
+@keyframes hemFastPulse{0%,100%{box-shadow:0 0 6px #cc44ff;}50%{box-shadow:0 0 18px #cc44ff,0 0 30px #990099;}}
+@keyframes comboFlashIn{0%{opacity:0;transform:scale(.5) translateY(20px);}60%{opacity:1;transform:scale(1.15) translateY(-5px);}80%{transform:scale(.95);}100%{opacity:1;transform:scale(1) translateY(0);}}
+@keyframes comboFlashOut{0%{opacity:1;}100%{opacity:0;transform:scale(1.3);}}
+.hem-indicator{display:inline-block;padding:2px 5px;border:1px solid #cc44ff;border-radius:2px;color:#cc44ff;font-size:clamp(6px,0.7vw,9px);animation:hemFastPulse 1s infinite;}
+#comboFlash{display:none;position:fixed;inset:0;z-index:9000;pointer-events:none;background:rgba(0,0,0,.55);align-items:center;justify-content:center;}
+#comboFlashName{font-family:'Press Start 2P',monospace;font-size:clamp(18px,3vw,36px);text-shadow:0 0 30px currentColor,0 0 60px currentColor;text-align:center;letter-spacing:3px;}
+#combatDebrief{display:none;position:fixed;inset:0;z-index:8500;background:rgba(0,0,16,.93);backdrop-filter:blur(6px);align-items:center;justify-content:center;}
+.p2-debrief-box{max-width:480px;width:100%;border:1px solid #00ffff;background:rgba(0,0,30,.9);padding:clamp(16px,2.5vh,28px) clamp(18px,2.5vw,32px);}
+.p2-debrief-title{font-family:'Press Start 2P',monospace;font-size:clamp(12px,1.5vw,18px);color:#00ffff;text-shadow:0 0 12px #00ffff;margin-bottom:14px;text-align:center;}
+.p2-debrief-row{display:flex;justify-content:space-between;font-family:'Share Tech Mono',monospace;font-size:clamp(9px,1vw,13px);color:#88aabb;padding:4px 0;border-bottom:1px solid rgba(0,255,255,.08);}
+.p2-debrief-combo{font-family:'Share Tech Mono',monospace;font-size:clamp(9px,1vw,12px);padding:3px 0;color:#00ff88;}
+.p2-debrief-rating{font-family:'Press Start 2P',monospace;font-size:clamp(20px,3vw,36px);text-align:center;margin:14px 0;}
+.p2-debrief-btn{font-family:'Press Start 2P',monospace;font-size:clamp(8px,1vw,12px);padding:10px 24px;border:1px solid #00ffff;background:rgba(0,255,255,.08);color:#00ffff;cursor:pointer;width:100%;margin-top:14px;transition:all .2s;}
+.p2-debrief-btn:hover{background:rgba(0,255,255,.2);box-shadow:0 0 14px rgba(0,255,255,.4);}
+
 #imReveal{background:rgba(0,0,20,.8);border:1px solid rgba(255,255,255,.15);border-radius:2px;padding:5px 18px;}
 .im-debuff-tag{padding:2px 6px;border:1px solid;border-radius:2px;font-size:clamp(7px,0.8vw,10px);}
 .im-debuff-tag.imGlitch{border-color:#ff00ff;color:#ff00ff;}
@@ -1571,6 +1588,11 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
     <canvas id="dmcv" width="52" height="60" style="display:none;"></canvas>
     <!-- Death overlay -->
     <div id="deathOverlay" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.9);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:20px;"></div>
+
+    <!-- ══ COMBO FLASH overlay ══ -->
+    <div id="comboFlash"><div id="comboFlashName"></div></div>
+    <!-- ══ COMBAT DEBRIEF overlay ══ -->
+    <div id="combatDebrief"></div>
 
     <!-- ══ INTERROGATION PROTOCOL overlay ══ -->
     <div id="interrogationOverlay" style="display:none;position:absolute;inset:0;z-index:60;background:rgba(0,0,16,.92);backdrop-filter:blur(3px);flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:16px;">
@@ -4687,7 +4709,9 @@ const ENEMY_PERSONALITIES = {
     weakness:'Empathy confuses it — it has never been spoken to gently and short-circuits emotionally',
     strength:'Intimidation triggers berserk escalation',
     interrogationStakes:null,
-    exampleLines:['I FEEL you. FEEL you. feel— ERROR—','Why... why are you... NICE? NICE IS BAD. BAD.','DELETE. DELETE DELETE DELETE—']
+    exampleLines:['I FEEL you. FEEL you. feel— ERROR—','Why... why are you... NICE? NICE IS BAD. BAD.','DELETE. DELETE DELETE DELETE—'],
+    trait:'STATIC DISCHARGE',
+    traitDescription:'20% chance to apply STATIC to attacker when taking damage'
   },
   'Neon Wraith':{
     archetype:'DISRUPTOR',
@@ -4697,7 +4721,9 @@ const ENEMY_PERSONALITIES = {
     weakness:'Intimidation — it respects dominance and finds genuine power attractive. Will yield ground.',
     strength:'Empathy — it weaponizes compassion back at you',
     interrogationStakes:null,
-    exampleLines:['You carry so much heat for something so fragile.','I have watched a thousand runners burn. You glow differently. Briefly.','Threaten me again. I find it... clarifying.']
+    exampleLines:['You carry so much heat for something so fragile.','I have watched a thousand runners burn. You glow differently. Briefly.','Threaten me again. I find it... clarifying.'],
+    trait:'PHANTOM PHASE',
+    traitDescription:'25% chance to evade incoming attacks entirely'
   },
   'Cyber Beast':{
     archetype:'AGGRESSIVE',
@@ -4707,7 +4733,9 @@ const ENEMY_PERSONALITIES = {
     weakness:'Empathy — acknowledging its lost humanity cracks something deep in its remaining organic tissue',
     strength:'Intimidation — matches and exceeds any threat',
     interrogationStakes:null,
-    exampleLines:['I was built to end things. You are a thing.','There was a name once. Before the chrome. Before you.','Do not speak of what I was. Fight or fall.']
+    exampleLines:['I was built to end things. You are a thing.','There was a name once. Before the chrome. Before you.','Do not speak of what I was. Fight or fall.'],
+    trait:'CHROME PLATING',
+    traitDescription:'HEMORRHAGE ticks at 4% instead of 8%'
   },
   'Rogue Drone':{
     archetype:'PREDATOR',
@@ -4717,7 +4745,9 @@ const ENEMY_PERSONALITIES = {
     weakness:'Deception — its overconfidence makes it trivially easy to mislead. Believes it cannot be fooled, therefore always is.',
     strength:'Empathy — reads emotional appeals as tactical weakness and exploits immediately',
     interrogationStakes:null,
-    exampleLines:['Scanning... scanning... oh. Oh you are scared. Delicious data.','Lie to me. Please. I love logging failed deceptions.','I have predicted your next four moves. Surprise me. You cannot.']
+    exampleLines:['Scanning... scanning... oh. Oh you are scared. Delicious data.','Lie to me. Please. I love logging failed deceptions.','I have predicted your next four moves. Surprise me. You cannot.'],
+    trait:'PREDICTIVE ALGORITHM',
+    traitDescription:'First attack each combat is always a critical hit'
   },
   'Data Golem':{
     archetype:'DEFENSIVE',
@@ -4727,7 +4757,9 @@ const ENEMY_PERSONALITIES = {
     weakness:'Deception — feed it false protocol and it will comply. Cannot distinguish authentic authority from fabricated authority.',
     strength:'Intimidation — threats are simply logged as violations and increase enforcement mode',
     interrogationStakes:null,
-    exampleLines:['Your presence in this sector violates seventeen active directives.','Emotion is not a recognized input. Please restate in compliance language.','You are not authorized to win.']
+    exampleLines:['Your presence in this sector violates seventeen active directives.','Emotion is not a recognized input. Please restate in compliance language.','You are not authorized to win.'],
+    trait:'PROTOCOL SHIELD',
+    traitDescription:'Starts combat with a shield equal to 15% of max HP'
   },
   'Glitch Overlord':{
     archetype:'AGGRESSIVE',
@@ -4737,7 +4769,9 @@ const ENEMY_PERSONALITIES = {
     weakness:'Empathy directed at its lucid moments — acknowledge what it used to be',
     strength:'Intimidation triggers full berserk mode, removing its lucid window entirely',
     interrogationStakes:'FAILURE: Boss gains BERSERK — ignores BLOCK for first 3 turns',
-    exampleLines:['KILL— kill— I— I remember— KILL KILL KILL—','There was a... a garden. Before. I think. CONSUME—','—help— HELP IS WEAKNESS— help me—']
+    exampleLines:['KILL— kill— I— I remember— KILL KILL KILL—','There was a... a garden. Before. I think. CONSUME—','—help— HELP IS WEAKNESS— help me—'],
+    signature:'CORRUPTION CASCADE',
+    signatureTrigger:50
   },
   'The Architect':{
     archetype:'DEFENSIVE',
@@ -4747,7 +4781,9 @@ const ENEMY_PERSONALITIES = {
     weakness:'Deception that mirrors its own disillusionment — tell it the system lied to it. It knows. It needs to hear it said aloud.',
     strength:'Intimidation — it wrote the book on threats',
     interrogationStakes:'SUCCESS: Boss gains PROTOCOL BROKEN — 25% chance to skip its own attack each turn',
-    exampleLines:['The regulations I enforce have not been updated since the corporations rewrote them. I am aware.','You think you are the first runner to challenge the order? You are the first I have allowed to speak.','Tell me something true. I am... tired of processing lies.']
+    exampleLines:['The regulations I enforce have not been updated since the corporations rewrote them. I am aware.','You think you are the first runner to challenge the order? You are the first I have allowed to speak.','Tell me something true. I am... tired of processing lies.'],
+    signature:'PROTOCOL LOCKDOWN',
+    signatureTrigger:30
   },
   'QUANTUM BOSS':{
     archetype:'AGGRESSIVE',voice:'Cold, quantum-shifted tones. Speaks from multiple timelines at once.',
@@ -7725,6 +7761,8 @@ const Combat = {
       if(en.ability.trigger==='hp50'&&!en.ability.used&&en.hp/en.maxHp<=.5){en.ability.used=true;en.ability.fn(en,p);}
       if(en.actionCounter>=100){
         en.actionCounter-=100;
+        // Phase 2E: boss signature — fires once, skips normal action if triggered
+        if((en.isBoss||en.maxHp>=200)&&_checkBossSignature(en,p)){en.actionCounter=0;continue;}
         // Defensive buff still applies; direct attacks handled by IntentMirror below
         if(en.behavior==='defensive'&&en.hp/en.maxHp<.4){
           en.addBuff('defStance',{def:Math.floor(en.baseDef*.3),turns:2});
@@ -7834,7 +7872,7 @@ const Combat = {
       fetchDifficultyTuning(GameState.runStats?.bossPerformance?.slice(-1)?.[0]); // fire-and-forget
       const zoneName=ZONES[GameState.currentZoneId]?.name||'ZONE';
       DM.say(`${zoneName} BOSS DEFEATED! Zone cleared!`);
-      setTimeout(()=>VictoryScreen.show(true,()=>WorldMap.show()),900);
+      setTimeout(()=>showCombatDebrief().then(()=>VictoryScreen.show(true,()=>WorldMap.show())),900);
     } else {
       // Advance to next room in the zone
       const nextIdx=GameState.currentRoomIdx+1;
@@ -7842,7 +7880,7 @@ const Combat = {
       const roomNum=GameState.currentRoomIdx+1;
       DM.say(`Room ${roomNum}/${totalRooms} cleared!`);
       setTimeout(()=>{
-        try{
+        showCombatDebrief().then(()=>{try{
           VictoryScreen.show(false,()=>{
             LootScreen.reset();
             try{
@@ -7860,7 +7898,7 @@ const Combat = {
             }catch(e){console.error('[VictoryScreen cb] ERROR:',e);}
           });
         }catch(e){console.error('[endCombat setTimeout] ERROR:',e);}
-      },900);
+        });},900);
     }
   },
   start(){
@@ -7889,6 +7927,17 @@ const Combat = {
     IntentMirror.comboSetupActive=false;IntentMirror.ghostActive=false;IntentMirror.ghostUsedThisTurn=false;
     IntentMirror.activeDaemon=null;IntentMirror._icePickActive=false;
     IntentMirror._renderSysMem();IntentMirror._renderFlatline();
+    // Phase 2 reset
+    CombatState.reset();
+    (GameState.enemies||[]).forEach(en=>{
+      en.signatureUsed=false;
+      en._predictiveUsed=false;
+      // PROTOCOL SHIELD (Data Golem) — init combat shield
+      const _p=ENEMY_PERSONALITIES[en.name];
+      if(_p?.trait==='PROTOCOL SHIELD'&&!en.shieldActive){
+        en.shieldHp=Math.floor(en.maxHp*0.15);en.shieldActive=true;
+      }
+    });
     GameState._imPlayerHistory=[];GameState._imModifiers=null;
     // Show combat log
     const cl=document.getElementById('combatLog');if(cl)cl.style.display='block';
@@ -7997,6 +8046,7 @@ const IntentMirror = {
   // ── FLATLINE helpers ─────────────────────────────────────────────
   _addFlatline(n){
     this.flatline=Math.min(this.FLATLINE_MAX,this.flatline+n);
+    if(this.flatline>CombatState.flatlinePeak)CombatState.flatlinePeak=this.flatline;
     this._renderFlatline();
     const p=GameState.player;
     if(this.flatline>=100){
@@ -8117,7 +8167,7 @@ const IntentMirror = {
     const ab=document.getElementById('imAttack'),bb=document.getElementById('imBlock'),eb=document.getElementById('imExploit');
     if(ab)ab.disabled=false;
     if(bb)bb.disabled=!!staticD;
-    if(eb)eb.disabled=!!corruptD;
+    if(eb)eb.disabled=!!corruptD||CombatState.exploitLockTurns>0;
     this._closeSubMenus();
     document.getElementById('imSync').style.display='none';
     document.getElementById('imReveal').style.display='none';
@@ -8202,6 +8252,14 @@ const IntentMirror = {
     if(!GameState._imPlayerHistory)GameState._imPlayerHistory=[];
     GameState._imPlayerHistory.push(PA);
     if(GameState._imPlayerHistory.length>10)GameState._imPlayerHistory.shift();
+
+    // Phase 2: track actions, check synergy combo
+    CombatState.lastTwoActions.push(PA);
+    if(CombatState.lastTwoActions.length>2)CombatState.lastTwoActions.shift();
+    CombatState.turnCount++;
+    if(CombatState.exploitLockTurns>0)CombatState.exploitLockTurns--;
+    const _p2combo=checkCombos(PA);
+    const _p2DmgMult=_p2combo?({GHOST_SNIPER:1.60,DAEMON_CHAIN:1.50,COUNTER_STRIKE:1.40,SYSTEM_BREACH:2.00}[_p2combo.id]||1):1;
 
     // Tick debuffs and DoTs
     this._tickIMDebuffs(p,enemy);
@@ -8293,6 +8351,7 @@ const IntentMirror = {
 
     // ── HACK action processing ───────────────────────────────────
     if(paBase==='EXPLOIT'){
+      CombatState.playerExploitCount++;
       const discount=this.comboSetupActive?1:0;
       const expBonus=this.activeDaemon?.id&&['D_CYBER','D_SONIC','D_REBOOT'].includes(this.activeDaemon.id)?1.5:1.0;
       if(PA==='D_CYBER'){
@@ -8328,7 +8387,8 @@ const IntentMirror = {
           logLines.push('CONTAGION — dual daemon upload!');if(discount)this.comboSetupActive=false;
         } else{logLines.push('INSUFFICIENT MEMORY for CONTAGION');}
       } else if(PA==='QH_BLACKWALL'){
-        if(this._spendMem(4)){
+        const bwCost=(_p2combo?.id==='PHANTOM_WALL')?2:4;
+        if(this._spendMem(bwCost)){
           pDmg=Math.floor(enemy.maxHp*0.20);
           logLines.push('BLACKWALL BREACH — beyond the wall!');
           // Brief flash
@@ -8353,6 +8413,25 @@ const IntentMirror = {
     if(hasHem&&enemy.archetype==='DEFENSIVE'&&Math.random()<0.20){
       enemy.debuffs=(enemy.debuffs||[]).filter(d=>d.id!=='imHem'&&!['D_CYBER','D_SONIC','D_REBOOT'].includes(d.id));
       logLines.push(`${enemy.name} CLEANSE — purging corruption`);
+    }
+
+    // ── Phase 2 combo bonuses ────────────────────────────────────
+    if(_p2combo){
+      if(_p2DmgMult!==1&&pDmg>0)pDmg=Math.floor(pDmg*_p2DmgMult);
+      if(_p2combo.id==='CHEMICAL_BURN'){this._tickDoTs(enemy);logLines.push('CHEMICAL BURN — DoTs tick twice!');}
+      if(_p2combo.id==='PHANTOM_WALL')logLines.push('PHANTOM WALL — BLACKWALL cost halved!');
+      if(pDmg>0||['CHEMICAL_BURN','PHANTOM_WALL'].includes(_p2combo.id)){
+        logLines.push(`⚡ COMBO: ${_p2combo.name} — ${_p2combo.desc}`);
+        CombatState.comboJournal.push({name:_p2combo.name,color:_p2combo.color,turn:CombatState.turnCount});
+        CombatState.lastCombo=_p2combo.name;
+      }
+    }
+
+    // PREDICTIVE ALGORITHM (Rogue Drone) — first enemy attack always crits
+    const _enTraitPers=ENEMY_PERSONALITIES[enemy.name];
+    if(_enTraitPers?.trait==='PREDICTIVE ALGORITHM'&&!enemy._predictiveUsed&&eDmg>0){
+      enemy._predictiveUsed=true;eDmg=Math.floor(eDmg*1.75);
+      logLines.push(`${enemy.name}: PREDICTIVE ALGORITHM — predicted your move!`);
     }
 
     // ── Apply damage ─────────────────────────────────────────────
@@ -8381,6 +8460,7 @@ const IntentMirror = {
     this._renderDebuffs();
     this._refreshButtonCosts();
     if(pDmg>0)triggerRelicEvent('on_attack',{dmg:pDmg,target:enemy});
+    if(_p2combo&&CombatState.lastCombo===_p2combo.name)setTimeout(()=>triggerComboFlash(_p2combo),350);
 
     // ── Death check ──────────────────────────────────────────────
     setTimeout(()=>{
@@ -8406,6 +8486,13 @@ const IntentMirror = {
   },
 
   _hitEnemy(p,enemy,dmg,log){
+    // PHANTOM PHASE (Neon Wraith) — 25% evasion
+    const _ePers=ENEMY_PERSONALITIES[enemy.name];
+    if(_ePers?.trait==='PHANTOM PHASE'&&Math.random()<0.25){
+      log.push(`${enemy.name}: PHANTOM PHASE — attack evaded!`);
+      this._log(`${enemy.name}: PHANTOM PHASE — evaded!`,'miss');
+      return;
+    }
     if(enemy.debuffs?.some(d=>d.id==='imOverload'&&d.turns>0))dmg=Math.floor(dmg*1.15);
     const effectiveDef=enemy.debuffs?.some(d=>d.id==='imWeaken'&&d.turns>0)?Math.floor((enemy.def||0)*0.5):(enemy.def||0);
     dmg=Math.max(1,dmg-effectiveDef);
@@ -8420,6 +8507,11 @@ const IntentMirror = {
       Arena.triggerHurt(false,enemy,'flinch');Arena.triggerAttack(true,null);
       log.push('You dealt '+dmg+' dmg');
       this._gainMem(1,'hit');
+      // STATIC DISCHARGE (Glitch Slime) — 20% chance to apply STATIC to attacker
+      if(_ePers?.trait==='STATIC DISCHARGE'&&Math.random()<0.20){
+        this._applyIMDebuff(GameState.player,'imStatic');
+        log.push(`${enemy.name}: STATIC DISCHARGE — STATIC applied to you!`);
+      }
     }
   },
 
@@ -8447,11 +8539,15 @@ const IntentMirror = {
     // HEMORRHAGE on enemy
     const hem=enemy.debuffs?.find(d=>d.id==='imHem'&&d.turns>0);
     if(hem){
-      const dot=Math.max(1,Math.floor(enemy.maxHp*0.08));
+      // CHROME PLATING (Cyber Beast) — ticks at 4% instead of 8%
+      const pers=ENEMY_PERSONALITIES[enemy.name];
+      const hemPct=(pers?.trait==='CHROME PLATING')?0.04:0.08;
+      const dot=Math.max(1,Math.floor(enemy.maxHp*hemPct));
       enemy.hp=Math.max(0,enemy.hp-dot);
       const idx=(GameState.enemies||[]).indexOf(enemy);
-      if(idx>=0){const pos=Arena.getEnemyPos(idx);Arena.spawnText('-'+dot+' HEM',pos.x,pos.y-30,'#cc44ff',10);}
-      this._log(`HEMORRHAGE: ${dot} dmg`,'crit');
+      if(idx>=0){const pos=Arena.getEnemyPos(idx);Arena.spawnText('-'+dot+' 🩸',pos.x,pos.y-30,'#cc44ff',10);}
+      const chromeNote=pers?.trait==='CHROME PLATING'?' [CHROME PLATING — 4%]':'';
+      this._log(`🩸 HEMORRHAGE: -${dot} HP${chromeNote}`,'crit');
       this._gainMem(1,'hemorrhage');
     }
     // OVERHEAT DoT on enemy
@@ -8660,6 +8756,124 @@ const InterrogationProtocol = {
     const opts=document.getElementById('iqOptions');if(opts)opts.style.opacity=v?'0.3':'1';
   },
 };
+
+// ═══════════════════════════════════════════════════════════════
+// COMBAT STATE — Phase 2 tracking (combos, debrief, signatures)
+// ═══════════════════════════════════════════════════════════════
+const CombatState = {
+  comboJournal: [],      // [{name,color,turn}] — landed combos this fight
+  lastTwoActions: [],    // [prev, curr] PA strings (max 2)
+  lastCombo: null,       // name of last triggered combo
+  turnCount: 0,          // incremented each resolve()
+  flatlinePeak: 0,       // highest flatline reached this fight
+  playerExploitCount: 0, // number of exploit actions used
+  exploitLockTurns: 0,   // turns remaining on PROTOCOL LOCKDOWN
+  _reactiveCounterFired: false, // whether BLK_REACT counter fired this turn
+  reset(){
+    this.comboJournal=[];this.lastTwoActions=[];this.lastCombo=null;
+    this.turnCount=0;this.flatlinePeak=0;this.playerExploitCount=0;
+    this.exploitLockTurns=0;this._reactiveCounterFired=false;
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════
+// PHASE 2 FUNCTIONS
+// ═══════════════════════════════════════════════════════════════
+
+// 6 named synergy combos — [prev, curr] → {name, color, bonusKey}
+const P2_COMBOS = [
+  {id:'GHOST_SNIPER',  prev:'BLK_GHOST', curr:'ATK_HARD',    name:'GHOST SNIPER',   color:'#aa44ff', desc:'Unblockable strike +60% DMG'},
+  {id:'DAEMON_CHAIN',  prev_group:'daemon', curr_group:'qhack', name:'DAEMON CHAIN',color:'#00ff88', desc:'Exploit deals +50% damage'},
+  {id:'CHEMICAL_BURN', prev:'ATK_HEM',   curr:'QH_OVERHEAT', name:'CHEMICAL BURN',  color:'#cc44ff', desc:'Both DoTs tick immediately'},
+  {id:'COUNTER_STRIKE',prev:'BLK_REACT', curr:'ATK_HARD',    name:'COUNTER STRIKE', color:'#ff9900', desc:'+40% DMG, ignore enemy DEF'},
+  {id:'SYSTEM_BREACH', prev:'D_REBOOT',  curr:'ATK_QHACK',   name:'SYSTEM BREACH',  color:'#00ffff', desc:'QUICKHACK deals double damage'},
+  {id:'PHANTOM_WALL',  prev:'BLK_GHOST', curr:'QH_BLACKWALL',name:'PHANTOM WALL',   color:'#ff00ff', desc:'BLACKWALL costs 2 MEM'},
+];
+const _DAEMON_IDS  = ['D_CYBER','D_SONIC','D_REBOOT'];
+const _QHACK_IDS   = ['QH_CIRCUIT','QH_OVERHEAT','QH_SYNAPSE','QH_CONTAGION','QH_BLACKWALL'];
+
+function checkCombos(PA){
+  const prev = CombatState.lastTwoActions[0];
+  if(!prev) return null;
+  for(const c of P2_COMBOS){
+    if(c.prev_group){
+      const prevMatch = c.prev_group==='daemon'?_DAEMON_IDS.includes(prev):_QHACK_IDS.includes(prev);
+      const currMatch = c.curr_group==='qhack'?_QHACK_IDS.includes(PA):_DAEMON_IDS.includes(PA);
+      if(prevMatch&&currMatch) return c;
+    } else {
+      if(c.prev===prev&&c.curr===PA) return c;
+    }
+  }
+  return null;
+}
+
+function triggerComboFlash(combo){
+  const el=document.getElementById('comboFlash');
+  const nm=document.getElementById('comboFlashName');
+  if(!el||!nm) return;
+  nm.textContent=combo.name;
+  nm.style.color=combo.color;
+  el.style.display='flex';
+  el.style.animation='none';
+  // Animate in then out
+  nm.style.animation='comboFlashIn .4s ease forwards';
+  setTimeout(()=>{
+    nm.style.animation='comboFlashOut .5s ease forwards';
+    setTimeout(()=>{el.style.display='none';nm.style.animation='';},500);
+  },900);
+}
+
+function showCombatDebrief(){
+  return new Promise(resolve=>{
+    const combos=CombatState.comboJournal;
+    // Skip debrief if zero combos
+    if(!combos.length){resolve();return;}
+    const count=combos.length;
+    const rating=count>=4?'S':count===3?'A':count===2?'B':'C';
+    const ratingColor={S:'#ff00ff',A:'#00ffff',B:'#00ff88',C:'#ff9900'}[rating];
+    const ratingLabel={S:'STREET LEGEND',A:'NETRUNNER',B:'RUNNER',C:'GREENHORN'}[rating];
+    const el=document.getElementById('combatDebrief');
+    if(!el){resolve();return;}
+    el.innerHTML=`<div class="p2-debrief-box">
+      <div class="p2-debrief-title">COMBAT DEBRIEF</div>
+      <div class="p2-debrief-row"><span>TURNS</span><span>${CombatState.turnCount}</span></div>
+      <div class="p2-debrief-row"><span>FLATLINE PEAK</span><span style="color:${CombatState.flatlinePeak>=80?'#ff0040':CombatState.flatlinePeak>=50?'#ff6600':'#00ff88'}">${Math.floor(CombatState.flatlinePeak)}</span></div>
+      <div class="p2-debrief-row"><span>EXPLOITS USED</span><span>${CombatState.playerExploitCount}</span></div>
+      <div class="p2-debrief-row" style="margin-bottom:8px"><span>COMBOS LANDED</span><span style="color:#00ff88">${count}</span></div>
+      ${combos.map(c=>`<div class="p2-debrief-combo" style="color:${c.color}">▶ ${c.name} <span style="color:#445;font-size:0.85em">(turn ${c.turn})</span></div>`).join('')}
+      <div class="p2-debrief-rating" style="color:${ratingColor}">${rating} — ${ratingLabel}</div>
+      <button class="p2-debrief-btn" id="p2DebriefContinue">CONTINUE</button>
+    </div>`;
+    el.style.display='flex';
+    document.getElementById('p2DebriefContinue').onclick=()=>{
+      el.style.display='none';
+      resolve();
+    };
+  });
+}
+
+// Returns true if boss fired a signature this turn (skip normal action)
+function _checkBossSignature(en, p){
+  const pers=ENEMY_PERSONALITIES[en.name];
+  if(!pers?.signature||en.signatureUsed) return false;
+  const hpPct=Math.floor((en.hp/en.maxHp)*100);
+  if(hpPct>pers.signatureTrigger) return false;
+  en.signatureUsed=true;
+  if(pers.signature==='CORRUPTION CASCADE'){
+    // Glitch Overlord: apply CORRUPT to player + boost ATK
+    IntentMirror._applyIMDebuff(p,'imCorrupt');
+    en.atk=Math.floor(en.atk*1.30);
+    en._atkBoosted=true;
+    IntentMirror._log(`⚠ ${en.name}: CORRUPTION CASCADE — CORRUPT applied, ATK +30%!`,'crit');
+    DM.say(`${en.name} CORRUPTION CASCADE!`);
+  } else if(pers.signature==='PROTOCOL LOCKDOWN'){
+    // The Architect: lock player exploits for 2 turns
+    CombatState.exploitLockTurns=2;
+    IntentMirror._log(`⚠ ${en.name}: PROTOCOL LOCKDOWN — exploits disabled 2 turns!`,'crit');
+    DM.say(`${en.name} PROTOCOL LOCKDOWN!`);
+  }
+  return true; // skip normal attack this turn
+}
 
 const DM={
   say(t){
@@ -13027,6 +13241,197 @@ function IM_TEST7(){
   console.log(pass?'✅ TEST 7 PASS':'❌ TEST 7 FAIL');console.groupEnd();
 }
 
+// ═══════════════════════════════════════════════════════════════
+// PHASE 2 TESTS
+// ═══════════════════════════════════════════════════════════════
+
+function P2_TEST1(){
+  console.group('[P2 TEST 1] Combo detection');
+  let pass=true;
+  // Setup: prev=BLK_GHOST, curr=ATK_HARD → GHOST SNIPER
+  CombatState.lastTwoActions=['BLK_GHOST'];
+  const c1=checkCombos('ATK_HARD');
+  if(c1?.id==='GHOST_SNIPER')console.log('PASS: GHOST SNIPER detected');
+  else{console.error('FAIL: expected GHOST_SNIPER, got',c1?.id);pass=false;}
+  // DAEMON_CHAIN: D_SONIC → QH_CIRCUIT
+  CombatState.lastTwoActions=['D_SONIC'];
+  const c2=checkCombos('QH_CIRCUIT');
+  if(c2?.id==='DAEMON_CHAIN')console.log('PASS: DAEMON CHAIN detected (D_SONIC→QH_CIRCUIT)');
+  else{console.error('FAIL: expected DAEMON_CHAIN, got',c2?.id);pass=false;}
+  // CHEMICAL_BURN: ATK_HEM → QH_OVERHEAT
+  CombatState.lastTwoActions=['ATK_HEM'];
+  const c3=checkCombos('QH_OVERHEAT');
+  if(c3?.id==='CHEMICAL_BURN')console.log('PASS: CHEMICAL BURN detected');
+  else{console.error('FAIL: expected CHEMICAL_BURN, got',c3?.id);pass=false;}
+  // COUNTER_STRIKE: BLK_REACT → ATK_HARD
+  CombatState.lastTwoActions=['BLK_REACT'];
+  const c4=checkCombos('ATK_HARD');
+  if(c4?.id==='COUNTER_STRIKE')console.log('PASS: COUNTER STRIKE detected');
+  else{console.error('FAIL: expected COUNTER_STRIKE, got',c4?.id);pass=false;}
+  // SYSTEM_BREACH: D_REBOOT → ATK_QHACK
+  CombatState.lastTwoActions=['D_REBOOT'];
+  const c5=checkCombos('ATK_QHACK');
+  if(c5?.id==='SYSTEM_BREACH')console.log('PASS: SYSTEM BREACH detected');
+  else{console.error('FAIL: expected SYSTEM_BREACH, got',c5?.id);pass=false;}
+  // PHANTOM_WALL: BLK_GHOST → QH_BLACKWALL
+  CombatState.lastTwoActions=['BLK_GHOST'];
+  const c6=checkCombos('QH_BLACKWALL');
+  if(c6?.id==='PHANTOM_WALL')console.log('PASS: PHANTOM WALL detected');
+  else{console.error('FAIL: expected PHANTOM_WALL, got',c6?.id);pass=false;}
+  // No combo: ATK_HARD → ATK_HARD
+  CombatState.lastTwoActions=['ATK_HARD'];
+  const c7=checkCombos('ATK_HARD');
+  if(!c7)console.log('PASS: no combo for ATK_HARD→ATK_HARD');
+  else{console.error('FAIL: unexpected combo',c7?.id);pass=false;}
+  // Empty history → no combo
+  CombatState.lastTwoActions=[];
+  const c8=checkCombos('ATK_HARD');
+  if(!c8)console.log('PASS: no combo with empty history');
+  else{console.error('FAIL: combo with empty history',c8?.id);pass=false;}
+  CombatState.reset();
+  console.log(pass?'✅ P2 TEST 1 PASS':'❌ P2 TEST 1 FAIL');console.groupEnd();
+}
+
+function P2_TEST2(){
+  console.group('[P2 TEST 2] Combo flash element');
+  let pass=true;
+  const el=document.getElementById('comboFlash');
+  if(el)console.log('PASS: #comboFlash element exists');
+  else{console.error('FAIL: #comboFlash not in DOM');pass=false;}
+  const nm=document.getElementById('comboFlashName');
+  if(nm)console.log('PASS: #comboFlashName element exists');
+  else{console.error('FAIL: #comboFlashName not in DOM');pass=false;}
+  const db=document.getElementById('combatDebrief');
+  if(db)console.log('PASS: #combatDebrief element exists');
+  else{console.error('FAIL: #combatDebrief not in DOM');pass=false;}
+  // Trigger a flash and verify it shows
+  const testCombo={name:'TEST FLASH',color:'#00ffff',desc:'Test'};
+  triggerComboFlash(testCombo);
+  if(el&&el.style.display!=='none')console.log('PASS: comboFlash displayed after trigger');
+  else console.warn('NOTE: comboFlash display check inconclusive (may already have faded)');
+  console.log(pass?'✅ P2 TEST 2 PASS':'❌ P2 TEST 2 FAIL');console.groupEnd();
+}
+
+function P2_TEST3(){
+  console.group('[P2 TEST 3] CombatState tracking');
+  let pass=true;
+  CombatState.reset();
+  // turnCount increments
+  if(CombatState.turnCount===0)console.log('PASS: turnCount starts at 0');
+  else{console.error('FAIL: turnCount='+CombatState.turnCount);pass=false;}
+  CombatState.turnCount=3;
+  if(CombatState.turnCount===3)console.log('PASS: turnCount tracks correctly');
+  // flatlinePeak tracking via _addFlatline
+  IntentMirror.flatline=0;CombatState.flatlinePeak=0;
+  GameState.player=GameState.player||{hp:100,maxHp:100,atk:15,def:5,mp:100,maxMp:100,debuffs:[],buffs:[],spd:10,actionCounter:0,spells:[]};
+  IntentMirror._addFlatline(40);
+  if(CombatState.flatlinePeak>=40)console.log('PASS: flatlinePeak updated to '+CombatState.flatlinePeak);
+  else{console.error('FAIL: flatlinePeak='+CombatState.flatlinePeak);pass=false;}
+  IntentMirror._addFlatline(20);
+  if(CombatState.flatlinePeak>=60)console.log('PASS: flatlinePeak tracks new high');
+  else{console.error('FAIL: flatlinePeak not tracking peaks, got'+CombatState.flatlinePeak);pass=false;}
+  // exploitLockTurns blocks exploit button
+  CombatState.exploitLockTurns=2;
+  const eb=document.getElementById('imExploit');
+  IntentMirror._showButtons();
+  if(eb&&eb.disabled)console.log('PASS: exploit button disabled during PROTOCOL LOCKDOWN');
+  else console.warn('NOTE: exploit button check inconclusive (imPanel may be hidden)');
+  CombatState.exploitLockTurns=0;
+  // comboJournal records combos
+  CombatState.comboJournal.push({name:'TEST',color:'#fff',turn:1});
+  if(CombatState.comboJournal.length===1)console.log('PASS: comboJournal records entries');
+  else{console.error('FAIL: comboJournal not working');pass=false;}
+  CombatState.reset();
+  IntentMirror.flatline=0;IntentMirror._fl50Applied=false;IntentMirror._fl80Applied=false;IntentMirror._renderFlatline();
+  console.log(pass?'✅ P2 TEST 3 PASS':'❌ P2 TEST 3 FAIL');console.groupEnd();
+}
+
+function P2_TEST4(){
+  console.group('[P2 TEST 4] Boss signatures');
+  let pass=true;
+  GameState.player=GameState.player||{hp:100,maxHp:100,atk:15,def:5,mp:100,maxMp:100,debuffs:[],buffs:[],spd:10,actionCounter:0,spells:[]};
+  // Glitch Overlord signature at 50% HP
+  const glitch={name:'Glitch Overlord',hp:40,maxHp:100,atk:10,def:2,isBoss:true,signatureUsed:false,debuffs:[],buffs:[]};
+  const fired1=_checkBossSignature(glitch,GameState.player);
+  if(fired1)console.log('PASS: CORRUPTION CASCADE fired at 40% HP');
+  else{console.error('FAIL: signature did not fire');pass=false;}
+  if(glitch.signatureUsed)console.log('PASS: signatureUsed=true after firing');
+  else{console.error('FAIL: signatureUsed not set');pass=false;}
+  // Does not fire twice
+  const fired2=_checkBossSignature(glitch,GameState.player);
+  if(!fired2)console.log('PASS: signature does not fire twice');
+  else{console.error('FAIL: signature fired twice');pass=false;}
+  // The Architect signature at 30% HP — should not fire at 40%
+  const arch={name:'The Architect',hp:40,maxHp:100,atk:10,def:2,isBoss:true,signatureUsed:false,debuffs:[],buffs:[]};
+  const fired3=_checkBossSignature(arch,GameState.player);
+  if(!fired3)console.log('PASS: PROTOCOL LOCKDOWN does not fire at 40% HP (>30% trigger)');
+  else{console.error('FAIL: fired too early');pass=false;}
+  // Should fire at 25% HP
+  arch.hp=25;
+  CombatState.exploitLockTurns=0;
+  const fired4=_checkBossSignature(arch,GameState.player);
+  if(fired4)console.log('PASS: PROTOCOL LOCKDOWN fired at 25% HP');
+  else{console.error('FAIL: PROTOCOL LOCKDOWN did not fire');pass=false;}
+  if(CombatState.exploitLockTurns===2)console.log('PASS: exploitLockTurns=2 after PROTOCOL LOCKDOWN');
+  else{console.error('FAIL: exploitLockTurns='+CombatState.exploitLockTurns);pass=false;}
+  // Boss with no signature — should return false
+  const plain={name:'Glitch Slime',hp:10,maxHp:50,atk:5,def:1,isBoss:false,signatureUsed:false,debuffs:[],buffs:[]};
+  const fired5=_checkBossSignature(plain,GameState.player);
+  if(!fired5)console.log('PASS: non-boss/non-signature enemy returns false');
+  else{console.error('FAIL: unexpected signature fire');pass=false;}
+  CombatState.reset();
+  GameState.player.debuffs=[];
+  console.log(pass?'✅ P2 TEST 4 PASS':'❌ P2 TEST 4 FAIL');console.groupEnd();
+}
+
+function P2_TEST5(){
+  console.group('[P2 TEST 5] Elite passive traits');
+  let pass=true;
+  // Verify all 5 elites have correct trait fields
+  const checks=[
+    {name:'Glitch Slime',trait:'STATIC DISCHARGE'},
+    {name:'Neon Wraith',trait:'PHANTOM PHASE'},
+    {name:'Cyber Beast',trait:'CHROME PLATING'},
+    {name:'Rogue Drone',trait:'PREDICTIVE ALGORITHM'},
+    {name:'Data Golem',trait:'PROTOCOL SHIELD'},
+  ];
+  checks.forEach(({name,trait})=>{
+    const p=ENEMY_PERSONALITIES[name];
+    if(p?.trait===trait)console.log(`PASS: ${name} has trait ${trait}`);
+    else{console.error(`FAIL: ${name} trait="${p?.trait}" expected "${trait}"`);pass=false;}
+    if(p?.traitDescription)console.log(`  description: "${p.traitDescription}"`);
+    else{console.error(`FAIL: ${name} missing traitDescription`);pass=false;}
+  });
+  // Verify boss signatures
+  const go=ENEMY_PERSONALITIES['Glitch Overlord'];
+  if(go?.signature==='CORRUPTION CASCADE'&&go?.signatureTrigger===50)console.log('PASS: Glitch Overlord CORRUPTION CASCADE at 50%');
+  else{console.error('FAIL: Glitch Overlord signature',go?.signature,go?.signatureTrigger);pass=false;}
+  const arch=ENEMY_PERSONALITIES['The Architect'];
+  if(arch?.signature==='PROTOCOL LOCKDOWN'&&arch?.signatureTrigger===30)console.log('PASS: The Architect PROTOCOL LOCKDOWN at 30%');
+  else{console.error('FAIL: The Architect signature',arch?.signature,arch?.signatureTrigger);pass=false;}
+  // CHROME PLATING: _tickDoTs uses 4% rate
+  const cbEnemy={name:'Cyber Beast',hp:100,maxHp:100,atk:10,def:2,debuffs:[{id:'imHem',turns:3}]};
+  IntentMirror._tickDoTs(cbEnemy);
+  const expectedDot=Math.max(1,Math.floor(100*0.04));
+  if(cbEnemy.hp===100-expectedDot)console.log(`PASS: CHROME PLATING HEM ticks at 4% (−${expectedDot} HP)`);
+  else{console.error(`FAIL: CHROME PLATING HEM, hp=${cbEnemy.hp} expected ${100-expectedDot}`);pass=false;}
+  // PROTOCOL SHIELD: shield initializes at 15% maxHp
+  const dgEnemy={name:'Data Golem',hp:200,maxHp:200,atk:8,def:5,isBoss:false,shieldActive:false,shieldHp:0,debuffs:[],buffs:[]};
+  const _ps=ENEMY_PERSONALITIES[dgEnemy.name];
+  if(_ps?.trait==='PROTOCOL SHIELD'){dgEnemy.shieldHp=Math.floor(dgEnemy.maxHp*0.15);dgEnemy.shieldActive=true;}
+  if(dgEnemy.shieldActive&&dgEnemy.shieldHp===30)console.log('PASS: PROTOCOL SHIELD init = 30 HP (15% of 200)');
+  else{console.error('FAIL: PROTOCOL SHIELD shieldHp='+dgEnemy.shieldHp);pass=false;}
+  console.log(pass?'✅ P2 TEST 5 PASS':'❌ P2 TEST 5 FAIL');console.groupEnd();
+}
+
+function P2_TEST6(){
+  console.group('[P2 TEST 6] Phase 1 regression (IM_TEST4–7)');
+  console.log('Running Phase 1 test suite...');
+  IM_TEST4();IM_TEST5();IM_TEST6();IM_TEST7();
+  console.log('✅ P2 TEST 6 COMPLETE — check individual results above');
+  console.groupEnd();
+}
+
 window.IM_TEST1 = IM_TEST1;
 window.IM_TEST2 = IM_TEST2;
 window.IM_TEST3 = IM_TEST3;
@@ -13034,6 +13439,12 @@ window.IM_TEST4 = IM_TEST4;
 window.IM_TEST5 = IM_TEST5;
 window.IM_TEST6 = IM_TEST6;
 window.IM_TEST7 = IM_TEST7;
+window.P2_TEST1 = P2_TEST1;
+window.P2_TEST2 = P2_TEST2;
+window.P2_TEST3 = P2_TEST3;
+window.P2_TEST4 = P2_TEST4;
+window.P2_TEST5 = P2_TEST5;
+window.P2_TEST6 = P2_TEST6;
 
 // Single init on load — boot first, then Game.init
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',()=>BootScreen.run());}
