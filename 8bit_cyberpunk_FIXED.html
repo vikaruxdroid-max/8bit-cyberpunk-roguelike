@@ -1185,6 +1185,70 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
 .p2-debrief-btn{font-family:'Press Start 2P',monospace;font-size:clamp(8px,1vw,12px);padding:10px 24px;border:1px solid #00ffff;background:rgba(0,255,255,.08);color:#00ffff;cursor:pointer;width:100%;margin-top:14px;transition:all .2s;}
 .p2-debrief-btn:hover{background:rgba(0,255,255,.2);box-shadow:0 0 14px rgba(0,255,255,.4);}
 
+/* ── PHASE 2E: SUPPRESS OLD IM PANEL ───────────────────── */
+#imPanel{display:none!important;pointer-events:none!important;}
+
+/* ── PHASE 2E: COMBAT HUD ───────────────────────────────── */
+#combatHUD{display:none;position:absolute;bottom:0;left:0;right:0;z-index:55;background:linear-gradient(0deg,rgba(0,0,16,.97),rgba(0,0,14,.9));border-top:1px solid rgba(0,255,255,.18);font-family:'Share Tech Mono',monospace;}
+/* Zone A */
+#hudZoneA{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;padding:4px 8px;border-bottom:1px solid rgba(0,255,255,.08);}
+#hudPlayer,#hudResources,#hudEnemy{display:flex;flex-direction:column;gap:2px;}
+#hudResources{align-items:center;}
+#hudEnemy{align-items:flex-end;}
+.hud-pname{font-family:'Press Start 2P',monospace;font-size:clamp(5px,0.6vw,8px);color:#00ffff;letter-spacing:1px;}
+.hud-ptrait{font-size:clamp(6px,0.65vw,8px);color:#556;min-height:9px;}
+.hud-bar-row{display:flex;align-items:center;gap:3px;width:100%;}
+.hud-lbl{font-size:clamp(5px,0.55vw,7px);color:#556;letter-spacing:1px;flex-shrink:0;}
+.hud-bar{flex:1;height:5px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:1px;overflow:visible;position:relative;}
+.hud-fill{height:100%;transition:width .25s;border-radius:1px;position:relative;}
+.hud-hp-fill{background:linear-gradient(90deg,#aa0022,#ff0040);}
+.hud-en-fill{background:linear-gradient(90deg,#880011,#cc0033);}
+.hud-num{font-size:clamp(6px,0.7vw,9px);color:#99aabb;flex-shrink:0;white-space:nowrap;}
+.hud-rlbl{font-family:'Press Start 2P',monospace;font-size:clamp(4px,0.48vw,6px);color:#445;letter-spacing:1px;text-align:center;}
+#hudFlatlineBar{width:100%;max-width:140px;height:5px;background:rgba(255,0,64,.1);border:1px solid rgba(255,0,64,.3);border-radius:1px;overflow:visible;position:relative;}
+#hudFlatlineFill{height:100%;background:#ff0040;transition:width .25s;border-radius:1px;}
+.hud-fl-tick{position:absolute;top:-1px;bottom:-1px;width:1px;background:rgba(255,255,255,.55);z-index:2;pointer-events:none;}
+#hudFlatlineNum{font-size:clamp(6px,0.7vw,9px);color:#ff4444;min-width:22px;text-align:center;}
+#hudSysMemPips{display:flex;gap:2px;justify-content:center;margin:1px 0;}
+.hud-pip{width:7px;height:7px;border:1px solid #00ffcc;border-radius:1px;transition:background .1s;}
+.hud-pip.on{background:#00ffcc;box-shadow:0 0 3px #00ffcc;}
+.hud-pip.off{background:transparent;}
+#hudSysMemCount{font-size:clamp(6px,0.65vw,8px);color:#00ffcc;}
+.hud-debuffs{display:flex;gap:2px;flex-wrap:wrap;min-height:9px;}
+#hudEnemyDebuffs{justify-content:flex-end;}
+.hud-dtag{font-size:clamp(5px,0.6vw,7px);padding:1px 3px;border:1px solid;border-radius:1px;}
+.hud-ename{font-family:'Press Start 2P',monospace;font-size:clamp(5px,0.6vw,8px);color:#ff4444;}
+.hud-badge{font-family:'Press Start 2P',monospace;font-size:clamp(4px,0.45vw,6px);padding:1px 4px;border:1px solid;border-radius:1px;margin-left:3px;}
+.hud-badge.REGULAR{border-color:#334;color:#556;}
+.hud-badge.ELITE{border-color:#ff9900;color:#ffaa22;}
+.hud-badge.BOSS{border-color:#ff0040;color:#ff2255;box-shadow:0 0 5px rgba(255,0,64,.4);}
+/* Zone B */
+#hudZoneB{display:flex;border-bottom:1px solid rgba(0,255,255,.1);}
+.hud-tab{flex:1;font-family:'Press Start 2P',monospace;font-size:clamp(5px,0.6vw,8px);padding:5px 4px;border:none;border-right:1px solid rgba(255,255,255,.06);background:rgba(0,0,16,.7);cursor:pointer;letter-spacing:1px;border-bottom:2px solid transparent;transition:all .15s;color:#334;}
+.hud-tab:last-child{border-right:none;}
+.hud-tab-atk.on{color:#FF4455;border-bottom-color:#FF4455;background:rgba(255,68,85,.06);}
+.hud-tab-blk.on{color:#4488FF;border-bottom-color:#4488FF;background:rgba(68,136,255,.06);}
+.hud-tab-exp.on{color:#FFCC00;border-bottom-color:#FFCC00;background:rgba(255,204,0,.06);}
+/* Zone C */
+#hudZoneC{padding:3px 5px 4px;}
+.hud-panel{flex-direction:column;gap:2px;}
+.hud-tier-lbl{font-family:'Press Start 2P',monospace;font-size:clamp(4px,0.48vw,6px);color:#334;letter-spacing:2px;padding:2px 0;}
+.hud-tier-row{display:flex;gap:3px;flex-wrap:wrap;}
+.hud-abtn{display:flex;align-items:center;gap:5px;border:1px solid;cursor:pointer;padding:3px 6px;text-align:left;transition:all .12s;flex:1;min-width:90px;background:rgba(0,0,20,.5);position:relative;}
+.hud-abtn:disabled{opacity:0.35!important;cursor:not-allowed!important;}
+.hud-abtn-atk{border-color:#443344;color:#ffaacc;}
+.hud-abtn-atk:not(:disabled):hover{border-color:#FF4455;background:rgba(255,68,85,.12);}
+.hud-abtn-blk{border-color:#223355;color:#aaccff;}
+.hud-abtn-blk:not(:disabled):hover{border-color:#4488FF;background:rgba(68,136,255,.12);}
+.hud-abtn-exp{border-color:#443300;color:#ffeeaa;}
+.hud-abtn-exp:not(:disabled):hover{border-color:#FFCC00;background:rgba(255,204,0,.09);}
+.hud-abtn-bw{border-color:#440011;color:#ff8888;}
+.hud-abtn-bw:not(:disabled):hover{border-color:#ff0040;background:rgba(255,0,64,.12);}
+.hud-aname{font-family:'Press Start 2P',monospace;font-size:clamp(4px,0.5vw,7px);flex-shrink:0;letter-spacing:0.3px;}
+.hud-adesc{font-size:clamp(7px,0.72vw,9px);color:#556;flex:1;}
+.hud-acost{font-family:'Press Start 2P',monospace;font-size:clamp(4px,0.48vw,6px);color:#00ffcc;background:rgba(0,255,204,.07);border:1px solid rgba(0,255,204,.2);padding:1px 3px;border-radius:1px;flex-shrink:0;white-space:nowrap;}
+.hud-combo-tip{font-size:clamp(6px,0.65vw,8px);color:#334;text-align:center;padding:2px 0;border-top:1px solid rgba(255,255,255,.04);margin-top:1px;}
+
 #imReveal{background:rgba(0,0,20,.8);border:1px solid rgba(255,255,255,.15);border-radius:2px;padding:5px 18px;}
 .im-debuff-tag{padding:2px 6px;border:1px solid;border-radius:2px;font-size:clamp(7px,0.8vw,10px);}
 .im-debuff-tag.imGlitch{border-color:#ff00ff;color:#ff00ff;}
@@ -1533,6 +1597,99 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
             </div>
             <div id="imDebuffRow" style="display:flex;gap:6px;flex-wrap:wrap;font-family:'Share Tech Mono',monospace;font-size:clamp(7px,0.85vw,10px);color:#888;min-height:12px;justify-content:center;"></div>
           </div>
+          <!-- ══ PHASE 2E COMBAT HUD ══ -->
+          <div id="combatHUD">
+            <!-- Zone A: Status Row -->
+            <div id="hudZoneA">
+              <div id="hudPlayer">
+                <div class="hud-pname" id="hudPlayerName">RUNNER</div>
+                <div class="hud-ptrait" id="hudPlayerTrait"></div>
+                <div class="hud-bar-row">
+                  <span class="hud-lbl" style="color:#ff4444">HP</span>
+                  <div class="hud-bar"><div id="hudHpFill" class="hud-fill hud-hp-fill" style="width:100%"></div></div>
+                  <span id="hudHpNum" class="hud-num">100/100</span>
+                </div>
+              </div>
+              <div id="hudResources">
+                <div class="hud-rlbl">FLATLINE</div>
+                <div style="display:flex;align-items:center;gap:3px;">
+                  <div id="hudFlatlineBar">
+                    <div id="hudFlatlineFill" style="width:0%"></div>
+                    <div class="hud-fl-tick" style="left:50%"></div>
+                    <div class="hud-fl-tick" style="left:80%"></div>
+                  </div>
+                  <span id="hudFlatlineNum" class="hud-num">0</span>
+                </div>
+                <div class="hud-rlbl" style="margin-top:2px">SYS_MEM</div>
+                <div id="hudSysMemPips"></div>
+                <span id="hudSysMemCount" class="hud-num">3/8</span>
+                <div id="hudPlayerDebuffs" class="hud-debuffs" style="margin-top:2px;justify-content:center;"></div>
+              </div>
+              <div id="hudEnemy">
+                <div style="display:flex;align-items:center;justify-content:flex-end;gap:2px;">
+                  <span class="hud-badge REGULAR" id="hudEnemyBadge">REG</span>
+                  <span class="hud-ename" id="hudEnemyName">ENEMY</span>
+                </div>
+                <div class="hud-ptrait" id="hudEnemyTrait" style="color:#ff6622;text-align:right;"></div>
+                <div class="hud-bar-row">
+                  <span id="hudEnemyHpNum" class="hud-num" style="color:#ff4444">100/100</span>
+                  <div class="hud-bar"><div id="hudEnemyHpFill" class="hud-fill hud-en-fill" style="width:100%"></div></div>
+                  <span class="hud-lbl" style="color:#ff4444">HP</span>
+                </div>
+                <div id="hudEnemyDebuffs" class="hud-debuffs"></div>
+              </div>
+            </div>
+            <!-- Zone B: Tab Bar -->
+            <div id="hudZoneB">
+              <button class="hud-tab hud-tab-atk on" id="hudTabAtk" onclick="HUD.selectTab('attack')">ATTACK</button>
+              <button class="hud-tab hud-tab-blk"    id="hudTabBlk" onclick="HUD.selectTab('block')">BLOCK</button>
+              <button class="hud-tab hud-tab-exp"    id="hudTabExp" onclick="HUD.selectTab('exploit')">EXPLOIT</button>
+            </div>
+            <!-- Zone C: Sub-panels -->
+            <div id="hudZoneC">
+              <!-- ATTACK panel -->
+              <div id="hudAttackPanel" class="hud-panel" style="display:flex;">
+                <div class="hud-tier-row">
+                  <button class="hud-abtn hud-abtn-atk" id="hudBtnHardJack" onclick="HUD.pick('ATK_HARD')"><span class="hud-aname">HARD JACK</span><span class="hud-adesc">Standard melee +25%</span><span class="hud-acost" style="visibility:hidden">0</span></button>
+                  <button class="hud-abtn hud-abtn-atk" id="hudBtnQhack"    onclick="HUD.pick('ATK_QHACK')"><span class="hud-aname">QUICKHACK</span><span class="hud-adesc">Ignores BLOCK entirely</span><span class="hud-acost">1</span></button>
+                  <button class="hud-abtn hud-abtn-atk" id="hudBtnBleed"    onclick="HUD.pick('ATK_HEM')"><span class="hud-aname">BLEED WIRE</span><span class="hud-adesc">DoT, bypasses BLOCK</span><span class="hud-acost" style="visibility:hidden">0</span></button>
+                </div>
+                <div class="hud-combo-tip">GHOST PROTOCOL → BLEED WIRE = <span style="color:#aa44ff">GHOST WIRE</span></div>
+              </div>
+              <!-- BLOCK panel -->
+              <div id="hudBlockPanel" class="hud-panel" style="display:none;">
+                <div class="hud-tier-row">
+                  <button class="hud-abtn hud-abtn-blk" id="hudBtnIronWall"  onclick="HUD.pick('BLK_IRON')"><span class="hud-aname">IRON WALL</span><span class="hud-adesc">60% damage reduction</span><span class="hud-acost" style="visibility:hidden">0</span></button>
+                  <button class="hud-abtn hud-abtn-blk" id="hudBtnReactive"  onclick="HUD.pick('BLK_REACT')"><span class="hud-aname">REACTIVE SHIELD</span><span class="hud-adesc">30% DR + GLITCH counter</span><span class="hud-acost" style="visibility:hidden">0</span></button>
+                  <button class="hud-abtn hud-abtn-blk" id="hudBtnGhost"     onclick="HUD.pick('BLK_GHOST')"><span class="hud-aname">GHOST PROTOCOL</span><span class="hud-adesc">Full dodge — next ATK unblockable</span><span class="hud-acost" style="visibility:hidden">0</span></button>
+                </div>
+                <div class="hud-combo-tip">REACTIVE SHIELD → QUICKHACK = <span style="color:#4488ff">REACTIVE SURGE</span></div>
+              </div>
+              <!-- EXPLOIT panel -->
+              <div id="hudExploitPanel" class="hud-panel" style="display:none;max-height:130px;overflow-y:auto;">
+                <div class="hud-tier-lbl">DAEMON — TIER 1</div>
+                <div class="hud-tier-row">
+                  <button class="hud-abtn hud-abtn-exp" id="hudBtnCyber"    onclick="HUD.pick('D_CYBER')"><span class="hud-aname">CW MALFUNCTION</span><span class="hud-adesc">Enemy EXPLOIT off 2t</span><span class="hud-acost">1</span></button>
+                  <button class="hud-abtn hud-abtn-exp" id="hudBtnSonic"    onclick="HUD.pick('D_SONIC')"><span class="hud-aname">SONIC STATIC</span><span class="hud-adesc">Enemy BLOCK off 1t</span><span class="hud-acost">1</span></button>
+                  <button class="hud-abtn hud-abtn-exp" id="hudBtnReboot"   onclick="HUD.pick('D_REBOOT')"><span class="hud-aname">REBOOT OPTICS</span><span class="hud-adesc">Enemy ATK -40% 1t</span><span class="hud-acost">1</span></button>
+                </div>
+                <div class="hud-tier-lbl">QUICKHACK — TIER 2</div>
+                <div class="hud-tier-row">
+                  <button class="hud-abtn hud-abtn-exp" id="hudBtnCircuit"   onclick="HUD.pick('QH_CIRCUIT')"><span class="hud-aname">SHORT CIRCUIT</span><span class="hud-adesc">1.5× dmg + OVERLOAD</span><span class="hud-acost" id="hudCostCircuit">2</span></button>
+                  <button class="hud-abtn hud-abtn-exp" id="hudBtnOverheat"  onclick="HUD.pick('QH_OVERHEAT')"><span class="hud-aname">OVERHEAT</span><span class="hud-adesc">DoT + HEMORRHAGE</span><span class="hud-acost" id="hudCostOverheat">2</span></button>
+                  <button class="hud-abtn hud-abtn-exp" id="hudBtnSynapse"   onclick="HUD.pick('QH_SYNAPSE')"><span class="hud-aname">SYNAPSE BURNOUT</span><span class="hud-adesc">2× dmg + cleanse</span><span class="hud-acost" id="hudCostSynapse">3</span></button>
+                  <button class="hud-abtn hud-abtn-exp" id="hudBtnContagion" onclick="HUD.pick('QH_CONTAGION')"><span class="hud-aname">CONTAGION</span><span class="hud-adesc">GLITCH + OVERLOAD</span><span class="hud-acost" id="hudCostContagion">3</span></button>
+                </div>
+                <div class="hud-tier-lbl" style="color:#ff4444">BLACKWARE — TIER 3</div>
+                <div class="hud-tier-row">
+                  <button class="hud-abtn hud-abtn-bw" id="hudBtnOverclock"  onclick="HUD.pick('OVERCLOCK')"><span class="hud-aname">OVERCLOCK</span><span class="hud-adesc">-15% HP: +3 MEM, -15 FLAT</span><span class="hud-acost">0</span></button>
+                  <button class="hud-abtn hud-abtn-bw" id="hudBtnBlackwall"  onclick="HUD.pick('QH_BLACKWALL')"><span class="hud-aname">BLACKWALL BREACH</span><span class="hud-adesc">20% enemy maxHP dmg</span><span class="hud-acost">4</span></button>
+                  <button class="hud-abtn hud-abtn-bw" id="hudBtnCollapse"   onclick="HUD.pick('SYS_COLLAPSE')"><span class="hud-aname">SYSTEM COLLAPSE</span><span class="hud-adesc">Enemy skips 2 turns</span><span class="hud-acost">5</span></button>
+                </div>
+                <div class="hud-combo-tip">OVERCLOCK → BLACKWALL BREACH = <span style="color:#ff00ff">OVERCLOCK GAMBIT</span></div>
+              </div>
+            </div>
+          </div>
           <!-- ══ COMBAT LOG — last 6 lines ══ -->
           <div id="combatLog" style="position:absolute;right:8px;top:56px;width:clamp(160px,18vw,220px);max-height:110px;overflow-y:auto;z-index:42;background:rgba(0,0,12,.82);border:1px solid rgba(0,255,255,.12);border-radius:2px;padding:4px 6px;display:none;"></div>
         </div>
@@ -1545,11 +1702,7 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
             <div class="bt"><div class="bfill hpf" id="phpf" style="width:100%"></div></div>
             <span class="bnum" id="phpn">120/120</span>
           </div>
-          <div class="br" style="flex:1;max-width:clamp(100px,12vw,180px);">
-            <span class="bl2" style="color:#44aaff">MP</span>
-            <div class="bt"><div class="bfill mpf" id="pmpf" style="width:100%"></div></div>
-            <span class="bnum" id="pmpn">100/100</span>
-          </div>
+          <!-- [P2E] MP bar removed — SYS_MEM is the sole resource -->
           <div class="buffs" id="pbuffs" style="flex-shrink:0;"></div>
           <div class="spbar" id="spbar" style="flex-shrink:0;"></div>
           <button id="blockBtn" title="BLOCK">
@@ -4872,7 +5025,7 @@ const SaveSystem = {
         passiveIds:GameState.player?.passiveIds||[],
         statAlloc:GameState.ccState?.statAlloc||{hp:0,atk:0,def:0,spd:0,mp:0},
         weaponIds:(GameState.player?.weapons||[]).map(w=>w.id),
-        hp:p.hp,maxHp:p.maxHp,mp:p.mp,maxMp:p.maxMp,
+        hp:p.hp,maxHp:p.maxHp,/*[P2E] mp/maxMp removed*/
         baseAtk:p.baseAtk,atk:p.atk,baseDef:p.baseDef,def:p.def,
         baseSpd:p.baseSpd,spd:p.spd,level:p.level||1,
         xp:p.xp||0,xpToNext:p.xpToNext||50,critBonus:p.critBonus||0,
@@ -4909,7 +5062,7 @@ const SaveSystem = {
       const alloc=cfg.statAlloc;
       GameState.ccState={gender:cfg.gender,accent:Object.entries(ACCENT_COLORS).find(([,v])=>v===cfg.accent)?.[0]||'cyan',statAlloc:alloc,pointsLeft:STAT_POINTS_TOTAL-Object.values(alloc).reduce((a,b)=>a+b,0),randActive:activeSkills,randPassive:passiveSkills,randDefensive:defensiveSkills,randWeapons:weapons,randPotions:potions};
       const p=new Player(cfg);
-      p.hp=d.hp;p.maxHp=d.maxHp;p.mp=d.mp;p.maxMp=d.maxMp;
+      p.hp=d.hp;p.maxHp=d.maxHp;p.mp=0;p.maxMp=1;/*[P2E] mp/maxMp removed from save*/
       p.baseAtk=d.baseAtk;p.atk=d.atk;p.baseDef=d.baseDef;p.def=d.def;
       p.baseSpd=d.baseSpd;p.spd=d.spd;p.level=d.level||1;
       p.xp=d.xp||0;p.xpToNext=d.xpToNext||50;p.critBonus=d.critBonus||0;
@@ -7737,6 +7890,8 @@ const Combat = {
       }
     }
     for(const en of alive){
+      // SYSTEM COLLAPSE — skip turns
+      if(en._skipTurns>0){en._skipTurns--;DM.say(`${en.name}: SYSTEM COLLAPSE — locked!`);continue;}
       // FREEZE debuff — skip this enemy's turn
       if(en.debuffs?.some(d=>d.id==='imFreeze'&&d.turns>0)){
         en.debuffs.find(d=>d.id==='imFreeze').turns=0;
@@ -7787,6 +7942,7 @@ const Combat = {
   },
   endCombat(won){
     if(this._endingCombat)return;this._endingCombat=true;
+    if(typeof HUD!=='undefined')HUD.hide();
     cancelCombatIntroTimers();
     clearInterval(GameState.combatInterval);GameState.combatInterval=null;GameState.combatRunning=false;
     // Clean up Intent Mirror UI
@@ -7853,9 +8009,8 @@ const Combat = {
     if(GameState.floorTurns<=10)QM.track('fastWins',1);
     QM.track('floorsCleared',1);QM.check();
     // Ghost run: no damage taken this room
-    // Between-room regen: 10% HP + 15% MP
+    // Between-room regen: 10% HP — [P2E] MP regen removed
     p.hp=Math.min(p.maxHp,p.hp+Math.floor(p.maxHp*0.1));
-    p.mp=Math.min(p.maxMp,p.mp+Math.floor(p.maxMp*0.15));
     if(p.hp>=p.maxHp)Achievements.unlock('no_damage');
     Achievements.check();
     UI.flash();
@@ -7902,6 +8057,7 @@ const Combat = {
     }
   },
   start(){
+    if(typeof HUD!=='undefined')HUD.show();
     // Interrogation Protocol — runs BEFORE combat for elites/bosses
     const primaryEnemy=(GameState.enemies||[])[0];
     if(primaryEnemy&&InterrogationProtocol.isEliteOrBoss(primaryEnemy)&&!GameState._interrogationDone){
@@ -8407,6 +8563,19 @@ const IntentMirror = {
     }
     // ── ICEPICK: bypass enemy DEF (set externally if needed) ─────
     if(this._icePickActive){this._icePickActive=false;}
+
+    // ── OVERCLOCK / SYS_COLLAPSE (Tier 3 Blackware) ─────────────
+    if(PA==='OVERCLOCK'){
+      const hpCost=Math.floor(p.maxHp*0.15);
+      if(p.hp>hpCost){p.hp=Math.max(1,p.hp-hpCost);this._gainMem(3,'overclock');this._reduceFlatline(15);logLines.push('OVERCLOCK — HP -15%, +3 MEM, -15 FLATLINE');}
+      else{logLines.push('OVERCLOCK FAILED — insufficient HP');}
+      eDmg=this._dmg(enemy.atk); // enemy still attacks during overclock
+    }
+    if(PA==='SYS_COLLAPSE'){
+      if(this._spendMem(5)){enemy._skipTurns=(enemy._skipTurns||0)+2;logLines.push('SYSTEM COLLAPSE — enemy locked 2 turns!');}
+      else{logLines.push('INSUFFICIENT MEMORY for SYSTEM COLLAPSE');}
+      eDmg=this._dmg(enemy.atk); // enemy acts last time before lockout
+    }
 
     // ── ENEMY CLEANSE (DEFENSIVE archetype, 20% chance) ──────────
     const hasHem=enemy.debuffs?.some(d=>d.id==='imHem'&&d.turns>0);
@@ -9463,7 +9632,7 @@ const UI={
     const p=GameState.player;if(!p)return;
     const hpPct=Math.max(0,p.hp/p.maxHp);
     const hpEl=document.getElementById('phpf');
-    const mpEl=document.getElementById('pmpf');
+    // [P2E] MP bar removed — console.warn('[P2E] MP removed here - was: pmpf bar update')
     if(hpEl){
       hpEl.style.width=(hpPct*100)+'%';
       hpEl.classList.remove('hp-high','hp-mid','hp-low');
@@ -9471,22 +9640,17 @@ const UI={
       else if(hpPct>0.3)hpEl.classList.add('hp-mid');
       else hpEl.classList.add('hp-low');
     }
-    if(mpEl){
-      mpEl.style.width=Math.max(0,p.mp/p.maxMp*100)+'%';
-      mpEl.classList.toggle('mp-full',p.mp>=p.maxMp);
-    }
     const hpN=document.getElementById('phpn');if(hpN)hpN.textContent=`${Math.max(0,p.hp)}/${p.maxHp}`;
-    const mpN=document.getElementById('pmpn');if(mpN)mpN.textContent=`${Math.max(0,p.mp)}/${p.maxMp}`;
-    // Chdr HP/MP bars
+    // Chdr HP bar
     const chf=document.getElementById('chdrHpFill');
     const chn=document.getElementById('chdrHpNum');
-    const cmf=document.getElementById('chdrMpFill');
     if(chf){
       const hc=hpPct>0.5?'#00ff41':hpPct>0.25?'#ffaa00':'#ff4444';
       chf.style.width=(hpPct*100)+'%';chf.style.background=hc;
     }
     if(chn)chn.textContent=`${Math.max(0,p.hp)}/${p.maxHp}`;
-    if(cmf)cmf.style.width=Math.max(0,p.mp/p.maxMp*100)+'%';
+    // [P2E] MP removed: console.warn('[P2E] MP removed here - was: chdrMpFill update')
+    if(typeof HUD!=='undefined'&&HUD._active)HUD.render();
   },
   updateSpells(){
     const p=GameState.player;
@@ -11642,8 +11806,7 @@ const Game={
         GameState.enemies=isBoss?this._spawnBoss():this._spawnCombatEnemies();
         triggerRelicEvent('room_start',{}); // Hook 1 — relic room_start reset
         GameState.enemies.forEach(e=>{e.entranceAnim={active:true,frame:0,totalFrames:12,complete:false};});
-        p.mp=Math.min(p.maxMp,p.mp+Math.floor(p.maxMp*.3));
-        p.spells.forEach(s=>s.cd=Math.max(0,(s.cd||0)-1));
+        /*[P2E] mp regen removed*/p.spells.forEach(s=>s.cd=Math.max(0,(s.cd||0)-1));
         if(isBoss&&GameState.enemies[0]){
           // Stop any lingering combat before boss intro
           clearInterval(GameState.combatInterval);GameState.combatInterval=null;GameState.combatRunning=false;Combat._endingCombat=false;
@@ -11685,8 +11848,7 @@ const Game={
         room.cleared=true;
         const heal=Math.floor(p.maxHp*0.3);
         p.hp=Math.min(p.maxHp,p.hp+heal);
-        p.mp=Math.min(p.maxMp,p.mp+Math.floor(p.maxMp*0.2));
-        try{UI.updateBars();}catch(e){}
+        /*[P2E] mp regen removed*/try{UI.updateBars();}catch(e){}
         DM.say(`Rest node. +${heal} HP restored.`);
         const nextRest=GameState.currentRoomIdx+1;
         const totalRest=GameState.currentFloor?.rooms?.length||0;
@@ -13242,6 +13404,176 @@ function IM_TEST7(){
 }
 
 // ═══════════════════════════════════════════════════════════════
+// PHASE 2E — COMBAT HUD
+// ═══════════════════════════════════════════════════════════════
+const HUD = {
+  _active: false,
+  _tab: 'attack',
+
+  show(){
+    const el=document.getElementById('combatHUD');
+    if(el)el.style.display='block';
+    const phud=document.querySelector('.phud');
+    if(phud)phud.style.display='none';
+    this._active=true;
+    this.selectTab('attack');
+    this.render();
+  },
+
+  hide(){
+    const el=document.getElementById('combatHUD');
+    if(el)el.style.display='none';
+    const phud=document.querySelector('.phud');
+    if(phud)phud.style.display='';
+    this._active=false;
+  },
+
+  activate(){
+    this._setButtonsEnabled(true);
+    this.render();
+  },
+
+  deactivate(){
+    this._setButtonsEnabled(false);
+  },
+
+  selectTab(tab){
+    this._tab=tab;
+    const tabs={attack:'hudTabAtk',block:'hudTabBlk',exploit:'hudTabExp'};
+    const panels={attack:'hudAttackPanel',block:'hudBlockPanel',exploit:'hudExploitPanel'};
+    const classes={attack:'hud-tab-atk',block:'hud-tab-blk',exploit:'hud-tab-exp'};
+    Object.keys(tabs).forEach(t=>{
+      const btn=document.getElementById(tabs[t]);
+      const panel=document.getElementById(panels[t]);
+      if(btn){btn.classList.remove('on');if(t===tab)btn.classList.add('on');}
+      if(panel)panel.style.display=t===tab?'flex':'none';
+    });
+  },
+
+  render(){
+    if(!this._active)return;
+    const p=GameState.player;if(!p)return;
+    const enemies=GameState.enemies||[];
+    const enemy=enemies.find(e=>e.hp>0)||enemies[0];
+
+    // ── Zone A: Player ──
+    const nm=document.getElementById('hudPlayerName');
+    if(nm)nm.textContent=p.name||'RUNNER';
+    const pt=document.getElementById('hudPlayerTrait');
+    if(pt)pt.textContent=p.passive?.name||'';
+    const hpFill=document.getElementById('hudHpFill');
+    const hpNum=document.getElementById('hudHpNum');
+    if(hpFill)hpFill.style.width=Math.max(0,(p.hp/p.maxHp)*100)+'%';
+    if(hpNum)hpNum.textContent=`${Math.max(0,p.hp)}/${p.maxHp}`;
+
+    // ── Zone A: Resources (center) ──
+    const fl=IntentMirror.flatline||0;
+    const flatFill=document.getElementById('hudFlatlineFill');
+    const flatNum=document.getElementById('hudFlatlineNum');
+    if(flatFill)flatFill.style.width=Math.min(100,fl)+'%';
+    if(flatNum)flatNum.textContent=Math.floor(fl);
+    const mem=IntentMirror.sysMem||0;
+    const pipsEl=document.getElementById('hudSysMemPips');
+    if(pipsEl){
+      pipsEl.innerHTML='';
+      for(let i=0;i<8;i++){const d=document.createElement('div');d.className='hud-pip '+(i<mem?'on':'off');pipsEl.appendChild(d);}
+    }
+    const mc=document.getElementById('hudSysMemCount');
+    if(mc)mc.textContent=`${mem}/8`;
+    this._renderDebuffs('hudPlayerDebuffs',p.debuffs||[]);
+
+    // ── Zone A: Enemy (right) ──
+    if(enemy){
+      const en=document.getElementById('hudEnemyName');
+      const badge=document.getElementById('hudEnemyBadge');
+      const enHpFill=document.getElementById('hudEnemyHpFill');
+      const enHpNum=document.getElementById('hudEnemyHpNum');
+      const enTrait=document.getElementById('hudEnemyTrait');
+      if(en)en.textContent=enemy.name||'ENEMY';
+      if(badge){
+        const type=enemy.isBoss?'BOSS':enemy.maxHp>=200?'ELITE':'REGULAR';
+        badge.textContent=type;badge.className='hud-badge '+type;
+      }
+      if(enHpFill)enHpFill.style.width=Math.max(0,(enemy.hp/enemy.maxHp)*100)+'%';
+      if(enHpNum)enHpNum.textContent=`${Math.max(0,enemy.hp)}/${enemy.maxHp}`;
+      if(enTrait){
+        const pers=ENEMY_PERSONALITIES[enemy.name];
+        enTrait.textContent=(enemy.isBoss||enemy.maxHp>=200)&&pers?.trait?`[${pers.trait}]`:'';
+      }
+      this._renderDebuffs('hudEnemyDebuffs',enemy.debuffs||[]);
+    }
+
+    // ── Zone C: button states ──
+    this._updateButtonStates();
+  },
+
+  _renderDebuffs(elId,debuffs){
+    const row=document.getElementById(elId);if(!row)return;
+    const COLORS={imGlitch:'#CC44FF',imOverload:'#FF8822',imStatic:'#FFDD00',imCorrupt:'#FF3355',imHem:'#FF3355',imOvht:'#FF8822',imCyberDisable:'#4499FF',imRebootOptics:'#00FFCC',imWeaken:'#FF6600'};
+    const NAMES={imGlitch:'GLITCH',imOverload:'OVERLOAD',imStatic:'STATIC',imCorrupt:'CORRUPT',imHem:'HEMORRHAGE',imOvht:'OVERHEAT',imCyberDisable:'CW.LOCK',imRebootOptics:'OPTICS',imWeaken:'WEAKEN'};
+    row.innerHTML='';
+    (debuffs||[]).filter(d=>d.turns>0).forEach(d=>{
+      const c=COLORS[d.id]||'#888';
+      const tag=document.createElement('span');
+      tag.className='hud-dtag';tag.style.borderColor=c;tag.style.color=c;
+      tag.textContent=(NAMES[d.id]||d.id)+d.turns;
+      row.appendChild(tag);
+    });
+  },
+
+  _updateButtonStates(){
+    const waiting=IntentMirror.waitingForPlayer;
+    const mem=IntentMirror.sysMem||0;
+    const locked=CombatState.exploitLockTurns>0;
+    const corruptD=(GameState.player?.debuffs||[]).some(d=>d.id==='imCorrupt'&&d.turns>0);
+    const staticD=(GameState.player?.debuffs||[]).some(d=>d.id==='imStatic'&&d.turns>0);
+    const discount=IntentMirror.comboSetupActive?1:0;
+
+    // ATK buttons
+    ['hudBtnHardJack','hudBtnBleed'].forEach(id=>{const b=document.getElementById(id);if(b)b.disabled=!waiting;});
+    const bq=document.getElementById('hudBtnQhack');if(bq)bq.disabled=!waiting||mem<1;
+
+    // BLOCK buttons — disabled if STATIC
+    ['hudBtnIronWall','hudBtnReactive','hudBtnGhost'].forEach(id=>{const b=document.getElementById(id);if(b)b.disabled=!waiting||!!staticD;});
+
+    // EXPLOIT — master lock
+    const exploitDisabled=!waiting||locked||corruptD;
+    const COSTS={hudBtnCyber:1,hudBtnSonic:1,hudBtnReboot:1,hudBtnCircuit:2,hudBtnOverheat:2,hudBtnSynapse:3,hudBtnContagion:3,hudBtnBlackwall:4,hudBtnCollapse:5,hudBtnOverclock:0};
+    const DISCOUNTABLE=['hudBtnCircuit','hudBtnOverheat','hudBtnSynapse','hudBtnContagion'];
+    Object.entries(COSTS).forEach(([id,baseCost])=>{
+      const btn=document.getElementById(id);if(!btn)return;
+      if(exploitDisabled){btn.disabled=true;btn.style.opacity='';btn.style.cursor='';return;}
+      const cost=DISCOUNTABLE.includes(id)?Math.max(baseCost===2?1:2,baseCost-discount):baseCost;
+      // Update cost badge
+      const costEl=btn.querySelector('.hud-acost');
+      if(costEl&&cost!==baseCost)costEl.textContent=cost;
+      if(cost>mem){btn.disabled=true;btn.style.opacity='0.35';btn.style.cursor='not-allowed';}
+      else{btn.disabled=false;btn.style.opacity='';btn.style.cursor='';}
+    });
+  },
+
+  _setButtonsEnabled(en){
+    document.querySelectorAll('#combatHUD .hud-abtn').forEach(b=>{
+      b.disabled=!en;if(!en){b.style.opacity='';b.style.cursor='';}
+    });
+    if(en)this._updateButtonStates();
+  },
+
+  pick(action){
+    if(!IntentMirror.waitingForPlayer)return;
+    IntentMirror.playerPick(action);
+  },
+};
+
+// Monkey-patch IntentMirror to drive HUD activate/deactivate
+(()=>{
+  const _origShow=IntentMirror._showButtons.bind(IntentMirror);
+  const _origHide=IntentMirror._hidePanel.bind(IntentMirror);
+  IntentMirror._showButtons=function(){_origShow();if(typeof HUD!=='undefined'&&HUD._active)HUD.activate();};
+  IntentMirror._hidePanel=function(){_origHide();if(typeof HUD!=='undefined'&&HUD._active)HUD.deactivate();};
+})();
+
+// ═══════════════════════════════════════════════════════════════
 // PHASE 2 TESTS
 // ═══════════════════════════════════════════════════════════════
 
@@ -13432,6 +13764,88 @@ function P2_TEST6(){
   console.groupEnd();
 }
 
+function P2_TEST_HUD(){
+  const failed=[];
+  const assert=(id,cond,desc)=>{if(!cond){failed.push(`${id}: ${desc}`);}else{console.log(`PASS ${id}: ${desc}`);}};
+
+  // HUD_1: SYS_MEM pips match player.sysMem
+  IntentMirror.sysMem=5;HUD._active=true;HUD.render();
+  const pips=document.querySelectorAll('#hudSysMemPips .hud-pip.on');
+  assert('HUD_1',pips.length===5,`SYS_MEM pips filled=${pips.length} expected=5`);
+
+  // HUD_2: FLATLINE bar + tick marks at 50 and 80
+  IntentMirror.flatline=60;HUD.render();
+  const flatFill=document.getElementById('hudFlatlineFill');
+  const ticks=document.querySelectorAll('#hudFlatlineBar .hud-fl-tick');
+  assert('HUD_2',flatFill&&parseFloat(flatFill.style.width)===60,'FLATLINE bar width=60%');
+  assert('HUD_2b',ticks.length===2,'Two tick marks present');
+
+  // HUD_3: No MP bar anywhere in DOM
+  const mpBar=document.getElementById('pmpf');
+  const mpNum=document.getElementById('pmpn');
+  assert('HUD_3',!mpBar&&!mpNum,'MP bar elements absent from DOM');
+
+  // HUD_4: ATTACK tab shows only ATTACK panel
+  HUD.selectTab('attack');
+  const atkP=document.getElementById('hudAttackPanel');
+  const blkP=document.getElementById('hudBlockPanel');
+  const expP=document.getElementById('hudExploitPanel');
+  assert('HUD_4',atkP?.style.display!=='none','ATTACK panel visible');
+  assert('HUD_4b',blkP?.style.display==='none','BLOCK panel hidden');
+  assert('HUD_4c',expP?.style.display==='none','EXPLOIT panel hidden');
+
+  // HUD_5: BLOCK tab shows only BLOCK panel
+  HUD.selectTab('block');
+  assert('HUD_5',document.getElementById('hudBlockPanel')?.style.display!=='none','BLOCK panel visible');
+  assert('HUD_5b',document.getElementById('hudAttackPanel')?.style.display==='none','ATTACK panel hidden');
+
+  // HUD_6: EXPLOIT tab shows all 3 tier labels
+  HUD.selectTab('exploit');
+  const tierLabels=document.querySelectorAll('#hudExploitPanel .hud-tier-lbl');
+  assert('HUD_6',tierLabels.length>=3,`All 3 tier labels present (found ${tierLabels.length})`);
+
+  // HUD_7: BLACKWARE buttons with cost > sysMem at opacity 0.35
+  IntentMirror.sysMem=1;IntentMirror.waitingForPlayer=true;
+  CombatState.exploitLockTurns=0;
+  GameState.player=GameState.player||{hp:100,maxHp:100,atk:15,def:5,debuffs:[],buffs:[],spells:[]};
+  GameState.player.debuffs=[];
+  HUD._updateButtonStates();
+  const bwBtn=document.getElementById('hudBtnBlackwall');
+  assert('HUD_7',bwBtn?.disabled,'BLACKWALL (cost 4) disabled at sysMem=1');
+  assert('HUD_7b',bwBtn&&(bwBtn.style.opacity==='0.35'||bwBtn.disabled),'BLACKWALL opacity 0.35 or disabled');
+
+  // HUD_8: Player debuff tags from GameState.player.debuffs
+  GameState.player.debuffs=[{id:'imGlitch',turns:2},{id:'imStatic',turns:1}];
+  HUD.render();
+  const pDebuffs=document.querySelectorAll('#hudPlayerDebuffs .hud-dtag');
+  assert('HUD_8',pDebuffs.length===2,`Player debuff tags rendered (found ${pDebuffs.length}, expected 2)`);
+  assert('HUD_8b',pDebuffs[0]?.textContent.includes('GLITCH'),'GLITCH tag has correct name');
+
+  // HUD_9: Enemy debuff tags from enemy.debuffs
+  const fakeEnemy={name:'TEST',hp:50,maxHp:50,atk:10,def:2,isBoss:false,debuffs:[{id:'imOverload',turns:2}]};
+  GameState.enemies=[fakeEnemy];
+  HUD.render();
+  const eDebuffs=document.querySelectorAll('#hudEnemyDebuffs .hud-dtag');
+  assert('HUD_9',eDebuffs.length===1,`Enemy debuff tags rendered (found ${eDebuffs.length}, expected 1)`);
+  assert('HUD_9b',eDebuffs[0]?.textContent.includes('OVERLOAD'),'OVERLOAD tag has correct name');
+
+  // HUD_10: Enemy badge ELITE for maxHp>=200, BOSS for isBoss
+  const eliteEnemy={name:'ELITE',hp:200,maxHp:200,atk:12,def:4,isBoss:false,debuffs:[]};
+  GameState.enemies=[eliteEnemy];HUD.render();
+  const badge=document.getElementById('hudEnemyBadge');
+  assert('HUD_10',badge?.textContent==='ELITE','Badge=ELITE for maxHp>=200');
+  const bossEnemy={name:'BOSS',hp:300,maxHp:300,atk:20,def:8,isBoss:true,debuffs:[]};
+  GameState.enemies=[bossEnemy];HUD.render();
+  assert('HUD_10b',badge?.textContent==='BOSS','Badge=BOSS for isBoss=true');
+
+  // Cleanup
+  IntentMirror.sysMem=3;IntentMirror.flatline=0;IntentMirror.waitingForPlayer=false;
+  GameState.player.debuffs=[];HUD._active=false;HUD.selectTab('attack');
+
+  if(failed.length===0){console.log('✅ P2_TEST_HUD PASS — all 10 assertions');return'PASS';}
+  else{console.error('❌ P2_TEST_HUD FAIL:',failed);return failed;}
+}
+
 window.IM_TEST1 = IM_TEST1;
 window.IM_TEST2 = IM_TEST2;
 window.IM_TEST3 = IM_TEST3;
@@ -13445,6 +13859,7 @@ window.P2_TEST3 = P2_TEST3;
 window.P2_TEST4 = P2_TEST4;
 window.P2_TEST5 = P2_TEST5;
 window.P2_TEST6 = P2_TEST6;
+window.P2_TEST_HUD = P2_TEST_HUD;
 
 // Single init on load — boot first, then Game.init
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',()=>BootScreen.run());}
