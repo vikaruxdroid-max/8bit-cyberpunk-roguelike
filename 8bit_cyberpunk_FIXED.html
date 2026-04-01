@@ -1426,7 +1426,7 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
       <!-- Panel 2: Tall left — character -->
       <div class="manga-panel mp-2" id="mp2">
         <div class="mp-glow"></div><div class="mp-halftone"></div>
-        <div class="mp-char-wrap"><img class="mp-char-img" src="assets/characters/player.png" alt="runner"></div>
+        <div class="mp-char-wrap"><img class="mp-char-img" src="assets/player.png" alt="runner"></div>
         <div class="manga-bubble" style="top:12%;right:8%;">Another runner jacked in...</div>
         <div class="manga-bubble" style="top:35%;left:8%;border-radius:16px 16px 4px 16px;">Let's see how long this one lasts.</div>
         <div class="mp-scanline"></div>
@@ -1992,13 +1992,12 @@ Object.entries(_HERO_IMG_MAP).forEach(([name, src]) => {
 // Keys match canonical ENEMY_PERSONALITIES names for en.name lookup in render loop.
 // gen_netrunner retained for SPR.shadow / SPR.netrunner player-class path.
 const _GEN_IMG_MAP = {
-  'Glitch Slime':    'assets/enemies/glitch_slime.png',
-  'Neon Wraith':     'assets/enemies/neon_wraith.png',
-  'Cyber Beast':     'assets/enemies/cyber_beast.png',
-  'Rogue Drone':     'assets/enemies/rogue_drone.png',
-  'Data Golem':      'assets/enemies/data_golem.png',
-  'Glitch Overlord': 'assets/enemies/glitch_slime.png',
-  'The Architect':   'assets/enemies/data_golem.png',
+  'GLITCH SLIME':    'assets/enemies/glitch_slime.png',
+  'NEON WRAITH':     'assets/enemies/neon_wraith.png',
+  'CYBER BEAST':     'assets/enemies/cyber_beast.png',
+  'ROGUE DRONE':     'assets/enemies/rogue_drone.png',
+  'DATA GOLEM':      'assets/enemies/data_golem.png',
+  'GLITCH OVERLORD': 'assets/enemies/glitch_slime.png',
   'THE ARCHITECT':   'assets/enemies/data_golem.png',
   gen_netrunner:     'assets/player.png',
 };
