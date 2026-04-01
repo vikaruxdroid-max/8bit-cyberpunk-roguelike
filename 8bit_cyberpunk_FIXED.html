@@ -1988,6 +1988,34 @@ Object.entries(_HERO_IMG_MAP).forEach(([name, src]) => {
   };
 });
 
+// ── Generated enemy & player sprites (ComfyUI, dark bg removal) ──
+const _GEN_IMG_MAP = {
+  gen_glitchDrone: 'assets/enemies/glitch_slime.png',
+  gen_dataWraith:  'assets/enemies/neon_wraith.png',
+  gen_cyberOgre:   'assets/enemies/cyber_beast.png',
+  gen_pulseHound:  'assets/enemies/rogue_drone.png',
+  gen_neonGolem:   'assets/enemies/data_golem.png',
+  gen_netrunner:   'assets/player.png',
+};
+Object.entries(_GEN_IMG_MAP).forEach(([name, src]) => {
+  const img = new Image();
+  img.src = src;
+  img.onload = () => {
+    const ocv = document.createElement('canvas');
+    ocv.width = img.naturalWidth; ocv.height = img.naturalHeight;
+    const octx = ocv.getContext('2d');
+    octx.drawImage(img, 0, 0);
+    // Remove dark background pixels (generated sprites have dark/black backgrounds)
+    const id = octx.getImageData(0, 0, ocv.width, ocv.height);
+    const d = id.data;
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i] < 25 && d[i+1] < 25 && d[i+2] < 25) d[i+3] = 0;
+    }
+    octx.putImageData(id, 0, 0);
+    _ssCanvases[name] = ocv;
+  };
+});
+
 // Each cell in the 4x3 grid — we'll auto-detect cell size on load
 const _ssCells = {}; // spriteName -> {sx,sy,sw,sh} source rect
 const _ssCanvases = {}; // spriteName -> offscreen canvas (bg removed)
@@ -2110,7 +2138,7 @@ const SPR = {
   shadow(ctx, ox, oy, flip, t=0) {
     const sz=SPRITE_SIZE['shadow']||{w:19*P,h:26*P}; const w=sz.w,h=sz.h;
     if(!_drawSS('heroShadow',ctx,ox,oy,w,h,flip)){
-      _drawSS('netrunner',ctx,ox,oy,w,h,flip)||_drawHeroFallback(ctx,ox,oy,w,h,'#334455');
+      _drawSS('gen_netrunner',ctx,ox,oy,w,h,flip)||_drawSS('netrunner',ctx,ox,oy,w,h,flip)||_drawHeroFallback(ctx,ox,oy,w,h,'#334455');
     }
   },
   druid(ctx, ox, oy, flip, t=0) {
@@ -2124,11 +2152,12 @@ const SPR = {
   ranger(ctx, ox, oy, flip, t=0) { _drawSS('rogue',ctx,ox,oy,14*P,20*P,flip)||drawEnemyFallback(ctx,ox,oy,14*P,20*P,'#228844'); },
   cleric(ctx, ox, oy, flip, t=0) { _drawSS('circuitLich',ctx,ox,oy,14*P,22*P,flip)||drawEnemyFallback(ctx,ox,oy,14*P,22*P,'#4488cc'); },
   warlock(ctx, ox, oy, flip, t=0) { _drawSS('voidSpecter',ctx,ox,oy,14*P,22*P,flip)||drawEnemyFallback(ctx,ox,oy,14*P,22*P,'#8844cc'); },
-  glitchDrone(ctx, ox, oy, flip, t=0) { _drawSS('glitchDrone',ctx,ox,oy,12*P,12*P,flip)||drawEnemyFallback(ctx,ox,oy,12*P,12*P,'#00cccc'); },
-  neonGolem(ctx, ox, oy, flip, t=0) { _drawSS('neonGolem',ctx,ox,oy,14*P,22*P,flip)||drawEnemyFallback(ctx,ox,oy,14*P,22*P,'#8800ff'); },
+  glitchDrone(ctx, ox, oy, flip, t=0) { const w=12*P,h=12*P; _drawSS('gen_glitchDrone',ctx,ox,oy,w,h,flip)||_drawSS('glitchDrone',ctx,ox,oy,w,h,flip)||drawEnemyFallback(ctx,ox,oy,w,h,'#00cccc'); },
+  neonGolem(ctx, ox, oy, flip, t=0) { const w=14*P,h=22*P; _drawSS('gen_neonGolem',ctx,ox,oy,w,h,flip)||_drawSS('neonGolem',ctx,ox,oy,w,h,flip)||drawEnemyFallback(ctx,ox,oy,w,h,'#8800ff'); },
   voidSpecter(ctx, ox, oy, flip, t=0) { _drawSS('voidSpecter',ctx,ox,oy,12*P,17*P,flip)||drawEnemyFallback(ctx,ox,oy,12*P,17*P,'#aa44ff'); },
-  cyberOgre(ctx, ox, oy, flip, t=0) { _drawSS('cyberOgre',ctx,ox,oy,14*P,22*P,flip)||drawEnemyFallback(ctx,ox,oy,14*P,22*P,'#ff6600'); },
+  cyberOgre(ctx, ox, oy, flip, t=0) { const w=14*P,h=22*P; _drawSS('gen_cyberOgre',ctx,ox,oy,w,h,flip)||_drawSS('cyberOgre',ctx,ox,oy,w,h,flip)||drawEnemyFallback(ctx,ox,oy,w,h,'#ff6600'); },
   dataWraith(ctx, ox, oy, flip, t=0) {
+    if(_drawSS('gen_dataWraith',ctx,ox,oy,12*P,18*P,flip)) return;
     ctx.save();
     if(flip){ctx.translate(ox+12*P,oy);ctx.scale(-1,1);ox=0;oy=0;}
     const gA=0.6+0.2*Math.sin(t*0.04);
@@ -2153,10 +2182,11 @@ const SPR = {
     ctx.globalAlpha=gA*0.3;ctx.strokeStyle='#ff00ff';ctx.lineWidth=1;ctx.strokeRect(ox+0.5,oy+0.5,12*P-1,18*P-1);
     ctx.restore();
   },
-  pulseHound(ctx, ox, oy, flip, t=0) { _drawSS('pulseHound',ctx,ox,oy,14*P,17*P,flip)||drawEnemyFallback(ctx,ox,oy,14*P,17*P,'#ff2244'); },
+  pulseHound(ctx, ox, oy, flip, t=0) { const w=14*P,h=17*P; _drawSS('gen_pulseHound',ctx,ox,oy,w,h,flip)||_drawSS('pulseHound',ctx,ox,oy,w,h,flip)||drawEnemyFallback(ctx,ox,oy,w,h,'#ff2244'); },
   circuitLich(ctx, ox, oy, flip, t=0) { _drawSS('circuitLich',ctx,ox,oy,14*P,22*P,flip)||drawEnemyFallback(ctx,ox,oy,14*P,22*P,'#39ff14'); },
   quantumBoss(ctx, ox, oy, flip, t=0) { _drawSS('quantumBoss',ctx,ox,oy,14*P,22*P,flip)||drawEnemyFallback(ctx,ox,oy,14*P,22*P,'#ff00ff'); },
   netrunner(ctx, ox, oy, flip, t=0) {
+    if(_drawSS('gen_netrunner',ctx,ox,oy,14*P,20*P,flip)) return;
     ctx.save();
     if(flip){ctx.translate(ox+14*P,oy);ctx.scale(-1,1);ox=0;oy=0;}
     // Hood/head
@@ -2663,7 +2693,7 @@ const Arena = {
       let lunge=0, scaleX2=1, scaleY2=1, eExtraBob=0;
       const eAnimSub=(s)=>s.includes('.')?s.split('.')[1]:'';
       const playerHomeX=Math.floor(W*0.18);
-      if (en.animState.startsWith('attack')) {
+      if (en.animState && en.animState.startsWith('attack')) {
         const eSub=eAnimSub(en.animState);
         const totalF=eSub==='thrust'?20:eSub==='overhead'?30:25;
         const prog2=en.animTimer/totalF;
@@ -2684,7 +2714,7 @@ const Arena = {
         en.animTimer++;if(en.animTimer>=totalF){en.animState='idle.base';en.animTimer=0;}
       }
       // Enemy hurt — flinch or knockback
-      const enWasHurt = en.animState.startsWith('hurt');
+      const enWasHurt = en.animState && en.animState.startsWith('hurt');
       if (enWasHurt) {
         const eSub=eAnimSub(en.animState);
         ctx.save();
@@ -2739,7 +2769,7 @@ const Arena = {
       // Enemy idle variations
       if(!en._idleVarTimer) en._idleVarTimer=0;
       if(!en._tauntCd) en._tauntCd=0;
-      if(en.animState.startsWith('idle')){
+      if(en.animState && en.animState.startsWith('idle')){
         en._idleVarTimer++;
         en._tauntCd++;
         // Devil taunt: fire every ~8s (480 frames) with small random window
@@ -2763,7 +2793,7 @@ const Arena = {
       } else if(eIdleSub==='taunt'){
         en.animTimer++;if(en.animTimer>120){en.animState='idle.base';en.animTimer=0;}
       }
-      const bob=(en.animState.startsWith('idle')||en.animState==='idle')?idleBob:Math.sin(t*.04+i*1.3)*3;
+      const bob=(en.animState && (en.animState.startsWith('idle')||en.animState==='idle'))?idleBob:Math.sin(t*.04+i*1.3)*3;
       const eBob=bob+eExtraBob;
 
       // Draw with outline for visibility
@@ -2833,7 +2863,7 @@ const Arena = {
       }}
       // ── Enemy limb animation overlay (devil image includes limbs — skip) ──
       if(!isDevil){
-        const eIsAtk=en.animState.startsWith('attack');
+        const eIsAtk=en.animState && en.animState.startsWith('attack');
         const eAtkSub=eAnimSub(en.animState);
         let eArmSwing;
         if(eIsAtk&&eAtkSub==='slash'){eArmSwing=Math.sin(en.animTimer/12*Math.PI)*18;}
