@@ -2432,7 +2432,7 @@ const Arena = {
 
       // Animation — dash movement system
       let lunge=0, scaleX=1, scaleY=1, extraBob=0;
-      const animSub=(s)=>s.includes('.')?s.split('.')[1]:'';
+      const animSub=(s)=>(s&&s.includes('.'))?s.split('.')[1]:'';
       // Get first alive enemy position for dash target
       const firstAlive=enemies.find(e=>e.hp>0);
       const dashTarget=firstAlive?Math.floor(W*0.45+(enemies.indexOf(firstAlive))*(W*0.52/Math.max(enemies.filter(e=>e.hp>0).length,1))):W*0.6;
@@ -4096,10 +4096,10 @@ const Arena = {
     if (en.hp <= 0) return 'death';
     if (en.animState === 'victory') return 'victory';
     if (en.animState === 'idle.taunt') return 'taunt';
-    if (en.animState.startsWith('attack'))
+    if (en.animState && en.animState.startsWith('attack'))
       return en.animState.split('.')[1] === 'overhead' ? 'special' : 'attack';
-    if (en.animState.startsWith('cast')) return 'special';
-    if (en.animState.startsWith('hurt')) return 'hit';
+    if (en.animState && en.animState.startsWith('cast')) return 'special';
+    if (en.animState && en.animState.startsWith('hurt')) return 'hit';
     return 'idle';
   },
 
