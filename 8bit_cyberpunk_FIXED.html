@@ -1989,13 +1989,18 @@ Object.entries(_HERO_IMG_MAP).forEach(([name, src]) => {
 });
 
 // ── Generated enemy & player sprites (ComfyUI, dark bg removal) ──
+// Keys match canonical ENEMY_PERSONALITIES names for en.name lookup in render loop.
+// gen_netrunner retained for SPR.shadow / SPR.netrunner player-class path.
 const _GEN_IMG_MAP = {
-  gen_glitchDrone: 'assets/enemies/glitch_slime.png',
-  gen_dataWraith:  'assets/enemies/neon_wraith.png',
-  gen_cyberOgre:   'assets/enemies/cyber_beast.png',
-  gen_pulseHound:  'assets/enemies/rogue_drone.png',
-  gen_neonGolem:   'assets/enemies/data_golem.png',
-  gen_netrunner:   'assets/player.png',
+  'Glitch Slime':    'assets/enemies/glitch_slime.png',
+  'Neon Wraith':     'assets/enemies/neon_wraith.png',
+  'Cyber Beast':     'assets/enemies/cyber_beast.png',
+  'Rogue Drone':     'assets/enemies/rogue_drone.png',
+  'Data Golem':      'assets/enemies/data_golem.png',
+  'Glitch Overlord': 'assets/enemies/glitch_slime.png',
+  'The Architect':   'assets/enemies/data_golem.png',
+  'THE ARCHITECT':   'assets/enemies/data_golem.png',
+  gen_netrunner:     'assets/player.png',
 };
 Object.entries(_GEN_IMG_MAP).forEach(([name, src]) => {
   const img = new Image();
@@ -2152,12 +2157,11 @@ const SPR = {
   ranger(ctx, ox, oy, flip, t=0) { _drawSS('rogue',ctx,ox,oy,14*P,20*P,flip)||drawEnemyFallback(ctx,ox,oy,14*P,20*P,'#228844'); },
   cleric(ctx, ox, oy, flip, t=0) { _drawSS('circuitLich',ctx,ox,oy,14*P,22*P,flip)||drawEnemyFallback(ctx,ox,oy,14*P,22*P,'#4488cc'); },
   warlock(ctx, ox, oy, flip, t=0) { _drawSS('voidSpecter',ctx,ox,oy,14*P,22*P,flip)||drawEnemyFallback(ctx,ox,oy,14*P,22*P,'#8844cc'); },
-  glitchDrone(ctx, ox, oy, flip, t=0) { const w=12*P,h=12*P; _drawSS('gen_glitchDrone',ctx,ox,oy,w,h,flip)||_drawSS('glitchDrone',ctx,ox,oy,w,h,flip)||drawEnemyFallback(ctx,ox,oy,w,h,'#00cccc'); },
-  neonGolem(ctx, ox, oy, flip, t=0) { const w=14*P,h=22*P; _drawSS('gen_neonGolem',ctx,ox,oy,w,h,flip)||_drawSS('neonGolem',ctx,ox,oy,w,h,flip)||drawEnemyFallback(ctx,ox,oy,w,h,'#8800ff'); },
+  glitchDrone(ctx, ox, oy, flip, t=0) { _drawSS('glitchDrone',ctx,ox,oy,12*P,12*P,flip)||drawEnemyFallback(ctx,ox,oy,12*P,12*P,'#00cccc'); },
+  neonGolem(ctx, ox, oy, flip, t=0) { _drawSS('neonGolem',ctx,ox,oy,14*P,22*P,flip)||drawEnemyFallback(ctx,ox,oy,14*P,22*P,'#8800ff'); },
   voidSpecter(ctx, ox, oy, flip, t=0) { _drawSS('voidSpecter',ctx,ox,oy,12*P,17*P,flip)||drawEnemyFallback(ctx,ox,oy,12*P,17*P,'#aa44ff'); },
-  cyberOgre(ctx, ox, oy, flip, t=0) { const w=14*P,h=22*P; _drawSS('gen_cyberOgre',ctx,ox,oy,w,h,flip)||_drawSS('cyberOgre',ctx,ox,oy,w,h,flip)||drawEnemyFallback(ctx,ox,oy,w,h,'#ff6600'); },
+  cyberOgre(ctx, ox, oy, flip, t=0) { _drawSS('cyberOgre',ctx,ox,oy,14*P,22*P,flip)||drawEnemyFallback(ctx,ox,oy,14*P,22*P,'#ff6600'); },
   dataWraith(ctx, ox, oy, flip, t=0) {
-    if(_drawSS('gen_dataWraith',ctx,ox,oy,12*P,18*P,flip)) return;
     ctx.save();
     if(flip){ctx.translate(ox+12*P,oy);ctx.scale(-1,1);ox=0;oy=0;}
     const gA=0.6+0.2*Math.sin(t*0.04);
@@ -2182,7 +2186,7 @@ const SPR = {
     ctx.globalAlpha=gA*0.3;ctx.strokeStyle='#ff00ff';ctx.lineWidth=1;ctx.strokeRect(ox+0.5,oy+0.5,12*P-1,18*P-1);
     ctx.restore();
   },
-  pulseHound(ctx, ox, oy, flip, t=0) { const w=14*P,h=17*P; _drawSS('gen_pulseHound',ctx,ox,oy,w,h,flip)||_drawSS('pulseHound',ctx,ox,oy,w,h,flip)||drawEnemyFallback(ctx,ox,oy,w,h,'#ff2244'); },
+  pulseHound(ctx, ox, oy, flip, t=0) { _drawSS('pulseHound',ctx,ox,oy,14*P,17*P,flip)||drawEnemyFallback(ctx,ox,oy,14*P,17*P,'#ff2244'); },
   circuitLich(ctx, ox, oy, flip, t=0) { _drawSS('circuitLich',ctx,ox,oy,14*P,22*P,flip)||drawEnemyFallback(ctx,ox,oy,14*P,22*P,'#39ff14'); },
   quantumBoss(ctx, ox, oy, flip, t=0) { _drawSS('quantumBoss',ctx,ox,oy,14*P,22*P,flip)||drawEnemyFallback(ctx,ox,oy,14*P,22*P,'#ff00ff'); },
   netrunner(ctx, ox, oy, flip, t=0) {
@@ -2797,7 +2801,7 @@ const Arena = {
       const eBob=bob+eExtraBob;
 
       // Draw with outline for visibility
-      const isDevil = true; // devil sprites are the enemy visual avatar for all enemy types
+      const isDevil = !_ssCanvases[en.name]; // use ComfyUI sprite if loaded for this canonical name, else devil
       const dImgH = isDevil ? Math.floor(Math.min(H * 0.48, 280)) : 0;
       const dImgW = isDevil ? Math.floor(dImgH * 832 / 1248) : 0;
       const dSlotCX = ex + sz.w / 2; // true slot center X
@@ -2838,9 +2842,9 @@ const Arena = {
           if(dImg&&dImg.complete&&dImg.naturalWidth>0)ctx.drawImage(dImg,-dImgW/2,dImgY0+eBob,dImgW,dImgH);
           ctx.restore();
         } else {
-          if(_ea.frame<6){ctx.save();ctx.globalAlpha=0.3*(1-_p);if(SPR[en.sprite])SPR[en.sprite](ctx,edx+_ox*1.5,edy-8,true,t);ctx.restore();}
+          if(_ea.frame<6){ctx.save();ctx.globalAlpha=0.3*(1-_p);_drawSS(en.name,ctx,edx+_ox*1.5,edy-8,sz.w,sz.h,true)||(SPR[en.sprite]&&SPR[en.sprite](ctx,edx+_ox*1.5,edy-8,true,t));ctx.restore();}
           ctx.globalAlpha=0.4+_p*0.6;
-          if(SPR[en.sprite])SPR[en.sprite](ctx,edx+_ox,edy,true,t);
+          _drawSS(en.name,ctx,edx+_ox,edy,sz.w,sz.h,true)||(SPR[en.sprite]&&SPR[en.sprite](ctx,edx+_ox,edy,true,t));
         }
         _ea.frame++;if(_ea.frame>=_ea.totalFrames){_ea.active=false;_ea.complete=true;}
       }else{
@@ -2858,7 +2862,7 @@ const Arena = {
           ctx.restore();
         } else {
           ctx.globalAlpha=1;
-          if(SPR[en.sprite])SPR[en.sprite](ctx,edx,edy,true,t);
+          _drawSS(en.name,ctx,edx,edy,sz.w,sz.h,true)||(SPR[en.sprite]&&SPR[en.sprite](ctx,edx,edy,true,t));
         }
       }}
       // ── Enemy limb animation overlay (devil image includes limbs — skip) ──
