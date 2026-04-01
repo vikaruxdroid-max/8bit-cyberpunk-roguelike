@@ -2691,7 +2691,7 @@ const Arena = {
 
       // Animation — dash movement
       let lunge=0, scaleX2=1, scaleY2=1, eExtraBob=0;
-      const eAnimSub=(s)=>s.includes('.')?s.split('.')[1]:'';
+      const eAnimSub=(s)=>(s&&s.includes('.'))?s.split('.')[1]:'';
       const playerHomeX=Math.floor(W*0.18);
       if (en.animState && en.animState.startsWith('attack')) {
         const eSub=eAnimSub(en.animState);
