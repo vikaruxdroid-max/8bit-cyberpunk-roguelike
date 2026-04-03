@@ -1278,6 +1278,11 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
 .iq-empathize{background:rgba(0,255,65,.06);border-color:#00ff41;color:#99ffbb;}
 .iq-empathize:hover{background:rgba(0,255,65,.14);box-shadow:0 0 10px rgba(0,255,65,.25);}
 .iq-empathize .iq-label{color:#00ff41;}
+
+  .runner-card:hover{border-color:#6644ff!important;background:#1a1a3a!important;transform:translateY(-2px)}
+  .runner-card:hover img{filter:brightness(1.0) drop-shadow(0 0 4px #6644ff)!important}
+  .runner-card.runner-selected{transform:translateY(-1px)}
+  #ccRunnerClass{font-family:monospace;font-size:11px;letter-spacing:2px;text-align:center;margin-top:4px;opacity:.85}
 </style>
 </head>
 <body>
@@ -1988,6 +1993,71 @@ Object.entries(_HERO_IMG_MAP).forEach(([name, src]) => {
   };
 });
 
+// ── Player Spritesheet Animation ──
+const PlayerSprite = {
+  sheet: null,
+  loaded: false,
+  frameW: 256,
+  frameH: 256,
+  current: 'IDLE',
+  frame: 0,
+  ticker: 0,
+  fps: 8,
+  animations: {
+    IDLE:   { row: 0, frames: 4, loop: true,  startFrame: 0 },
+    ATTACK: { row: 1, frames: 4, loop: false, startFrame: 0 },
+    HACK:   { row: 2, frames: 4, loop: false, startFrame: 0 },
+    BLOCK:  { row: 3, frames: 1, loop: true,  startFrame: 2 },
+    HURT:   { row: 4, frames: 2, loop: false, startFrame: 1 },
+    DIE:    { row: 5, frames: 3, loop: false, startFrame: 0 }
+  },
+  onComplete: null,
+  play(state, onComplete) {
+    if (!this.animations[state]) state = 'IDLE';
+    this.current = state;
+    this.frame = 0;
+    this.ticker = 0;
+    this.onComplete = onComplete || null;
+  },
+  advance(dt) {
+    if (!this.loaded) return;
+    this.ticker += dt;
+    const interval = 1000 / this.fps;
+    if (this.ticker < interval) return;
+    this.ticker -= interval;
+    const anim = this.animations[this.current];
+    if (!anim) return;
+    this.frame++;
+    if (this.frame >= anim.frames) {
+      if (anim.loop) {
+        this.frame = 0;
+      } else {
+        this.frame = anim.frames - 1;
+        const cb = this.onComplete;
+        this.onComplete = null;
+        if (cb) cb();
+        else this.play('IDLE');
+      }
+    }
+  }
+};
+
+function drawPlayerSprite(ctx, x, y, dw, dh) {
+  if (!PlayerSprite.loaded || !PlayerSprite.sheet) return false;
+  const anim = PlayerSprite.animations[PlayerSprite.current];
+  if (!anim) return false;
+  // Source: crop to left 128px of each 256px cell (character content only)
+  const srcW = 128;
+  const sx = (anim.startFrame + PlayerSprite.frame) * PlayerSprite.frameW;
+  const sy = anim.row * PlayerSprite.frameH;
+  // Screen blend removes black background without modifying the file
+  const prevComp = ctx.globalCompositeOperation;
+  ctx.globalCompositeOperation = 'screen';
+  ctx.drawImage(PlayerSprite.sheet, sx, sy, srcW, PlayerSprite.frameH, x, y, dw, dh);
+  ctx.globalCompositeOperation = prevComp;
+  return true;
+}
+
 // ── Generated enemy & player sprites (ComfyUI, dark bg removal) ──
 // Keys match canonical ENEMY_PERSONALITIES names for en.name lookup in render loop.
 // gen_netrunner retained for SPR.shadow / SPR.netrunner player-class path.
@@ -2376,6 +2446,7 @@ const Arena = {
     AchToast.update(effectiveDt);     // Phase 5.3 — achievement toast
     GlitchTransition.update();
     if(GameState._reactionPhase&&GameState._reactionPhase.active)updateReactionPhase();
+    PlayerSprite.advance(dt);
     this.render();
     requestAnimationFrame(ts=>this.loop(ts));
   },
@@ -2564,17 +2635,20 @@ const Arena = {
       if (scaleX!==1||scaleY!==1||breathe!==1) {
         ctx.translate(dx+imgW/2, FLOOR_Y+bob); ctx.scale(scaleX*breathe, scaleY*breathe); ctx.translate(-(dx+imgW/2), -(FLOOR_Y+bob));
       }
-      const spriteName = this._resolvePlayerSpriteName(p);
-      const img = this._sprites[spriteName];
       if (pDead) ctx.globalAlpha = 0.35;
-      if (img && img.complete && img.naturalWidth > 0) {
-        ctx.shadowColor = 'rgba(0,0,0,0.55)';
-        ctx.shadowBlur = 16; ctx.shadowOffsetX = 4; ctx.shadowOffsetY = 8;
-        ctx.drawImage(img, dx, dy, imgW, imgH);
-        ctx.shadowBlur = 0; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0; ctx.shadowColor = 'transparent';
-      } else if (SPR[p.sprite]) {
-        SPR[p.sprite](ctx, px2 + lunge + idleExtraX, py2 + bob, false, t);
+      // Try spritesheet first, then fall back to individual sprites
+      ctx.shadowColor = 'rgba(0,0,0,0.55)';
+      ctx.shadowBlur = 16; ctx.shadowOffsetX = 4; ctx.shadowOffsetY = 8;
+      if (!drawPlayerSprite(ctx, dx, dy, imgW, imgH)) {
+        const spriteName = this._resolvePlayerSpriteName(p);
+        const img = this._sprites[spriteName];
+        if (img && img.complete && img.naturalWidth > 0) {
+          ctx.drawImage(img, dx, dy, imgW, imgH);
+        } else if (SPR[p.sprite]) {
+          SPR[p.sprite](ctx, px2 + lunge + idleExtraX, py2 + bob, false, t);
+        }
       }
+      ctx.shadowBlur = 0; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0; ctx.shadowColor = 'transparent';
       ctx.restore();
       if (pWasHurt) ctx.restore();
 
@@ -3780,13 +3854,13 @@ const Arena = {
   triggerAttack(isPlayer, en, style) {
     // style: 'slash','thrust','overhead' — defaults to 'slash'
     const s=style||'slash';
-    if (isPlayer && GameState.player) { GameState.player.animState='attack.'+s; GameState.player.animTimer=0; }
+    if (isPlayer && GameState.player) { GameState.player.animState='attack.'+s; GameState.player.animTimer=0; PlayerSprite.play('ATTACK'); }
     else if (en) { en.animState='attack.'+(en.attackStyle||s); en.animTimer=0; }
   },
   triggerHurt(isPlayer, en, severity) {
     // severity: 'flinch' (small hit) or 'knockback' (big hit)
     const s=severity||'knockback';
-    if (isPlayer && GameState.player) { GameState.player.animState='hurt.'+s; GameState.player.animTimer=0; }
+    if (isPlayer && GameState.player) { GameState.player.animState='hurt.'+s; GameState.player.animTimer=0; PlayerSprite.play('HURT'); }
     else if (en) { en.animState='hurt.'+s; en.animTimer=0; }
   },
   triggerDodge(isPlayer, en) {
@@ -3799,6 +3873,7 @@ const Arena = {
     const channelSpells=['bioPulse','voidDrain'];
     const sub=channelSpells.includes(spellId)?'channel':'arm';
     GameState.player.animState='cast.'+sub; GameState.player.animTimer=0;
+    PlayerSprite.play('HACK');
   },
 
   // ── BOSS INTRO CINEMATIC ──
@@ -4075,6 +4150,10 @@ const Arena = {
       img.src = `assets/characters/${n}.png`;
       this._sprites[n] = img;
     });
+    // Load player spritesheet
+    const psImg = new Image();
+    psImg.onload = () => { PlayerSprite.sheet = psImg; PlayerSprite.loaded = true; };
+    psImg.src = 'assets/player_sheet.png';
     ['idle','attack','special','hit','death','victory','taunt'].forEach(n => {
       const img = new Image();
       img.src = `assets/characters/devil/${n}.png`;
@@ -4115,13 +4194,173 @@ const Arena = {
 // ═══════════════════════════════════════════════════════════════
 // CHARACTER CREATION SYSTEM
 // ═══════════════════════════════════════════════════════════════
-const GENDERS = {
-  man:    { name:'MAN',    sprite:'warrior', lore:'Chrome-plated enforcer. Built to break things.' },
-  woman:  { name:'WOMAN',  sprite:'rogue',   lore:'Ghost in the wires. Strikes before you blink.' },
-  sage:   { name:'SAGE',   sprite:'sage',    lore:'Grizzled techno-mystic. Bends light and code alike.' },
-  cyber:  { name:'CYBER',  sprite:'druid',   lore:'Post-human construct. More machine than meat.' },
-  shadow: { name:'SHADOW', sprite:'shadow',  lore:'Black-ops phantom. Leaves nothing but static.' }
+const RUNNERS = {
+  aria: {
+    name:'Aria', label:'Psi-Lancer', color:'#00FFFF',
+    lore:'A rogue netrunner who channels psychic energy into plasma rings. Fragile but lethal at range.',
+    previewSrc:'assets/characters/aria_preview.png',
+    spriteSrc:'assets/characters/aria_combat.png',
+    statMods:{maxHp:-20,attack:+5,defense:-10,speed:+10,magic:+25}
+  },
+  glitch: {
+    name:'Glitch', label:'Decker', color:'#39FF14',
+    lore:'A street hacker who weaponizes code. Deploys ICE, spawns malware constructs, rewrites the fight.',
+    previewSrc:'assets/characters/glitch_preview.png',
+    spriteSrc:'assets/characters/glitch_combat.png',
+    statMods:{maxHp:-30,attack:-10,defense:-15,speed:+5,magic:+30}
+  },
+  kron: {
+    name:'Kron', label:'Enforcer', color:'#CC44FF',
+    lore:'Former corpo heavy with demon-rig implants. Absorbs punishment and hits like a freight locomotive.',
+    previewSrc:'assets/characters/kron_preview.png',
+    spriteSrc:'assets/characters/kron_combat.png',
+    statMods:{maxHp:+30,attack:+15,defense:+20,speed:-15,magic:-20}
+  },
+  shade: {
+    name:'Shade', label:'Shadow Blade', color:'#4466FF',
+    lore:'A ghost from the underground fight circuit. Dual mono-blades and zero hesitation.',
+    previewSrc:'assets/characters/shade_preview.png',
+    spriteSrc:'assets/characters/shade_combat.png',
+    statMods:{maxHp:-25,attack:+20,defense:-5,speed:+25,magic:-10}
+  },
+  kira: {
+    name:'Kira', label:'Street Samurai', color:'#FF44AA',
+    lore:'Corporate defector turned merc. Plasma katanas and a neural combat chip make her a killswitch.',
+    previewSrc:'assets/characters/kira_preview.png',
+    spriteSrc:'assets/characters/kira_combat.png',
+    statMods:{maxHp:0,attack:+10,defense:+5,speed:+10,magic:0}
+  },
+  nyx: {
+    name:'Nyx', label:'Techno-Mage', color:'#44DDFF',
+    lore:'Void-touched street artist who graffitis reality. Summons glitch orbs and rides the signal.',
+    previewSrc:'assets/characters/nyx_preview.png',
+    spriteSrc:'assets/characters/nyx_combat.png',
+    statMods:{maxHp:-25,attack:0,defense:-10,speed:+15,magic:+20}
+  }
 };
+const GENDERS = RUNNERS; // backward-compat alias
+
+// Preload all runner sprites
+const _runnerImgs = {};
+(function(){
+  Object.entries(RUNNERS).forEach(([id,r])=>{
+    const p=new Image(); p.src=r.previewSrc;
+    const c=new Image(); c.src=r.spriteSrc;
+    _runnerImgs[id]={preview:p,combat:c};
+  });
+})();
+
+// Standalone runner helpers (called from onclick and object methods)
+function _selectRunner(id){
+  if(!RUNNERS[id]) return;
+  GameState.ccState=GameState.ccState||{};
+  GameState.ccState.gender=id;
+  document.querySelectorAll('.runner-card').forEach(card=>{
+    const cid=card.dataset.runnerId;
+    const r=RUNNERS[cid];
+    const sel=cid===id;
+    card.classList.toggle('runner-selected',sel);
+    card.style.border=`2px solid ${sel?r.color:'#2a2a4a'}`;
+    card.style.background=sel?r.color+'18':'#0d0d1f';
+    card.style.boxShadow=sel?`0 0 12px ${r.color}66`:'none';
+    const img=card.querySelector('img');
+    if(img) img.style.filter=sel?`drop-shadow(0 0 6px ${r.color})`:'brightness(0.7)';
+    const divs=card.querySelectorAll('div');
+    if(divs[0]) divs[0].style.color=sel?r.color:'#888';
+    if(divs[1]) divs[1].style.color=sel?r.color+'bb':'#555';
+  });
+  const loreEl=document.getElementById('runner-lore');
+  const r=RUNNERS[id];
+  if(loreEl&&r){loreEl.textContent=r.lore;loreEl.style.borderColor=r.color;}
+  _updatePreviewFn();
+}
+
+function _buildRunnerGrid(cc){
+  const grid=document.getElementById('cgrid');
+  if(!grid) return;
+  const selId=cc.gender||Object.keys(RUNNERS)[0];
+  const html=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:8px 0 4px" id="runner-grid">
+    ${Object.entries(RUNNERS).map(([id,r])=>{
+      const sel=id===selId;
+      return `<div class="runner-card${sel?' runner-selected':''}" data-runner-id="${id}" onclick="_selectRunner('${id}')"
+        style="cursor:pointer;border:2px solid ${sel?r.color:'#2a2a4a'};border-radius:6px;padding:8px 6px;
+               background:${sel?r.color+'18':'#0d0d1f'};text-align:center;transition:all 0.2s;
+               box-shadow:${sel?`0 0 12px ${r.color}66`:'none'}">
+        <img src="${r.previewSrc}" style="width:64px;height:64px;image-rendering:pixelated;display:block;
+             margin:0 auto 6px;filter:${sel?`drop-shadow(0 0 6px ${r.color})`:'brightness(0.7)'};transition:filter 0.2s"
+             alt="${r.name}" onerror="this.style.display='none'">
+        <div style="font-size:11px;font-weight:bold;color:${sel?r.color:'#888'};font-family:monospace;letter-spacing:1px">${r.name.toUpperCase()}</div>
+        <div style="font-size:9px;color:${sel?r.color+'bb':'#555'};font-family:monospace;margin-top:2px">${r.label}</div>
+      </div>`;
+    }).join('')}
+  </div>
+  <div id="runner-lore" style="font-size:11px;color:#888;font-family:monospace;padding:8px 10px;
+    background:#0d0d1f;border-left:3px solid ${RUNNERS[selId]?.color||'#444'};border-radius:0 4px 4px 0;
+    margin-bottom:10px;min-height:32px">${RUNNERS[selId]?.lore||''}</div>`;
+  const existing=document.getElementById('runner-grid');
+  if(existing){
+    const wrap=existing.closest('#runner-section')||existing.parentElement;
+    const tmp=document.createElement('div');
+    tmp.id='runner-section'; tmp.innerHTML=html;
+    wrap.replaceWith(tmp);
+  } else {
+    const wrap=document.createElement('div');
+    wrap.id='runner-section'; wrap.innerHTML=html;
+    grid.insertAdjacentElement('afterbegin',wrap);
+  }
+}
+
+function _updatePreviewFn(){
+  const cc=GameState.ccState||{};
+  const cvs=document.getElementById('ccPreviewCV');
+  if(!cvs) return;
+  const ctx=cvs.getContext('2d');
+  const W=cvs.width||120, H=cvs.height||160;
+  ctx.fillStyle='#0a0a1a';
+  ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='rgba(0,0,0,0.18)';
+  for(let y=0;y<H;y+=3) ctx.fillRect(0,y,W,1);
+  const rId=cc.gender||Object.keys(RUNNERS)[0];
+  const runner=RUNNERS[rId];
+  if(!runner) return;
+  const img=_runnerImgs[rId]?.preview;
+  if(img&&img.complete&&img.naturalWidth>0){
+    const scale=Math.min((W*0.75)/img.naturalWidth,(H*0.65)/img.naturalHeight);
+    const sw=img.naturalWidth*scale, sh=img.naturalHeight*scale;
+    const sx=(W-sw)/2, sy=H*0.08;
+    ctx.save(); ctx.shadowColor=runner.color; ctx.shadowBlur=18;
+    ctx.imageSmoothingEnabled=false; ctx.drawImage(img,sx,sy,sw,sh);
+    ctx.restore();
+    ctx.imageSmoothingEnabled=false; ctx.drawImage(img,sx,sy,sw,sh);
+  } else if(img){
+    ctx.fillStyle=runner.color+'44';
+    ctx.fillRect(W*0.2,H*0.1,W*0.6,H*0.6);
+    img.addEventListener('load',_updatePreviewFn,{once:true});
+  }
+  const nameEl=document.getElementById('ccPreviewName');
+  if(nameEl){nameEl.textContent=runner.name;nameEl.style.color=runner.color;}
+  const classEl=document.getElementById('ccRunnerClass');
+  if(classEl){classEl.textContent=`[ ${runner.label} ]`;classEl.style.color=runner.color;}
+  const statsEl=document.getElementById('ccPreviewStats');
+  if(statsEl){
+    const base={maxHp:100,attack:70,defense:60,speed:70,magic:50};
+    const m=runner.statMods;
+    const stats={HP:Math.max(10,base.maxHp+(m.maxHp||0)),ATK:Math.max(10,base.attack+(m.attack||0)),
+                 DEF:Math.max(10,base.defense+(m.defense||0)),SPD:Math.max(10,base.speed+(m.speed||0)),
+                 MGC:Math.max(10,base.magic+(m.magic||0))};
+    statsEl.innerHTML=Object.entries(stats).map(([l,v])=>{
+      const pct=Math.min(100,Math.round(v/160*100));
+      return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+        <span style="width:28px;font-size:10px;color:#aaa;font-family:monospace">${l}</span>
+        <div style="flex:1;height:6px;background:#1a1a2e;border-radius:3px;overflow:hidden">
+          <div style="width:${pct}%;height:100%;background:${runner.color};box-shadow:0 0 6px ${runner.color};border-radius:3px;transition:width 0.3s"></div>
+        </div>
+        <span style="width:24px;font-size:10px;color:#666;font-family:monospace;text-align:right">${v}</span>
+      </div>`;
+    }).join('');
+  }
+}
+
 
 // ── PORTRAIT SYSTEM ──
 // Each portrait is a 24x24 pixel art face drawn programmatically
@@ -7985,6 +8224,7 @@ const Combat = {
     InterrogationProtocol._close();
     const p=GameState.player;
     if(!won){
+      PlayerSprite.play('DIE');
       if(GameState.runStats)GameState.runStats.outcome='defeat';
       saveRunToHistory('defeat'); // 5.1 — persist to run log
       if(GameState.isDailyChallenge){saveDailyResult('defeat',GameState.runStats?.zonesCleared||0);_seededRNG=null;GameState.isDailyChallenge=false;}
@@ -8461,6 +8701,11 @@ const IntentMirror = {
     const ATK_ENEMY_VARIANTS=['ATK_HARD','ATK_QHACK','ATK_HEM'];
     const paBase=ATK_VARIANTS.includes(PA)?'ATTACK':BLK_VARIANTS.includes(PA)?'BLOCK':HACK_ACTIONS.includes(PA)?'EXPLOIT':PA;
     const eaBase=ATK_ENEMY_VARIANTS.includes(EA)?'ATTACK':EA;
+
+    // PlayerSprite animation from IntentMirror action
+    if(paBase==='ATTACK') PlayerSprite.play('ATTACK');
+    else if(paBase==='BLOCK') PlayerSprite.play('BLOCK');
+    else if(paBase==='EXPLOIT') PlayerSprite.play('HACK');
 
     // Reveal display
     const icons={ATTACK:'⚔',BLOCK:'🛡',EXPLOIT:'⚡',ATK_HARD:'⚡',ATK_QHACK:'💻',ATK_HEM:'🩸',BLK_IRON:'🧱',BLK_REACT:'⚡',BLK_GHOST:'👻'};
@@ -11266,12 +11511,14 @@ const Game={
         if(!GameState.combatRunning||GameState.blockCd>0||GameState.isBlocking)return;
         GameState.isBlocking=true;GameState.blockCd=2;
         GameState._playerLastAction={type:'shield',tags:['shield','defense'],name:'Block'};
+        PlayerSprite.play('BLOCK');
         blockBtn.classList.add('blocking');
         const bb=document.getElementById('blockBubble');if(bb)bb.classList.add('show');
         DM.say('BLOCKING! Incoming damage halved!');
         // Auto-cancel blocking after 1.5 combat ticks
         setTimeout(()=>{
           GameState.isBlocking=false;
+          PlayerSprite.play('IDLE');
           blockBtn.classList.remove('blocking');
           const bbl=document.getElementById('blockBubble');if(bbl)bbl.classList.remove('show');
           UI.updateBlock();
@@ -11444,6 +11691,7 @@ const Game={
     }
     const cc=GameState.ccState;
     const grid=document.getElementById('cgrid');grid.innerHTML='';
+    _buildRunnerGrid(cc);
     const F='font-family:\"Share Tech Mono\",monospace;';
 
     // ── ROW 1: BODY TYPE + PORTRAIT (left) | COLOR + NAME + DIFFICULTY (right) ──
@@ -11583,6 +11831,7 @@ const Game={
     midRow.appendChild(buildPanel('◆ WEAPON',cc.randWeapons,false,'selWeapon'));
 
     grid.appendChild(midRow);
+    _updatePreviewFn();
     setTimeout(()=>this._updatePreview(),100);
   },
 
@@ -11616,71 +11865,7 @@ const Game={
     });
   },
 
-  _updatePreview(){
-    const cc=GameState.ccState;
-    const accent=ACCENT_COLORS[cc.accent]||CY;
-    // Update gender card accent colors
-    document.querySelectorAll('.cc[data-gkey]').forEach(card=>{
-      const nm=card.querySelector('.cn');
-      if(nm){nm.style.color=accent;nm.style.textShadow='0 0 8px '+accent;}
-    });
-    // Draw large preview sprite + portrait
-    const cv=document.getElementById('ccPreviewCV');
-    if(!cv)return;
-    const ctx=cv.getContext('2d');
-    ctx.clearRect(0,0,cv.width,cv.height);
-    const gender=GENDERS[cc.gender]||GENDERS.man;
-    const sz=SPRITE_SIZE[gender.sprite]||{w:56,h:88};
-
-    // Draw portrait at top
-    const portraits=PORTRAITS[cc.gender]||PORTRAITS.man;
-    const portrait=portraits[cc.portraitIdx||0];
-    if(portrait){
-      const ps=5; // pixel scale for portrait
-      const pxOff=Math.floor((cv.width-24*ps)/2);
-      ctx.save();
-      // Portrait frame glow
-      ctx.shadowColor=accent;ctx.shadowBlur=12;
-      ctx.strokeStyle=accent;ctx.lineWidth=2;
-      ctx.strokeRect(pxOff-4,4,24*ps+8,24*ps+8);
-      ctx.shadowBlur=0;
-      // Dark background behind portrait
-      ctx.fillStyle='#0a0a1a';ctx.fillRect(pxOff-2,6,24*ps+4,24*ps+4);
-      portrait.draw(ctx,pxOff,8,ps,accent);
-      ctx.restore();
-    }
-
-    // Draw sprite below portrait
-    const scale=2;
-    const spriteY=portrait?24*5+20:0;
-    const ox=Math.floor((cv.width-sz.w*scale)/2)/scale;
-    const oy=Math.floor(spriteY/scale)+4;
-    ctx.save();
-    ctx.scale(scale,scale);
-    ctx.shadowColor=accent;ctx.shadowBlur=10;
-    if(SPR[gender.sprite]) SPR[gender.sprite](ctx,ox,oy,false,Date.now()*0.06);
-    ctx.restore();
-    // Platform/ground line
-    const gy=spriteY+sz.h*scale+8;
-    ctx.strokeStyle=accent;ctx.lineWidth=1;ctx.globalAlpha=0.3;
-    ctx.beginPath();ctx.moveTo(cv.width*.2,gy);ctx.lineTo(cv.width*.8,gy);ctx.stroke();
-    ctx.globalAlpha=1;
-    // Name label
-    const nameEl=document.getElementById('ccPreviewName');
-    if(nameEl){nameEl.textContent=cc.runnerName||gender.name;nameEl.style.color=accent;nameEl.style.textShadow='0 0 8px '+accent;}
-    // Stats summary
-    const statsEl=document.getElementById('ccPreviewStats');
-    if(statsEl){
-      const alloc=cc.statAlloc;
-      const hp=BASE_STATS.hp+alloc.hp*STAT_PER_POINT.hp;
-      const atk=BASE_STATS.atk+alloc.atk*STAT_PER_POINT.atk;
-      const def=BASE_STATS.def+alloc.def*STAT_PER_POINT.def;
-      const spd=BASE_STATS.spd+alloc.spd*STAT_PER_POINT.spd;
-      const mp=BASE_STATS.mp+alloc.mp*STAT_PER_POINT.mp;
-      const ac=accent;
-      statsEl.innerHTML=`<span style="color:#ff4444">HP:${hp}</span> <span style="color:${OR}">ATK:${atk}</span> <span style="color:#4488ff">DEF:${def}</span><br><span style="color:${GR}">SPD:${spd}</span> <span style="color:#aa66ff">MP:${mp}</span>`;
-    }
-  },
+    _updatePreview(){ _updatePreviewFn(); },
 
   renderEquip(){/* no-op — gear now rendered inline */},
 
@@ -11705,7 +11890,21 @@ const Game={
     GameState.selectedAccent=ACCENT_COLORS[cc.accent]||CY;
     GameState.runnerName=cc.runnerName||GENDERS[cc.gender].name;
     GameState.difficulty=cc.difficulty||'normal';
-    GameState.player=new Player(cfg);
+        GameState.player=new Player(cfg);
+    // Apply runner stat modifiers
+    (function(){
+      const r=RUNNERS[GameState.ccState?.gender];
+      const p=GameState.player;
+      if(!r||!p) return;
+      const m=r.statMods;
+      if(m.maxHp!==undefined){p.maxHp=Math.max(1,(p.maxHp||100)+m.maxHp);p.hp=p.maxHp;}
+      if(m.attack!==undefined)  p.attack  =Math.max(1,(p.attack||70)+m.attack);
+      if(m.defense!==undefined) p.defense =Math.max(1,(p.defense||60)+m.defense);
+      if(m.speed!==undefined)   p.speed   =Math.max(1,(p.speed||70)+m.speed);
+      if(m.magic!==undefined)   p.magic   =Math.max(1,(p.magic||50)+m.magic);
+      p.runnerClass=r.label; p.runnerColor=r.color; p.spriteSrc=r.spriteSrc;
+      console.log('[Runner]',r.name,r.label,'HP:'+p.maxHp,'ATK:'+p.attack,'DEF:'+p.defense,'SPD:'+p.speed,'MGC:'+p.magic);
+    })();
     // Apply difficulty modifiers
     if(GameState.difficulty==='hard'){GameState._diffMult={hp:1.3,atk:1.3,loot:0.8};}
     else if(GameState.difficulty==='nightmare'){GameState._diffMult={hp:2,atk:1.5,loot:0.6};}
@@ -13897,6 +14096,33 @@ window.P2_TEST4 = P2_TEST4;
 window.P2_TEST5 = P2_TEST5;
 window.P2_TEST6 = P2_TEST6;
 window.P2_TEST_HUD = P2_TEST_HUD;
+
+// ── PlayerSprite animation test ──
+window.PS_TEST1 = function() {
+  const states = ['IDLE','ATTACK','HACK','BLOCK','HURT','DIE'];
+  let i = 0;
+  const results = [];
+  console.log('[PS_TEST1] Starting spritesheet animation cycle test...');
+  if (!PlayerSprite.loaded) { console.log('[PS_TEST1] FAIL — sheet not loaded'); return; }
+  function next() {
+    if (i >= states.length) {
+      const allPass = results.every(r => r.pass);
+      console.log('[PS_TEST1] Results:', results);
+      console.log('[PS_TEST1] ' + (allPass ? 'PASS' : 'FAIL'));
+      PlayerSprite.play('IDLE');
+      return;
+    }
+    const state = states[i];
+    PlayerSprite.play(state);
+    const anim = PlayerSprite.animations[state];
+    const ok = PlayerSprite.current === state && PlayerSprite.frame === 0 && !!anim;
+    results.push({ state, pass: ok, frames: anim ? anim.frames : 0 });
+    console.log('[PS_TEST1] ' + state + ': ' + (ok ? 'OK' : 'FAIL') + ' (' + (anim ? anim.frames : 0) + ' frames)');
+    i++;
+    setTimeout(next, 1000);
+  }
+  next();
+};
 
 // Single init on load — boot first, then Game.init
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',()=>BootScreen.run());}
