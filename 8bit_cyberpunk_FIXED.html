@@ -2007,8 +2007,8 @@ const PlayerSprite = {
     IDLE:   { row: 0, frames: 4, loop: true,  startFrame: 0 },
     ATTACK: { row: 1, frames: 4, loop: false, startFrame: 0 },
     HACK:   { row: 2, frames: 4, loop: false, startFrame: 0 },
-    BLOCK:  { row: 3, frames: 1, loop: true,  startFrame: 2 },
-    HURT:   { row: 4, frames: 2, loop: false, startFrame: 1 },
+    BLOCK:  { row: 3, frames: 1, loop: true,  startFrame: 0 },
+    HURT:   { row: 4, frames: 2, loop: false, startFrame: 0 },
     DIE:    { row: 5, frames: 3, loop: false, startFrame: 0 }
   },
   onComplete: null,
@@ -2042,12 +2042,60 @@ const PlayerSprite = {
   }
 };
 
+// ── Build player spritesheet from 6 row images via Canvas ──
+function buildPlayerSheet() {
+  const rows = [
+    { src: 'assets/row0_idle.png',   frames: 4 },
+    { src: 'assets/row1_attack.png', frames: 4 },
+    { src: 'assets/row2_hack.png',   frames: 4 },
+    { src: 'assets/row3_block.png',  frames: 1 },
+    { src: 'assets/row4_hurt.png',   frames: 2 },
+    { src: 'assets/row5_die.png',    frames: 3 },
+  ];
+  const COLS = 4, CELL = 256;
+  const sheetW = COLS * CELL, sheetH = rows.length * CELL;
+  const cv = document.createElement('canvas');
+  cv.width = sheetW; cv.height = sheetH;
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, sheetW, sheetH);
+
+  let loaded = 0;
+  rows.forEach((row, ri) => {
+    const img = new Image();
+    img.onload = () => {
+      const fw = img.naturalWidth / row.frames;
+      const fh = img.naturalHeight;
+      for (let fi = 0; fi < row.frames; fi++) {
+        const sx = fi * fw, sy = 0;
+        const dx = fi * CELL, dy = ri * CELL;
+        ctx.drawImage(img, sx, sy, fw, fh, dx, dy, CELL, CELL);
+      }
+      loaded++;
+      if (loaded === rows.length) {
+        const sheetImg = new Image();
+        sheetImg.onload = () => {
+          PlayerSprite.sheet = sheetImg;
+          PlayerSprite.loaded = true;
+          console.log('[buildPlayerSheet] Spritesheet assembled: ' + sheetW + 'x' + sheetH);
+        };
+        sheetImg.src = cv.toDataURL('image/png');
+      }
+    };
+    img.onerror = () => {
+      console.error('[buildPlayerSheet] Failed to load: ' + row.src);
+      loaded++;
+    };
+    img.src = row.src;
+  });
+}
+
 function drawPlayerSprite(ctx, x, y, dw, dh) {
   if (!PlayerSprite.loaded || !PlayerSprite.sheet) return false;
   const anim = PlayerSprite.animations[PlayerSprite.current];
   if (!anim) return false;
-  // Source: crop to left 128px of each 256px cell (character content only)
-  const srcW = 128;
+  // Source: full 256px cell
+  const srcW = 256;
   const sx = (anim.startFrame + PlayerSprite.frame) * PlayerSprite.frameW;
   const sy = anim.row * PlayerSprite.frameH;
   // Screen blend removes black background without modifying the file
@@ -4150,10 +4198,8 @@ const Arena = {
       img.src = `assets/characters/${n}.png`;
       this._sprites[n] = img;
     });
-    // Load player spritesheet
-    const psImg = new Image();
-    psImg.onload = () => { PlayerSprite.sheet = psImg; PlayerSprite.loaded = true; };
-    psImg.src = 'assets/player_sheet.png';
+    // Build player spritesheet from row images
+    buildPlayerSheet();
     ['idle','attack','special','hit','death','victory','taunt'].forEach(n => {
       const img = new Image();
       img.src = `assets/characters/devil/${n}.png`;
