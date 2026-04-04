@@ -2109,6 +2109,34 @@ function drawPlayerSprite(ctx, x, y, dw, dh) {
   return true;
 }
 
+// ── UI Asset Preloader (Phase 3 — combat screen overlays) ──
+const _UI = {
+  bg: null, panelPlayer: null, panelEnemy: null,
+  topbar: null, actions: null, meters: null, log: null,
+  loaded: false
+};
+function _loadUIAssets() {
+  const map = {
+    bg:          'assets/ui/combat_bg.png',
+    panelPlayer: 'assets/ui/panel_player.png',
+    panelEnemy:  'assets/ui/panel_enemy.png',
+    topbar:      'assets/ui/hud_topbar.png',
+    actions:     'assets/ui/hud_actions.png',
+    meters:      'assets/ui/hud_meters.png',
+    log:         'assets/ui/hud_log.png'
+  };
+  const promises = Object.entries(map).map(([key, src]) => new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => { _UI[key] = img; resolve(); };
+    img.onerror = () => { console.warn('[UI] Failed to load ' + src); resolve(); };
+    img.src = src;
+  }));
+  Promise.all(promises).then(() => {
+    _UI.loaded = true;
+    console.log('[UI] All assets loaded');
+  });
+}
+
 // ── Generated enemy & player sprites (ComfyUI, dark bg removal) ──
 // Keys match canonical ENEMY_PERSONALITIES names for en.name lookup in render loop.
 // gen_netrunner retained for SPR.shadow / SPR.netrunner player-class path.
@@ -2408,6 +2436,7 @@ const Arena = {
     window.addEventListener('resize', () => this.resize());
     requestAnimationFrame(ts=>this.loop(ts));
     this._loadPlayerSprites();
+    _loadUIAssets();
     this.cv.addEventListener('click',e=>{
       if(NarrationBox.active){NarrationBox.skip();return;} // Phase 4.1 — click to skip/dismiss
       // 5.1 — Run history screen scroll + back
@@ -2717,6 +2746,12 @@ const Arena = {
       ctx.fillStyle = ac;
       ctx.fillText(nameText, imgX0+imgW/2, imgY0-18);
       ctx.restore();
+      // UI panel frame overlay (player)
+      if(_UI.loaded&&_UI.panelPlayer){
+        ctx.save();ctx.globalCompositeOperation='screen';
+        ctx.drawImage(_UI.panelPlayer,imgX0-10,imgY0-10,imgW+20,imgH+20);
+        ctx.globalCompositeOperation='source-over';ctx.restore();
+      }
     }
 
     // Enemies
@@ -2989,6 +3024,17 @@ const Arena = {
           _drawSS(en.name,ctx,edx,edy,sz.w,sz.h,true)||(SPR[en.sprite]&&SPR[en.sprite](ctx,edx,edy,true,t));
         }
       }}
+      // UI panel frame overlay (enemy) — mirrored to match enemy facing
+      if(_UI.loaded&&_UI.panelEnemy){
+        const _epX=isDevil?(dSlotCX+lunge+idleShiftX-dImgW/2-10):(edx-10);
+        const _epY=isDevil?(dImgY0+eBob-10):(edy-10);
+        const _epW=isDevil?(dImgW+20):(sz.w+20);
+        const _epH=isDevil?(dImgH+20):(sz.h+20);
+        ctx.save();ctx.globalCompositeOperation='screen';
+        ctx.translate(_epX+_epW/2,_epY+_epH/2);ctx.scale(-1,1);
+        ctx.drawImage(_UI.panelEnemy,-_epW/2,-_epH/2,_epW,_epH);
+        ctx.globalCompositeOperation='source-over';ctx.restore();
+      }
       // ── Enemy limb animation overlay (devil image includes limbs — skip) ──
       if(!isDevil){
         const eIsAtk=en.animState && en.animState.startsWith('attack');
@@ -3070,6 +3116,10 @@ const Arena = {
       ctx.fillText('VS', W/2, H*.52); ctx.shadowBlur=0; ctx.restore();
     }
 
+    // UI topbar background
+    if(_UI.loaded&&_UI.topbar&&GameState.currentScreen==='sCM'){
+      ctx.save();ctx.drawImage(_UI.topbar,0,0,W,48);ctx.restore();
+    }
     // Room progress strip (replaces full minimap)
     if (GameState.currentScreen === 'sCM') {
       const fd=GameState.currentFloor;
@@ -3184,6 +3234,10 @@ const Arena = {
       renderPhaseBanner(ctx);
     }
 
+    // UI meters background (behind HTML SYS_MEM + FLATLINE)
+    if(_UI.loaded&&_UI.meters&&GameState.currentScreen==='sCM'){
+      ctx.save();ctx.drawImage(_UI.meters,(W/2)-200,38,400,60);ctx.restore();
+    }
     // Synergy HUD (Phase 2.6)
     renderSynergyHUD(ctx,W,H);
 
@@ -3403,12 +3457,20 @@ const Arena = {
       if(sf.timer>=30)sf.active=false;
     }
     ctx.restore();
+    // UI log background (behind narration box)
+    if(_UI.loaded&&_UI.log&&NarrationBox.active){
+      ctx.save();ctx.drawImage(_UI.log,(W/2)-390,H-100,780,80);ctx.restore();
+    }
     NarrationBox.render(ctx,W,H); // Phase 4.1 — AI narration overlay
     renderAIStatusDot(ctx,W,H);   // Phase 4.4 — AI live indicator dot
     AchToast.render(ctx,W,H);     // Phase 5.3 — achievement toast
     renderSeedDisplay(ctx,W,H); // Phase 5.5 — seed display
     // Scanlines — after all game elements, before spell bar
     if(GameState.currentScreen==='sCM') renderScanlines(ctx,W,H,0,144);
+    // UI actions background (behind spell bar)
+    if(_UI.loaded&&_UI.actions&&GameState.currentScreen==='sCM'){
+      ctx.save();ctx.drawImage(_UI.actions,0,H-120,W,120);ctx.restore();
+    }
     // COMBAT-UI-2 — canvas spell bar (bottom of arena)
     if(GameState.currentScreen==='sCM'&&GameState.player){
       renderSpellBar(ctx,GameState.player.spells,W,H);
@@ -3482,6 +3544,8 @@ const Arena = {
   // ── ZONE BACKGROUND METHODS ──────────────────────────────────
 
   _bgNexus(ctx,W,H,t,isBoss){
+    // UI asset background — replaces procedural drawing when loaded
+    if(_UI.loaded&&_UI.bg){ctx.drawImage(_UI.bg,0,0,this.W,this.H);return;}
     // NEON NEXUS: bright cyan grid, holographic billboards, hot pink accents
     const bg=ctx.createLinearGradient(0,0,0,H);
     bg.addColorStop(0,isBoss?'#0f030a':'#020a1a');bg.addColorStop(.55,isBoss?'#1a051f':'#020d22');bg.addColorStop(1,isBoss?'#0f030a':'#020a1a');
@@ -14171,6 +14235,23 @@ window.PS_TEST1 = function() {
     setTimeout(next, 1000);
   }
   next();
+};
+
+// ── P3_TEST1: UI asset integration regression test ──
+window.P3_TEST1 = function() {
+  const failed = [];
+  const assert = (id, cond, desc) => { if (!cond) { failed.push(id + ': ' + desc); console.error('FAIL ' + id + ': ' + desc); } else { console.log('PASS ' + id + ': ' + desc); } };
+  assert('UI_1', typeof _UI === 'object' && _UI !== null, '_UI object exists');
+  assert('UI_2', _UI.loaded === true, '_UI.loaded === true');
+  assert('UI_3', _UI.bg instanceof HTMLImageElement, '_UI.bg is HTMLImageElement');
+  assert('UI_4', _UI.panelPlayer instanceof HTMLImageElement, '_UI.panelPlayer is HTMLImageElement');
+  assert('UI_5', _UI.panelEnemy instanceof HTMLImageElement, '_UI.panelEnemy is HTMLImageElement');
+  assert('UI_6', _UI.topbar instanceof HTMLImageElement, '_UI.topbar is HTMLImageElement');
+  assert('UI_7', _UI.actions instanceof HTMLImageElement, '_UI.actions is HTMLImageElement');
+  assert('UI_8', _UI.meters instanceof HTMLImageElement, '_UI.meters is HTMLImageElement');
+  assert('UI_9', _UI.log instanceof HTMLImageElement, '_UI.log is HTMLImageElement');
+  if (failed.length === 0) { console.log('✅ P3_TEST1 PASS'); return 'PASS'; }
+  else { console.error('❌ P3_TEST1 FAIL:', failed); return failed; }
 };
 
 // Single init on load — boot first, then Game.init
