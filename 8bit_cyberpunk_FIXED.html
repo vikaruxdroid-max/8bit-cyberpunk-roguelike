@@ -2073,13 +2073,16 @@ function buildPlayerSheet() {
       }
       loaded++;
       if (loaded === rows.length) {
-        const sheetImg = new Image();
-        sheetImg.onload = () => {
-          PlayerSprite.sheet = sheetImg;
-          PlayerSprite.loaded = true;
-          console.log('[buildPlayerSheet] Spritesheet assembled: ' + sheetW + 'x' + sheetH);
-        };
-        sheetImg.src = cv.toDataURL('image/png');
+        cv.toBlob(blob => {
+          const url = URL.createObjectURL(blob);
+          const sheetImg = new Image();
+          sheetImg.onload = () => {
+            PlayerSprite.sheet = sheetImg;
+            PlayerSprite.loaded = true;
+            console.log('[buildPlayerSheet] Spritesheet assembled: ' + sheetW + 'x' + sheetH);
+          };
+          sheetImg.src = url;
+        }, 'image/png');
       }
     };
     img.onerror = () => {
