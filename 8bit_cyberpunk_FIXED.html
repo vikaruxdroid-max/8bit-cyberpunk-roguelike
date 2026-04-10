@@ -1283,6 +1283,107 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
   .runner-card:hover img{filter:brightness(1.0) drop-shadow(0 0 4px #6644ff)!important}
   .runner-card.runner-selected{transform:translateY(-1px)}
   #ccRunnerClass{font-family:monospace;font-size:11px;letter-spacing:2px;text-align:center;margin-top:4px;opacity:.85}
+
+/* ── Cinematic Intro Styles ── */
+@keyframes glitch{0%,6%,92%,100%{transform:none}2%{transform:skewX(3deg) translateX(4px)}4%{transform:skewX(-2deg) translateX(-3px)}94%{transform:skewX(2deg) translateX(3px)}96%{transform:skewX(-3deg) translateX(-4px)}98%{transform:skewX(1deg) translateX(2px)}}
+@keyframes blink-hint{0%,49%{opacity:1}50%,100%{opacity:0}}
+@keyframes lore-scroll{0%{transform:translateY(100%)}100%{transform:translateY(-100%)}}
+#title-card{position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:1;transition:opacity 0.8s;}
+#title-card .tc-glitch{animation:glitch 3s infinite;}
+#title-card .tc-line1{font-size:clamp(48px,8vw,96px);color:#00FFFF;letter-spacing:0.3em;font-family:monospace;text-shadow:0 0 20px rgba(0,255,255,.5);}
+#title-card .tc-line2{font-size:clamp(36px,6vw,72px);color:#FF00FF;letter-spacing:0.5em;font-family:monospace;text-shadow:0 0 20px rgba(255,0,255,.5);}
+#title-card .tc-sub{color:#888;font-size:14px;font-family:monospace;letter-spacing:0.2em;margin-top:24px;}
+#title-card .tc-skip{color:#444;font-size:12px;font-family:monospace;position:absolute;bottom:40px;animation:blink-hint 1s step-end infinite;}
+.scanline-ov{position:absolute;top:0;left:0;width:100%;height:100%;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.15) 2px,rgba(0,0,0,0.15) 4px);pointer-events:none;}
+#lore-crawl{position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:9998;overflow:hidden;opacity:1;transition:opacity 0.8s;}
+#lore-text{width:60%;max-width:600px;margin:0 auto;font-family:monospace;font-size:14px;color:#AAAAAA;line-height:2;animation:lore-scroll 8s linear forwards;}
+#lore-text p{margin:0;}
+#zone-entry{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);z-index:9997;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;opacity:1;transition:opacity 0.8s;}
+#zone-entry .ze-l1{color:#00FFFF;font-size:18px;font-family:monospace;}
+#zone-entry .ze-l2{color:#FF4444;font-size:14px;font-family:monospace;margin-top:12px;}
+#zone-entry .ze-l3{color:#FFFFFF;font-size:32px;font-weight:bold;font-family:monospace;margin-top:24px;}
+
+/* ═══ CHARACTER CREATION SCREEN ═══ */
+#characterCreationScreen{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:1000;display:none;background-image:url('/assets/ui/cc_bg.png');background-size:cover;background-position:center;background-attachment:fixed;background-color:#0a0a1a;font-family:'Press Start 2P',monospace;overflow:hidden;}
+#characterCreationScreen *{box-sizing:border-box;}
+#cc-layout{display:grid;grid-template-columns:220px 1fr;height:calc(100vh - 62px);overflow:hidden;}
+/* Left preview */
+#cc-left{display:flex;flex-direction:column;align-items:center;padding:16px 12px;gap:8px;background:rgba(5,5,20,0.90);border-right:1px solid rgba(255,230,0,0.3);overflow-y:auto;}
+#cc-left .cc-label{color:#FFE600;font-size:11px;letter-spacing:3px;text-align:center;}
+.cc-portrait-container{width:160px;height:160px;position:relative;}
+.cc-portrait-container .cc-frame-img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:2;}
+.cc-portrait-container .cc-sprite-img{position:absolute;top:10px;left:10px;width:140px;height:140px;object-fit:cover;object-position:left;image-rendering:pixelated;z-index:1;}
+#cc-portrait-fallback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-family:monospace;z-index:1;}
+#cc-preview-name{font-size:16px;text-align:center;letter-spacing:2px;}
+#cc-preview-arch{color:#fff;font-size:10px;letter-spacing:2px;text-align:center;}
+#cc-left .cc-lore{color:#aaa;font-size:clamp(8px,0.8vw,10px);font-family:'Share Tech Mono',monospace;line-height:1.5;max-height:5.5em;overflow:hidden;text-align:center;padding:0 4px;}
+.cc-div-line{width:100%;border:none;border-top:1px solid rgba(255,255,255,0.1);margin:8px 0;}
+#cc-left .cc-passive-label{color:#FFE600;font-size:8px;}
+#cc-left .cc-passive-name{color:#fff;font-size:9px;}
+#cc-left .cc-passive-desc{color:#888;font-size:9px;font-family:'Share Tech Mono',monospace;font-style:italic;text-align:center;}
+#cc-left .cc-sysmem-label{color:#FFE600;font-size:8px;}
+#cc-left .cc-sysmem-val{color:#00FFFF;font-size:12px;font-weight:bold;}
+/* Right panel */
+#cc-right{overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;}
+.cc-section-label{color:#FFE600;font-size:clamp(9px,1vw,11px);letter-spacing:3px;display:block;}
+.cc-divider-img{width:100%;height:auto;max-height:20px;object-fit:contain;opacity:0.7;margin:4px 0;}
+.cc-title{color:#FFE600;font-size:clamp(14px,2vw,22px);letter-spacing:4px;text-shadow:0 0 12px #FFE600;text-align:center;}
+/* Card grid */
+#cc-card-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.cc-card{position:relative;cursor:pointer;border-radius:3px;transition:all 0.2s;max-height:160px;min-height:120px;overflow:hidden;}
+.cc-card .cc-card-frame-img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:0;}
+.cc-card .cc-card-dim{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(8,8,18,0.78);z-index:1;}
+.cc-card .cc-card-content{position:relative;z-index:2;padding:10px 12px;display:flex;flex-direction:column;height:100%;}
+.cc-card .cc-card-row1{display:flex;justify-content:space-between;align-items:baseline;}
+.cc-card .cc-card-name{font-size:12px;letter-spacing:2px;}
+.cc-card .cc-card-arch{color:#fff;font-size:9px;}
+.cc-card .cc-card-desc{color:#999;font-size:9px;font-family:'Share Tech Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:4px 0;}
+.cc-card .cc-card-spells{display:flex;gap:4px;}
+.cc-card .cc-spell-slot{border-radius:2px;padding:3px 6px;font-size:8px;letter-spacing:1px;}
+.cc-card .cc-card-passive{font-size:8px;margin-top:auto;padding-top:4px;letter-spacing:1px;}
+.cc-card .cc-card-sel-img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:3;display:none;pointer-events:none;}
+.cc-card:hover{transform:scale(1.02);}
+.cc-card.cc-selected{transform:scale(1.03);}
+.cc-card.cc-selected .cc-card-sel-img{display:block;}
+/* Accent swatches */
+.cc-swatch{width:28px;height:28px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all 0.15s;flex-shrink:0;}
+.cc-swatch:hover{transform:scale(1.1);}
+.cc-swatch.cc-swatch-sel{outline:2px solid #fff;}
+/* Difficulty buttons */
+.cc-diff-btn{flex:1;padding:6px 10px;cursor:pointer;border-radius:4px;text-align:center;transition:all 0.15s;min-height:44px;}
+.cc-diff-btn .cc-diff-label{font-size:clamp(9px,1vw,12px);letter-spacing:1px;}
+.cc-diff-btn .cc-diff-sub{font-size:8px;font-family:'Share Tech Mono',monospace;margin-top:4px;opacity:0.7;}
+/* Name input */
+#cc-name-input{background:#0a0a14;border:1px solid #FFE600;color:#FFE600;font-family:'Press Start 2P',monospace;padding:8px 12px;width:100%;letter-spacing:2px;font-size:clamp(9px,1vw,12px);outline:none;}
+#cc-name-input:focus{box-shadow:0 0 8px rgba(255,230,0,0.3);}
+/* Portrait slots */
+.cc-portrait-slot{width:40px;height:40px;border:1px solid #333;background:#0a0a14;cursor:pointer;border-radius:4px;transition:all 0.15s;display:flex;align-items:center;justify-content:center;font-size:10px;color:#555;}
+.cc-portrait-slot.cc-port-sel{border:2px solid #FFE600;box-shadow:0 0 6px #FFE600;}
+/* Bottom bar */
+#cc-bottom-bar{position:sticky;bottom:0;left:0;width:100%;display:flex;justify-content:space-between;align-items:center;padding:10px 20px;background:rgba(4,4,16,0.97);border-top:1px solid rgba(255,230,0,0.25);z-index:1001;}
+.cc-action-btn{position:relative;cursor:pointer;border:none;background:transparent;padding:0;display:flex;align-items:center;justify-content:center;min-height:44px;transition:all 0.15s;}
+.cc-action-btn:hover{filter:brightness(1.2);transform:translateY(-1px);}
+.cc-action-btn img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:fill;}
+.cc-action-btn span{position:relative;z-index:1;font-family:'Press Start 2P',monospace;letter-spacing:3px;}
+#cc-btn-continue{width:240px;height:52px;}
+#cc-btn-continue span{color:#00FF44;font-size:13px;text-shadow:0 0 8px #00FF44;}
+#cc-btn-dungeon{width:300px;height:52px;}
+#cc-btn-dungeon span{color:#CC88FF;font-size:13px;text-shadow:0 0 8px #9900FF;}
+/* Responsive */
+#cc-left-strip{display:none;}
+@media(max-width:1279px){
+  #cc-layout{grid-template-columns:1fr;}
+  #cc-left{display:none;}
+  #cc-left-strip{display:flex !important;align-items:center;gap:8px;padding:8px 16px;background:rgba(10,10,20,0.88);border-bottom:1px solid rgba(255,230,0,0.15);}
+  #cc-left-strip .cc-strip-dot{width:12px;height:12px;border-radius:50%;}
+  #cc-left-strip .cc-strip-name{font-size:12px;letter-spacing:2px;}
+}
+@media(min-width:1280px){#cc-left-strip{display:none !important;}}
+@media(max-width:899px){
+  #cc-card-grid{grid-template-columns:repeat(2,1fr);}
+  #cc-bottom-bar{flex-direction:column;gap:8px;padding:8px 16px;}
+  #cc-btn-continue,#cc-btn-dungeon{width:100%;min-height:56px;}
+}
 </style>
 </head>
 <body>
@@ -2141,13 +2242,30 @@ function _loadUIAssets() {
 // Keys match canonical ENEMY_PERSONALITIES names for en.name lookup in render loop.
 // gen_netrunner retained for SPR.shadow / SPR.netrunner player-class path.
 const _GEN_IMG_MAP = {
-  'GLITCH SLIME':    'assets/enemies/glitch_slime.png',
-  'NEON WRAITH':     'assets/enemies/neon_wraith.png',
-  'CYBER BEAST':     'assets/enemies/cyber_beast.png',
-  'ROGUE DRONE':     'assets/enemies/rogue_drone.png',
-  'DATA GOLEM':      'assets/enemies/data_golem.png',
-  'GLITCH OVERLORD': 'assets/enemies/glitch_slime.png',
+  // Zone 1 enemies (runtime en.name values)
+  'GLITCH DRONE':    'assets/enemies/glitch_slime.png',
+  'NETRUNNER':       'assets/enemies/neon_wraith.png',
+  'NEON GOLEM':      'assets/enemies/data_golem.png',
+  // Zone 2+ enemies
+  'VOID SPECTER':    'assets/enemies/neon_wraith.png',
+  'DATA WRAITH':     'assets/enemies/neon_wraith.png',
+  'GHOST HACKER':    'assets/enemies/neon_wraith.png',
+  'CYBER OGRE':      'assets/enemies/cyber_beast.png',
+  'CHROME BEAST':    'assets/enemies/cyber_beast.png',
+  'PULSE HOUND':     'assets/enemies/rogue_drone.png',
+  'NEON SPIDER':     'assets/enemies/rogue_drone.png',
+  'CORP DRONE':      'assets/enemies/glitch_slime.png',
+  'CIRCUIT LICH':    'assets/enemies/data_golem.png',
+  // Bosses
+  'QUANTUM BOSS':    'assets/enemies/data_golem.png',
   'THE ARCHITECT':   'assets/enemies/data_golem.png',
+  // TODO: Add unique boss sprites when art is ready
+  // Personality-name aliases (used by ENEMY_PERSONALITIES)
+  'Glitch Slime':    'assets/enemies/glitch_slime.png',
+  'Neon Wraith':     'assets/enemies/neon_wraith.png',
+  'Cyber Beast':     'assets/enemies/cyber_beast.png',
+  'Rogue Drone':     'assets/enemies/rogue_drone.png',
+  'Data Golem':      'assets/enemies/data_golem.png',
   gen_netrunner:     'assets/player.png',
 };
 Object.entries(_GEN_IMG_MAP).forEach(([name, src]) => {
@@ -2233,36 +2351,6 @@ const CY='#00FFFF',MG='#FF00FF',PU='#8800FF',GR='#39FF14',
 const SK='#d4a878',sk='#c08850';
 const ST='#8899bb',st='#556688',sd='#334455';
 const W1='#dde0f0',W2='#aab0cc',W3='#778899';
-
-// Draw grid: array of arrays of color strings (null = transparent)
-function pg(ctx, ox, oy, grid, flipX) {
-  const rows = grid.length;
-  const cols = grid[0].length;
-  ctx.save();
-  if (flipX) {
-    ctx.translate(ox + cols * P, oy);
-    ctx.scale(-1, 1);
-    ctx.translate(-ox, -oy);
-  }
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const col = grid[r][c];
-      if (!col) continue;
-      ctx.fillStyle = col;
-      ctx.fillRect(ox + c * P, oy + r * P, P, P);
-    }
-  }
-  ctx.restore();
-}
-
-// Neon glow on a single rect
-function glow(ctx, x, y, w, h, col, str=8) {
-  ctx.save();
-  ctx.shadowColor = col; ctx.shadowBlur = str;
-  ctx.fillStyle = col; ctx.globalAlpha = 0.35;
-  ctx.fillRect(x, y, w, h);
-  ctx.restore();
-}
 
 // ═══════════════════════════════════════════════════════════════
 // SPRITES
@@ -2746,12 +2834,12 @@ const Arena = {
       ctx.fillStyle = ac;
       ctx.fillText(nameText, imgX0+imgW/2, imgY0-18);
       ctx.restore();
-      // UI panel frame overlay (player)
-      if(_UI.loaded&&_UI.panelPlayer){
-        ctx.save();ctx.globalCompositeOperation='screen';
-        ctx.drawImage(_UI.panelPlayer,imgX0-10,imgY0-10,imgW+20,imgH+20);
-        ctx.globalCompositeOperation='source-over';ctx.restore();
-      }
+      // UI panel frame overlay (player) — disabled, was creating black box artifact
+      // if(_UI.loaded&&_UI.panelPlayer){
+      //   ctx.save();ctx.globalCompositeOperation='screen';
+      //   ctx.drawImage(_UI.panelPlayer,imgX0-10,imgY0-10,imgW+20,imgH+20);
+      //   ctx.globalCompositeOperation='source-over';ctx.restore();
+      // }
     }
 
     // Enemies
@@ -3024,17 +3112,8 @@ const Arena = {
           _drawSS(en.name,ctx,edx,edy,sz.w,sz.h,true)||(SPR[en.sprite]&&SPR[en.sprite](ctx,edx,edy,true,t));
         }
       }}
-      // UI panel frame overlay (enemy) — mirrored to match enemy facing
-      if(_UI.loaded&&_UI.panelEnemy){
-        const _epX=isDevil?(dSlotCX+lunge+idleShiftX-dImgW/2-10):(edx-10);
-        const _epY=isDevil?(dImgY0+eBob-10):(edy-10);
-        const _epW=isDevil?(dImgW+20):(sz.w+20);
-        const _epH=isDevil?(dImgH+20):(sz.h+20);
-        ctx.save();ctx.globalCompositeOperation='screen';
-        ctx.translate(_epX+_epW/2,_epY+_epH/2);ctx.scale(-1,1);
-        ctx.drawImage(_UI.panelEnemy,-_epW/2,-_epH/2,_epW,_epH);
-        ctx.globalCompositeOperation='source-over';ctx.restore();
-      }
+      // UI panel frame overlay (enemy) — disabled, same black box artifact as player panel
+      // if(_UI.loaded&&_UI.panelEnemy){...}
       // ── Enemy limb animation overlay (devil image includes limbs — skip) ──
       if(!isDevil){
         const eIsAtk=en.animState && en.animState.startsWith('attack');
@@ -3554,15 +3633,7 @@ const Arena = {
     ctx.strokeStyle=isBoss?'rgba(255,0,100,.04)':'rgba(0,255,255,.04)';ctx.lineWidth=1;
     for(let x=-off;x<W+80;x+=80){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H*.7);ctx.stroke();}
     for(let y=0;y<H*.68;y+=44){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
-    // Billboard signs
-    ctx.save();
-    [[W*.08,H*.08,70,22,'#FF00FF','RAMEN'],[W*.75,H*.06,60,20,'#00FFFF','JACK IN'],[W*.45,H*.04,80,24,'#39FF14','NEURAL'],[W*.88,H*.15,55,18,'#ff6600','CHROME'],[W*.22,H*.12,65,20,'#aa66ff','VOID BAR'],[W*.60,H*.10,50,18,'#ff0040','HACKS']].forEach(([bx,by,bw,bh,bc,txt])=>{
-      const pulse=.5+Math.sin(t*.06+bx)*.3;
-      ctx.fillStyle=bc+'22';ctx.fillRect(bx,by,bw,bh);
-      ctx.strokeStyle=bc;ctx.lineWidth=1;ctx.strokeRect(bx,by,bw,bh);
-      ctx.fillStyle=bc;ctx.font=`bold 7px 'Press Start 2P',monospace`;ctx.textAlign='center';ctx.fillText(txt,bx+bw/2,by+bh/2+3);
-    });
-    ctx.restore();
+    // Billboard signs removed — were cluttering combat view
     // Glow pillars
     ctx.save();ctx.globalAlpha=.06;
     [.18,.5,.82].forEach(fx=>{const pg2=ctx.createLinearGradient(W*fx-30,0,W*fx+30,0);pg2.addColorStop(0,'transparent');pg2.addColorStop(.5,isBoss?'#ff0066':'#8800ff');pg2.addColorStop(1,'transparent');ctx.fillStyle=pg2;ctx.fillRect(W*fx-30,0,60,H*.65);});
@@ -4974,8 +5045,8 @@ const STAT_POINTS_TOTAL = 15;
 // ── ACTIVE SKILLS: 30 pure attack skills (no buffs/heals/defense) ──
 // Helpers: _tgt = lowest HP target, _aoe = hit all enemies
 const _tgt=(en)=>Combat.lowestHp(en);
-const _vfx=(t,type,clr)=>{const pos=Arena.getEnemyPos(GameState.enemies.indexOf(t));Arena.spawnVFX(type,pos.x,pos.y,clr);};
-const _aoeVfx=(en,type,clr)=>{en.forEach(e=>{if(e.hp>0){const pos=Arena.getEnemyPos(GameState.enemies.indexOf(e));Arena.spawnVFX(type,pos.x,pos.y,clr);}});};
+const _vfx=(t,type,clr)=>{const idx=(GameState.enemies||[]).indexOf(t);const pos=Arena.getEnemyPos(idx>=0?idx:0);Arena.spawnVFX(type,pos.x,pos.y,clr);};
+const _aoeVfx=(en,type,clr)=>{en.forEach(e=>{if(e.hp>0){const idx=(GameState.enemies||[]).indexOf(e);const pos=Arena.getEnemyPos(idx>=0?idx:0);Arena.spawnVFX(type,pos.x,pos.y,clr);}});};
 
 const ACTIVE_SKILLS = [
   // ── Single target heavy hitters ──
@@ -4986,7 +5057,7 @@ const ACTIVE_SKILLS = [
   {id:'railgunBurst',tags:['attack','armor_pierce'],name:'Railgun Burst',icon:'🔫',desc:'3.5x ATK single target — pierces shields',mp:28,cd:0,maxCd:4,
    effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*3.5),false,['armor_pierce']);_vfx(t,'explode',CY);DM.say('RAILGUN BURST! Armor pierced!');}},
   {id:'neuralSpike',tags:['attack'],name:'Neural Spike',icon:'🧠',desc:'2x ATK ignores DEF',mp:18,cd:0,maxCd:3,
-   effect(p,en){const t=_tgt(en);if(!t)return;const dmg=Math.floor(p.atk*2);t.hp=Math.max(0,t.hp-dmg);_vfx(t,'slash',PU);UI.dmgNumAt(Arena.getEnemyPos(GameState.enemies.indexOf(t)).x,Arena.getEnemyPos(GameState.enemies.indexOf(t)).y,dmg);DM.say('NEURAL SPIKE! Defenses bypassed!');}},
+   effect(p,en){const t=_tgt(en);if(!t)return;const dmg=Math.floor(p.atk*2);t.hp=Math.max(0,t.hp-dmg);_vfx(t,'slash',PU);const _np=Arena.getEnemyPos(Math.max(0,(GameState.enemies||[]).indexOf(t)));UI.dmgNumAt(_np.x,_np.y,dmg);DM.say('NEURAL SPIKE! Defenses bypassed!');}},
   {id:'photonLance',tags:['attack'],name:'Photon Lance',icon:'✴',desc:'2.8x ATK single target',mp:22,cd:0,maxCd:3,
    effect(p,en){const t=_tgt(en);if(!t)return;Combat.deal(t,Math.floor(p.atk*2.8));_vfx(t,'slash',GD);DM.say('PHOTON LANCE! Beam locked!');}},
   {id:'cryptoShiv',tags:['attack'],name:'Crypto Shiv',icon:'🔪',desc:'2x ATK + 2x ATK combo',mp:20,cd:0,maxCd:3,
@@ -6017,6 +6088,8 @@ const GameState = {
   currentZoneId:null,
   zonesCleared:[],
   zonesUnlocked:['neonNexus'],
+  // Cinematic intro flag
+  _introShown:false,
   // Mini-game system (Phase 2.1)
   lastRoomWasMiniGame:false, pendingSecretRoom:null, zoneBossDefeated:false,
   _pendingRoomIdx:0,
@@ -7971,7 +8044,7 @@ const Combat = {
     if(GameState.runStats)GameState.runStats.damageDealt=(GameState.runStats.damageDealt||0)+dmg;
     QM.track('totalDmg',dmg); QM.track('dmgBlocked',blocked);
     Audio.play(isCrit?'crit':'hit');
-    const hurtSev=(dmg/enemy.maxHp>0.15)?'knockback':'flinch';
+    const hurtSev=(dmg/(enemy.maxHp||1)>0.15)?'knockback':'flinch';
     Arena.triggerHurt(false,enemy,hurtSev);
     const idx=GameState.enemies.indexOf(enemy);
     if(idx>=0){
@@ -8223,7 +8296,7 @@ const Combat = {
     if(!p||p.hp<=0)return;
     GameState.turnCount++;GameState.floorTurns++;
     if(GameState.turnsLeft>0)GameState.turnsLeft--;
-    const tb=document.getElementById('tbadge');
+    const tb=UI._el('tbadge');
     if(tb){
       tb.textContent=GameState.turnsLeft;
       tb.style.color=GameState.turnsLeft<=10?'#ff0040':GameState.turnsLeft<=20?'#ff6600':'var(--G)';
@@ -8319,8 +8392,8 @@ const Combat = {
       if(p.hp<=0){this.endCombat(false);return;}
     }
     UI.updateBars();UI.updateSpells();UI.renderBuffs();
-    const _db=document.getElementById('dbadge');if(_db)_db.textContent='DMG:'+GameState.totalDmg;
-    const _kb=document.getElementById('kbadge');if(_kb)_kb.textContent='KILLS:'+GameState.totalKills;
+    const _db=UI._el('dbadge');if(_db)_db.textContent='DMG:'+GameState.totalDmg;
+    const _kb=UI._el('kbadge');if(_kb)_kb.textContent='KILLS:'+GameState.totalKills;
     QM.check();
     // INTENT MIRROR — trigger damage exchange every round (replaces playerAttack/enemyAttack)
     if(alive.length>0){IntentMirror.beginRound(alive);}
@@ -8458,6 +8531,21 @@ const Combat = {
     this._beginFight();
   },
   _beginFight(){
+    // ── Zone entry cinematic on first fight (Task 4) ──
+    if(!GameState._introShown){
+      GameState._introShown=true;
+      this._showZoneEntry(()=>this._startFight());
+      return;
+    }
+    this._startFight();
+  },
+  _showZoneEntry(cb){
+    const ov=document.createElement('div');ov.id='zone-entry';
+    ov.innerHTML=`<div class="ze-l1">// SECTOR 9 \u2014 NEON DUNGEON //</div><div class="ze-l2">PURGE PROTOCOL ACTIVE</div><div class="ze-l3">SURVIVE.</div>`;
+    document.body.appendChild(ov);
+    setTimeout(()=>{ov.style.opacity='0';setTimeout(()=>{ov.remove();if(cb)cb();},800);},3000);
+  },
+  _startFight(){
     this._endingCombat=false;
     GameState.combatRunning=true;GameState.floorTurns=0;
     // Reset Intent Mirror state
@@ -9416,7 +9504,7 @@ function showCombatDebrief(){
 function _checkBossSignature(en, p){
   const pers=ENEMY_PERSONALITIES[en.name];
   if(!pers?.signature||en.signatureUsed) return false;
-  const hpPct=Math.floor((en.hp/en.maxHp)*100);
+  const hpPct=Math.floor((en.hp/(en.maxHp||1))*100);
   if(hpPct>pers.signatureTrigger) return false;
   en.signatureUsed=true;
   if(pers.signature==='CORRUPTION CASCADE'){
@@ -9841,7 +9929,7 @@ const DialogEngine={
     const dlgNm=document.getElementById('dlgName');if(dlgNm)dlgNm.textContent=speaker;
     const textEl=document.getElementById('dlgText');if(textEl)textEl.textContent='';
     const choicesEl=document.getElementById('dlgChoices');
-    choicesEl.style.display='none';choicesEl.innerHTML='';
+    if(choicesEl){choicesEl.style.display='none';choicesEl.innerHTML='';}
     box.style.display='flex';box.style.animation='none';
     void box.offsetHeight;box.style.animation='dlgIn .18s ease';
     this._clickFn=()=>this._complete();
@@ -9983,6 +10071,9 @@ const QM={
 };
 
 const UI={
+  _cachedEls:{},
+  _el(id){if(!this._cachedEls[id]){this._cachedEls[id]=document.getElementById(id);}return this._cachedEls[id];},
+  _clearCache(){this._cachedEls={};},
   show(id){
     if(typeof GlitchTransition!=='undefined'){
       if(GlitchTransition.active)return;
@@ -9992,6 +10083,7 @@ const UI={
     this._applyShow(id);
   },
   _applyShow(id){
+    this._clearCache();this._spellBtns=null;
     // Scanline wipe transition
     const wipe=document.getElementById('screenWipe');
     if(wipe){wipe.classList.remove('active');void wipe.offsetHeight;wipe.classList.add('active');}
@@ -10021,7 +10113,7 @@ const UI={
   dmgNumPlayer(val,type){const pp=Arena.getPlayerPos();this.dmgNumAt(pp.x,pp.y,val,type);},
   updateBars(){
     const p=GameState.player;if(!p)return;
-    const hpPct=Math.max(0,p.hp/p.maxHp);
+    const hpPct=Math.max(0,p.hp/(p.maxHp||1));
     const hpEl=document.getElementById('phpf');
     // [P2E] MP bar removed — console.warn('[P2E] MP removed here - was: pmpf bar update')
     if(hpEl){
@@ -10045,7 +10137,8 @@ const UI={
   },
   updateSpells(){
     const p=GameState.player;
-    document.querySelectorAll('.spbtn').forEach((btn,i)=>{
+    if(!this._spellBtns||!this._spellBtns.length)this._spellBtns=document.querySelectorAll('.spbtn');
+    this._spellBtns.forEach((btn,i)=>{
       const sp=p?.spells[i];if(!sp)return;
       const isHacked=(sp.hackedTurns||0)>0;
       const onCD=isHacked||sp.cd>0||p.mp<sp.mp;
@@ -11662,7 +11755,7 @@ const Game={
     if(pauseResume)pauseResume.addEventListener('click',()=>{
       const pm=document.getElementById('pauseMenu');pm.classList.remove('show');
       if(!GameState.combatRunning&&(GameState.enemies||[]).filter(e=>e.hp>0).length){
-        GameState.combatRunning=true;GameState.combatInterval=setInterval(()=>Combat.tick(),Game._combatSpeed||1200);
+        GameState.combatRunning=true;if(GameState.combatInterval)clearInterval(GameState.combatInterval);GameState.combatInterval=setInterval(()=>Combat.tick(),Game._combatSpeed||1200);
       }
     });
     const pauseSettings=document.getElementById('pauseSettings');
@@ -13383,6 +13476,349 @@ const VictoryScreen = {
 
 document.getElementById('ebtn').addEventListener('click',()=>Game.enterDungeon());
 
+// === CHARACTER CREATION SCREEN ===
+window.CLASS_DEFINITIONS = {
+  ARIA:   { archetype:'Psi-Lancer',     color:'#00FFFF', lore:'A rogue netrunner who channels psychic energy into plasma rings. Fragile but lethal at range.', startingSysMem:4, statMods:{hp:-10,hackBonus:0.15,attackBonus:-0.10}, passiveName:'PLASMA RESONANCE', passiveDesc:'QUICKHACK costs 0 SYS_MEM on first use each fight.' },
+  GLITCH: { archetype:'Decker',          color:'#FF00FF', lore:'A street hacker who weaponizes code. Deploys ICE, spawns malware constructs, rewrites the fight.', startingSysMem:5, statMods:{hp:-20,hackBonus:0.25,attackBonus:-0.20}, passiveName:'ICE WEAVE', passiveDesc:'DAEMON effects last 1 extra turn.' },
+  KRON:   { archetype:'Enforcer',        color:'#FF6600', lore:'Former corpo heavy with demon-rig implants. Absorbs punishment and hits like a freight locomotive.', startingSysMem:2, statMods:{hp:30,hackBonus:-0.15,attackBonus:0.20}, passiveName:'CHROME SHELL', passiveDesc:'IRON WALL damage reduction increased to 75%.' },
+  SHADE:  { archetype:'Shadow Blade',    color:'#9900FF', lore:'A ghost from the underground fight circuit. Dual mono-blades and zero hesitation.', startingSysMem:3, statMods:{hp:0,hackBonus:0,attackBonus:0.15}, passiveName:'GHOST STEP', passiveDesc:'GHOST PROTOCOL costs 0 SYS_MEM.' },
+  KIRA:   { archetype:'Street Samurai',  color:'#FF0066', lore:'Corporate defector turned merc. Plasma katanas and a neural combat chip make her a killswitch.', startingSysMem:3, statMods:{hp:10,hackBonus:-0.10,attackBonus:0.10}, passiveName:'NEURAL BLADE', passiveDesc:'BLEED WIRE ticks at 12% instead of 8%.' },
+  NYX:    { archetype:'Techno-Mage',     color:'#00FF99', lore:'Void-touched street artist who graffitis reality. Summons glitch orbs and rides the signal.', startingSysMem:5, statMods:{hp:-15,hackBonus:0.20,attackBonus:-0.05}, passiveName:'SIGNAL RIDE', passiveDesc:'CONTAGION applies GLITCH for 3 turns instead of 2.' }
+};
+window.selectedClass = 'ARIA';
+window.selectedAccentColor = '#00FFFF';
+window.runnerName = 'ANONYMOUS';
+window.selectedDifficulty = 'NORMAL';
+window.selectedPortrait = 0;
+window.activeClassDef = null;
+
+(function _buildCharacterCreationScreen(){
+  const CD = window.CLASS_DEFINITIONS;
+  const SHORT_DESC = {ARIA:"Psychic netrunner. Plasma rings. Lethal at range.",GLITCH:"Street hacker. Weaponizes code. Rewrites fights.",KRON:"Corpo enforcer. Demon-rig implants. Takes a hit.",SHADE:"Underground blade. Dual mono-blades. Zero mercy.",KIRA:"Corp defector. Plasma katanas. Neural kill chip.",NYX:"Void artist. Graffitis reality. Rides the signal."};
+  const scr = document.createElement('div');
+  scr.id = 'characterCreationScreen';
+
+  // Collapsed left strip for medium viewports
+  const strip = document.createElement('div');
+  strip.id = 'cc-left-strip';
+  strip.innerHTML = '<div class="cc-strip-dot" style="background:#00FFFF"></div><div class="cc-strip-name" style="color:#00FFFF">ARIA</div>';
+
+  const layout = document.createElement('div');
+  layout.id = 'cc-layout';
+
+  // ── LEFT PANEL ──
+  const left = document.createElement('div');
+  left.id = 'cc-left';
+  const _a = CD.ARIA;
+  left.innerHTML = `
+    <div class="cc-label">RUNNER</div>
+    <img class="cc-divider-img" src="/assets/ui/cc_divider.png" alt="">
+    <div class="cc-portrait-container">
+      <img class="cc-frame-img" src="/assets/ui/cc_portrait_frame.png" alt="">
+      <div id="cc-portrait-fallback" style="color:${_a.color}">[ SELECT ]</div>
+    </div>
+    <div id="cc-preview-name" style="color:${_a.color};text-shadow:0 0 10px ${_a.color}"><span id="cc-l-classname">ARIA</span></div>
+    <div id="cc-preview-arch">${_a.archetype}</div>
+    <hr class="cc-div-line">
+    <div class="cc-passive-label">PASSIVE</div>
+    <div class="cc-passive-name" id="cc-l-passive">${_a.passiveName}</div>
+    <div class="cc-passive-desc" id="cc-l-passivedesc">${_a.passiveDesc}</div>
+    <hr class="cc-div-line">
+    <div class="cc-sysmem-label">SYS_MEM START</div>
+    <div class="cc-sysmem-val" id="cc-l-sysmem">${_a.startingSysMem}</div>
+  `;
+  // Load sprite preview
+  const pContainer = left.querySelector('.cc-portrait-container');
+  const sprImg = new Image();
+  sprImg.className = 'cc-sprite-img';
+  sprImg.src = '/assets/row0_idle.png';
+  sprImg.onload = function(){ const fb=pContainer.querySelector('#cc-portrait-fallback'); if(fb)fb.style.display='none'; pContainer.insertBefore(sprImg,pContainer.firstChild); };
+  sprImg.onerror = function(){};
+
+  // ── RIGHT PANEL ──
+  const right = document.createElement('div');
+  right.id = 'cc-right';
+
+  // Title row
+  const titleRow = document.createElement('div');
+  titleRow.innerHTML = '<div class="cc-title">CREATE YOUR RUNNER</div><img class="cc-divider-img" src="/assets/ui/cc_divider.png" alt="" style="max-width:600px;margin:4px auto">';
+  right.appendChild(titleRow);
+
+  // Class cards
+  const cardGrid = document.createElement('div');
+  cardGrid.id = 'cc-card-grid';
+  const classKeys = Object.keys(CD);
+  classKeys.forEach(key => {
+    const c = CD[key];
+    const sel = key === 'ARIA';
+    const card = document.createElement('div');
+    card.className = 'cc-card' + (sel ? ' cc-selected' : '');
+    card.dataset.classKey = key;
+    card.style.border = sel ? '2px solid '+c.color : '1px solid rgba('+_hexToRgb(c.color)+',0.3)';
+    if(sel) card.style.boxShadow = '0 0 14px rgba('+_hexToRgb(c.color)+',0.5)';
+    card.setAttribute('tabindex','0');
+    card.innerHTML = `
+      <img class="cc-card-frame-img" src="/assets/ui/cc_card_frame.png" alt="">
+      <div class="cc-card-dim"></div>
+      <div class="cc-card-content">
+        <div class="cc-card-row1"><div class="cc-card-name" style="color:${c.color};text-shadow:0 0 6px ${c.color}">${key}</div><div class="cc-card-arch">${c.archetype}</div></div>
+        <div class="cc-card-desc">${SHORT_DESC[key]}</div>
+        <div class="cc-card-spells"><div class="cc-spell-slot" data-placeholder="true" style="background:rgba(${_hexToRgb(c.color)},0.12);border:1px solid rgba(${_hexToRgb(c.color)},0.35);color:rgba(${_hexToRgb(c.color)},0.8)">SPELL 1</div><div class="cc-spell-slot" data-placeholder="true" style="background:rgba(${_hexToRgb(c.color)},0.12);border:1px solid rgba(${_hexToRgb(c.color)},0.35);color:rgba(${_hexToRgb(c.color)},0.8)">SPELL 2</div></div>
+        <div class="cc-card-passive" style="color:${c.color};border-top:1px solid rgba(${_hexToRgb(c.color)},0.2)">${c.passiveName}</div>
+      </div>
+      <img class="cc-card-sel-img" src="/assets/ui/cc_card_selected.png" alt="">
+    `;
+    card.addEventListener('click', () => _ccSelectClass(key));
+    card.addEventListener('keydown', e => { if(e.key==='Enter') _ccSelectClass(key); });
+    cardGrid.appendChild(card);
+  });
+  right.appendChild(cardGrid);
+
+  // Accent color section
+  const accentSection = document.createElement('div');
+  accentSection.innerHTML = '<img class="cc-divider-img" src="/assets/ui/cc_divider.png" alt=""><span class="cc-section-label">ACCENT COLOR</span>';
+  const accentRow = document.createElement('div');
+  accentRow.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;';
+  const accentColors = ['#00FFFF','#FF00FF','#00FF44','#FF6600','#9900FF','#FF0066','#FFE600','#FFFFFF','#00FF99','#FF3300'];
+  accentColors.forEach((hex, i) => {
+    const sw = document.createElement('div');
+    sw.className = 'cc-swatch' + (i === 0 ? ' cc-swatch-sel' : '');
+    sw.style.background = hex;
+    if(i === 0) sw.style.boxShadow = '0 0 8px ' + hex;
+    sw.addEventListener('click', () => {
+      document.querySelectorAll('.cc-swatch').forEach(s => { s.classList.remove('cc-swatch-sel'); s.style.boxShadow = 'none'; });
+      sw.classList.add('cc-swatch-sel');
+      sw.style.boxShadow = '0 0 8px ' + hex;
+      window.selectedAccentColor = hex;
+    });
+    accentRow.appendChild(sw);
+  });
+  accentSection.appendChild(accentRow);
+  right.appendChild(accentSection);
+
+  // Runner name
+  const nameSection = document.createElement('div');
+  nameSection.innerHTML = '<img class="cc-divider-img" src="/assets/ui/cc_divider.png" alt=""><span class="cc-section-label">RUNNER NAME</span>';
+  const nameInput = document.createElement('input');
+  nameInput.id = 'cc-name-input';
+  nameInput.type = 'text';
+  nameInput.placeholder = 'ANONYMOUS';
+  nameInput.maxLength = 20;
+  nameInput.addEventListener('input', () => { window.runnerName = nameInput.value.trim() || 'ANONYMOUS'; });
+  nameSection.appendChild(nameInput);
+  right.appendChild(nameSection);
+
+  // Difficulty
+  const diffSection = document.createElement('div');
+  diffSection.innerHTML = '<img class="cc-divider-img" src="/assets/ui/cc_divider.png" alt=""><span class="cc-section-label">DIFFICULTY</span>';
+  const diffRow = document.createElement('div');
+  diffRow.style.cssText = 'display:flex;gap:8px;';
+  const diffs = [{key:'NORMAL',label:'NORMAL',sub:'Standard run.',accent:'#00FF44'},{key:'HARD',label:'HARD',sub:'Enemies +30%',accent:'#FFE600'},{key:'NIGHTMARE',label:'NIGHTMARE',sub:'Double HP.',accent:'#FF0066'}];
+  diffs.forEach(d => {
+    const btn = document.createElement('div');
+    btn.className = 'cc-diff-btn';
+    btn.dataset.diff = d.key;
+    const sel = d.key === 'NORMAL';
+    btn.style.cssText = `background:rgba(${_hexToRgb(d.accent)},${sel?0.20:0.08});border:${sel?2:1}px solid ${sel?d.accent:'rgba('+_hexToRgb(d.accent)+',0.4)'};color:${d.accent};${sel?'box-shadow:0 0 10px rgba('+_hexToRgb(d.accent)+',0.4)':''}`;
+    btn.innerHTML = `<div class="cc-diff-label">${d.label}</div><div class="cc-diff-sub">${d.sub}</div>`;
+    btn.addEventListener('click', () => {
+      window.selectedDifficulty = d.key;
+      diffRow.querySelectorAll('.cc-diff-btn').forEach(b => {
+        const dd = diffs.find(x => x.key === b.dataset.diff);
+        const s = b.dataset.diff === d.key;
+        b.style.cssText = `background:rgba(${_hexToRgb(dd.accent)},${s?0.20:0.08});border:${s?2:1}px solid ${s?dd.accent:'rgba('+_hexToRgb(dd.accent)+',0.4)'};color:${dd.accent};${s?'box-shadow:0 0 10px rgba('+_hexToRgb(dd.accent)+',0.4)':''}`;
+      });
+    });
+    diffRow.appendChild(btn);
+  });
+  diffSection.appendChild(diffRow);
+  right.appendChild(diffSection);
+
+  // Portrait
+  const portSection = document.createElement('div');
+  portSection.innerHTML = '<img class="cc-divider-img" src="/assets/ui/cc_divider.png" alt=""><span class="cc-section-label">PORTRAIT</span>';
+  const portRow = document.createElement('div');
+  portRow.style.cssText = 'display:flex;gap:8px;';
+  for(let i=0;i<5;i++){
+    const slot = document.createElement('div');
+    slot.className = 'cc-portrait-slot' + (i===0?' cc-port-sel':'');
+    slot.textContent = (i+1);
+    slot.addEventListener('click',()=>{window.selectedPortrait=i;portRow.querySelectorAll('.cc-portrait-slot').forEach(s=>s.classList.remove('cc-port-sel'));slot.classList.add('cc-port-sel');});
+    portRow.appendChild(slot);
+  }
+  portSection.appendChild(portRow);
+  right.appendChild(portSection);
+
+  const spacer = document.createElement('div');
+  spacer.style.height = '70px';
+  right.appendChild(spacer);
+
+  layout.appendChild(left);
+  layout.appendChild(right);
+  scr.appendChild(strip);
+  scr.appendChild(layout);
+
+  // ── BOTTOM BAR ──
+  const bottomBar = document.createElement('div');
+  bottomBar.id = 'cc-bottom-bar';
+
+  const btnContinue = document.createElement('button');
+  btnContinue.id = 'cc-btn-continue';
+  btnContinue.className = 'cc-action-btn';
+  btnContinue.innerHTML = '<img src="/assets/ui/cc_btn_continue.png" alt=""><span>CONTINUE</span>';
+  btnContinue.addEventListener('click', () => { _ccSaveToStorage(); scr.style.display = 'none'; });
+
+  const btnDungeon = document.createElement('button');
+  btnDungeon.id = 'cc-btn-dungeon';
+  btnDungeon.className = 'cc-action-btn';
+  btnDungeon.innerHTML = '<img src="/assets/ui/cc_btn_dungeon.png" alt=""><span>ENTER DUNGEON</span>';
+  btnDungeon.addEventListener('click', () => {
+    const classKey = window.selectedClass.toUpperCase();
+    window.activeClassDef = window.CLASS_DEFINITIONS[classKey];
+    console.log('CLASS LOADED:', classKey, window.activeClassDef.archetype, 'SYS_MEM:', window.activeClassDef.startingSysMem);
+    _ccSaveToStorage();
+    _ccSyncToGameState();
+    scr.style.display = 'none';
+    Game.enterDungeon();
+  });
+
+  bottomBar.appendChild(btnContinue);
+  bottomBar.appendChild(btnDungeon);
+  scr.appendChild(bottomBar);
+  document.body.appendChild(scr);
+
+  // ── KEYBOARD NAV ──
+  document.addEventListener('keydown', e => {
+    if(scr.style.display === 'none') return;
+    const idx = classKeys.indexOf(window.selectedClass);
+    if(idx < 0) return;
+    let next = -1;
+    if(e.key === 'ArrowRight') next = Math.min(idx+1, classKeys.length-1);
+    else if(e.key === 'ArrowLeft') next = Math.max(idx-1, 0);
+    else if(e.key === 'ArrowDown') next = Math.min(idx+3, classKeys.length-1);
+    else if(e.key === 'ArrowUp') next = Math.max(idx-3, 0);
+    if(next >= 0 && next !== idx){ _ccSelectClass(classKeys[next]); e.preventDefault(); }
+  });
+
+  // ── HOOK: Open from main menu ──
+  const origConnect = document.getElementById('menuConnectBtn');
+  if(origConnect) origConnect.addEventListener('click', () => { scr.style.display = 'block'; });
+
+  // ── HELPERS ──
+  function _ccSelectClass(key){
+    const c = CD[key]; if(!c) return;
+    window.selectedClass = key;
+    window.selectedAccentColor = c.color;
+    // Update cards
+    cardGrid.querySelectorAll('.cc-card').forEach(card => {
+      const k = card.dataset.classKey, sel = k===key, cc2 = CD[k];
+      card.classList.toggle('cc-selected', sel);
+      card.style.border = sel ? '2px solid '+cc2.color : '1px solid rgba('+_hexToRgb(cc2.color)+',0.3)';
+      card.style.boxShadow = sel ? '0 0 14px rgba('+_hexToRgb(cc2.color)+',0.5)' : 'none';
+    });
+    // Update left panel
+    const _cn=document.getElementById('cc-l-classname');
+    if(_cn){_cn.textContent=key;_cn.style.color=c.color;}
+    const ln=document.getElementById('cc-preview-name');
+    if(ln){ln.style.color=c.color;ln.style.textShadow='0 0 10px '+c.color;}
+    const la=document.getElementById('cc-preview-arch'); if(la) la.textContent=c.archetype;
+    const lp=document.getElementById('cc-l-passive'); if(lp) lp.textContent=c.passiveName;
+    const lpd=document.getElementById('cc-l-passivedesc'); if(lpd) lpd.textContent=c.passiveDesc;
+    const lsm=document.getElementById('cc-l-sysmem'); if(lsm) lsm.textContent=c.startingSysMem;
+    const pf=document.getElementById('cc-portrait-fallback'); if(pf) pf.style.color=c.color;
+    // Strip
+    const sd=strip.querySelector('.cc-strip-dot'); if(sd) sd.style.background=c.color;
+    const sn=strip.querySelector('.cc-strip-name'); if(sn){sn.textContent=key;sn.style.color=c.color;}
+    // Accent swatches
+    document.querySelectorAll('.cc-swatch').forEach(sw => {
+      const match = _rgbToHex(sw.style.backgroundColor) === c.color.toUpperCase();
+      sw.classList.toggle('cc-swatch-sel', match);
+      sw.style.boxShadow = match ? '0 0 8px '+c.color : 'none';
+    });
+  }
+
+  function _ccSaveToStorage(){
+    try { localStorage.setItem('neonDungeonRunner', JSON.stringify({class:window.selectedClass,accent:window.selectedAccentColor,name:window.runnerName,difficulty:window.selectedDifficulty,portrait:window.selectedPortrait})); } catch(e){}
+  }
+
+  function _ccSyncToGameState(){
+    const key = window.selectedClass.toLowerCase();
+    if(!GameState.ccState) Game.buildClassSelect();
+    if(GameState.ccState){
+      GameState.ccState.gender = key;
+      GameState.ccState.runnerName = window.runnerName;
+      GameState.ccState.difficulty = window.selectedDifficulty.toLowerCase();
+    }
+  }
+})();
+
+function _hexToRgb(hex){
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  return r+','+g+','+b;
+}
+function _rgbToHex(rgb){
+  const m = rgb.match(/(\d+)/g);
+  if(!m||m.length<3) return '';
+  return '#'+((1<<24)+(+m[0]<<16)+(+m[1]<<8)+(+m[2])).toString(16).slice(1).toUpperCase();
+}
+
+// ── CC REGRESSION TESTS ──
+window.CC_TEST1 = function(){
+  try {
+    const cards = document.querySelectorAll('#cc-card-grid .cc-card');
+    if(cards.length !== 6) return 'CC_TEST1: FAIL - Expected 6 cards, got ' + cards.length;
+    // Click KRON
+    const kronCard = document.querySelector('.cc-card[data-class-key="KRON"]');
+    if(!kronCard) return 'CC_TEST1: FAIL - KRON card not found';
+    kronCard.click();
+    if(window.selectedClass !== 'KRON') return 'CC_TEST1: FAIL - selectedClass is ' + window.selectedClass + ', expected KRON';
+    const nameEl = document.getElementById('cc-l-classname');
+    if(!nameEl || nameEl.textContent !== 'KRON') return 'CC_TEST1: FAIL - Left panel name not updated';
+    if(window.CLASS_DEFINITIONS.KRON.color !== '#FF6600') return 'CC_TEST1: FAIL - KRON color mismatch';
+    return 'CC_TEST1: PASS';
+  } catch(e){ return 'CC_TEST1: FAIL - ' + e.message; }
+};
+
+window.CC_TEST2 = function(){
+  try {
+    const keys = ['ARIA','GLITCH','KRON','SHADE','KIRA','NYX'];
+    for(const k of keys){
+      const d = window.CLASS_DEFINITIONS[k];
+      if(!d) return 'CC_TEST2: FAIL - Missing key ' + k;
+      for(const f of ['archetype','color','lore','startingSysMem','statMods','passiveName','passiveDesc']){
+        if(d[f] === undefined) return 'CC_TEST2: FAIL - ' + k + ' missing field ' + f;
+      }
+    }
+    if(!['NORMAL','HARD','NIGHTMARE'].includes(window.selectedDifficulty))
+      return 'CC_TEST2: FAIL - Invalid difficulty: ' + window.selectedDifficulty;
+    if(document.body.scrollWidth > window.innerWidth + 2)
+      return 'CC_TEST2: FAIL - Horizontal overflow detected (' + document.body.scrollWidth + ' > ' + window.innerWidth + ')';
+    return 'CC_TEST2: PASS';
+  } catch(e){ return 'CC_TEST2: FAIL - ' + e.message; }
+};
+
+window.CC_TEST3 = function(){
+  try {
+    // Simulate ENTER DUNGEON
+    const classKey = window.selectedClass.toUpperCase();
+    window.activeClassDef = window.CLASS_DEFINITIONS[classKey];
+    if(!window.activeClassDef) return 'CC_TEST3: FAIL - activeClassDef is null';
+    if(typeof window.activeClassDef.startingSysMem !== 'number') return 'CC_TEST3: FAIL - startingSysMem not a number';
+    if(!window.runnerName || typeof window.runnerName !== 'string') return 'CC_TEST3: FAIL - runnerName invalid';
+    try{
+      localStorage.setItem('neonDungeonRunner', JSON.stringify({
+        class: window.selectedClass, accent: window.selectedAccentColor,
+        name: window.runnerName, difficulty: window.selectedDifficulty,
+        portrait: window.selectedPortrait
+      }));
+    }catch(e){ return 'CC_TEST3: FAIL - localStorage save error'; }
+    const stored = JSON.parse(localStorage.getItem('neonDungeonRunner'));
+    if(!stored) return 'CC_TEST3: FAIL - localStorage not set';
+    return 'CC_TEST3: PASS';
+  } catch(e){ return 'CC_TEST3: FAIL - ' + e.message; }
+};
+// === END CHARACTER CREATION SCREEN ===
+
 // ── Asset cache: populated during boot, reused at runtime to avoid re-fetching ──
 window._assetCache = { images: {}, json: {} };
 
@@ -13414,6 +13850,19 @@ const BootScreen = {
     await this.delay(400);
     this.type('');
 
+    // ── Intercepted lore transmission ──
+    this.type('[INTERCEPTED TRANSMISSION \u2014 CORP SEC CHANNEL 7]');
+    await this.delay(200);
+    this.type('>> NETRUNNER ASSET TAGGED: DESIGNATION \u2018GHOST\u2019');
+    await this.delay(150);
+    this.type('>> LAST KNOWN LOCATION: SECTOR 9 \u2014 NEON DUNGEON DISTRICT');
+    await this.delay(150);
+    this.type('>> STATUS: UNCONTAINED. THREAT LEVEL: CRITICAL.');
+    await this.delay(200);
+    this.type('[END TRANSMISSION]');
+    await this.delay(400);
+    this.type('');
+
     await this.typeSlow('] LOAD "NEON.DUNGEON",8,1',35);
     await this.delay(500);
     this.type('');
@@ -13421,6 +13870,17 @@ const BootScreen = {
     await this.delay(600);
     this.type('FOUND. LOADING ASSETS...');
     await this.delay(200);
+    this.type('');
+
+    // ── Blackmarket lore alert ──
+    this.type('[BLACKMARKET ALERT \u2014 DARK WEB NODE 44]');
+    await this.delay(200);
+    this.type('>> BOUNTY POSTED: 50,000 CREDITS \u2014 GHOST PROTOCOL RUNNER');
+    await this.delay(150);
+    this.type('>> COLLECTOR: OMNICORP DIVISION 7 \u2014 NO QUESTIONS ASKED');
+    await this.delay(200);
+    this.type('[END ALERT]');
+    await this.delay(400);
     this.type('');
 
     // Show progress bar
@@ -13486,6 +13946,18 @@ const BootScreen = {
 
     await this.delay(300);
     this.type('');
+
+    // ── System notice lore ──
+    this.type('[SYSTEM NOTICE \u2014 NEON DUNGEON GRID]');
+    await this.delay(200);
+    this.type('>> UNAUTHORIZED ACCESS DETECTED \u2014 GRID LAYER 1');
+    await this.delay(150);
+    this.type('>> PURGE DRONES DISPATCHED. ESTIMATED ARRIVAL: 00:03:00');
+    await this.delay(150);
+    this.type('>> RUNNER \u2014 YOU ARE RUNNING OUT OF TIME.');
+    await this.delay(400);
+    this.type('');
+
     this.type('────────────────────────────');
     await this.delay(200);
     await this.typeSlow('ALL SYSTEMS NOMINAL.',30);
@@ -13494,15 +13966,65 @@ const BootScreen = {
     await this.typeSlow('] RUN',60);
     await this.delay(700);
 
-    // ── Fade out boot → show main menu ──
+    // ── Fade out boot → title card → lore crawl → main menu ──
     const boot = document.getElementById('sBOOT');
     boot.style.transition = 'opacity 0.8s';
     boot.style.opacity = '0';
     await this.delay(800);
     boot.classList.remove('on');
     boot.style.display = 'none';
+
+    // ── Title Card (Task 2) ──
+    await this._showTitleCard();
+
+    // ── Lore Crawl (Task 3) ──
+    await this._showLoreCrawl();
+
+    // ── Main Menu ──
     document.getElementById('sMM').classList.add('on');
     Game.init();
+  },
+
+  async _showTitleCard(){
+    const tc=document.createElement('div');tc.id='title-card';
+    tc.innerHTML=`<div class="tc-glitch"><div class="tc-line1">NEON</div><div class="tc-line2">DUNGEON</div></div><div class="tc-sub">// A NETRUNNER'S LAST RUN //</div><div class="scanline-ov"></div><div class="tc-skip">[ PRESS ANY KEY TO CONTINUE ]</div>`;
+    document.body.appendChild(tc);
+    return new Promise(resolve=>{
+      let done=false;
+      const dismiss=()=>{
+        if(done)return;done=true;
+        tc.style.opacity='0';
+        setTimeout(()=>{tc.remove();resolve();},800);
+      };
+      const onKey=()=>{dismiss();document.removeEventListener('keydown',onKey);};
+      const onClick=()=>{dismiss();tc.removeEventListener('click',onClick);};
+      document.addEventListener('keydown',onKey);
+      tc.addEventListener('click',onClick);
+      setTimeout(dismiss,4000);
+    });
+  },
+
+  async _showLoreCrawl(){
+    const lc=document.createElement('div');lc.id='lore-crawl';
+    const loreLines=["YEAR 2087. THE MEGACORPS WON.","","NEON DUNGEON \u2014 A SECTOR OF THE OLD CITY NO CORP CLAIMS.","ABANDONED GRID INFRASTRUCTURE. ROGUE AI PATROLS.","BLACK MARKET DATA BROKERS. DESPERATE NETRUNNERS.","","YOU ARE GHOST \u2014 A FIXER WITH NOTHING LEFT TO LOSE.","ONE LAST JOB: BREACH THE DUNGEON, REACH THE CORE,","EXTRACT THE DATA THAT BURNS DOWN OMNICORP FOREVER.","","THEY KNOW YOU\u2019RE COMING.","THEY\u2019VE ALREADY SENT THE DRONES.","","RUN."];
+    const textDiv=document.createElement('div');textDiv.id='lore-text';
+    loreLines.forEach(l=>{const p=document.createElement('p');p.textContent=l||'\u00A0';textDiv.appendChild(p);});
+    const scan=document.createElement('div');scan.className='scanline-ov';
+    lc.appendChild(textDiv);lc.appendChild(scan);
+    document.body.appendChild(lc);
+    return new Promise(resolve=>{
+      let done=false;
+      const dismiss=()=>{
+        if(done)return;done=true;
+        lc.style.opacity='0';
+        setTimeout(()=>{lc.remove();resolve();},800);
+      };
+      const onKey=()=>{dismiss();document.removeEventListener('keydown',onKey);};
+      const onClick=()=>{dismiss();lc.removeEventListener('click',onClick);};
+      document.addEventListener('keydown',onKey);
+      lc.addEventListener('click',onClick);
+      setTimeout(dismiss,6000);
+    });
   },
 
   type(text) {
@@ -13803,7 +14325,7 @@ const HUD = {
     if(!this._active)return;
     const p=GameState.player;if(!p)return;
     const enemies=GameState.enemies||[];
-    const enemy=enemies.find(e=>e.hp>0)||enemies[0];
+    const enemy=enemies.find(e=>e.hp>0)||enemies[0]||null;
 
     // ── Zone A: Player ──
     const nm=document.getElementById('hudPlayerName');
@@ -13843,7 +14365,7 @@ const HUD = {
         const type=enemy.isBoss?'BOSS':enemy.maxHp>=200?'ELITE':'REGULAR';
         badge.textContent=type;badge.className='hud-badge '+type;
       }
-      if(enHpFill)enHpFill.style.width=Math.max(0,(enemy.hp/enemy.maxHp)*100)+'%';
+      if(enHpFill)enHpFill.style.width=Math.max(0,(enemy.hp/(enemy.maxHp||1))*100)+'%';
       if(enHpNum)enHpNum.textContent=`${Math.max(0,enemy.hp)}/${enemy.maxHp}`;
       if(enTrait){
         const pers=ENEMY_PERSONALITIES[enemy.name];
@@ -14209,6 +14731,29 @@ window.P2_TEST4 = P2_TEST4;
 window.P2_TEST5 = P2_TEST5;
 window.P2_TEST6 = P2_TEST6;
 window.P2_TEST_HUD = P2_TEST_HUD;
+
+// ── Cinematic Intro Test ──
+window.INTRO_TEST1 = function(){
+  const results=[];
+  // 1. Boot screen lore lines exist
+  const bootEl=document.getElementById('bootLines');
+  const hasLore=bootEl&&bootEl.textContent.includes('GHOST PROTOCOL RUNNER');
+  results.push(hasLore?'PASS: Boot lore lines present':'FAIL: Boot lore lines missing — "GHOST PROTOCOL RUNNER" not found');
+  // 2. Glitch keyframe exists
+  let hasGlitch=false;
+  try{for(const ss of document.styleSheets){try{for(const r of ss.cssRules){if(r.type===7&&r.name==='glitch'){hasGlitch=true;break;}}}catch(e){}};}catch(e){}
+  results.push(hasGlitch?'PASS: Glitch keyframe defined':'FAIL: Glitch keyframe not found in stylesheets');
+  // 3. GameState._introShown exists and is boolean
+  const hasFlag=typeof GameState._introShown==='boolean';
+  results.push(hasFlag?'PASS: GameState._introShown is boolean ('+GameState._introShown+')':'FAIL: GameState._introShown missing or wrong type');
+  // 4. Zone entry overlay can be invoked
+  let zeOk=false;
+  try{Combat._showZoneEntry(()=>{});const ze=document.getElementById('zone-entry');zeOk=!!ze;if(ze)ze.remove();} catch(e){zeOk=false;}
+  results.push(zeOk?'PASS: Zone entry overlay renders without error':'FAIL: Zone entry overlay threw or did not render');
+  console.log('[INTRO_TEST1] Results:');
+  results.forEach(r=>console.log('  '+r));
+  return results.every(r=>r.startsWith('PASS'))?'ALL PASS':'SOME FAILED';
+};
 
 // ── PlayerSprite animation test ──
 window.PS_TEST1 = function() {
