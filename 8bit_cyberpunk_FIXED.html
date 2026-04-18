@@ -1323,8 +1323,8 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
 /* Preview panel */
 #cc-preview-panel{background:rgba(4,4,20,0.92);border-right:1px solid rgba(255,230,0,0.2);display:flex;flex-direction:column;align-items:center;padding:12px 8px;gap:6px;overflow:hidden;}
 #cc-portrait-container{position:relative;width:180px;height:180px;flex-shrink:0;}
-#cc-portrait-bg-ring{position:absolute;inset:-4px;border-radius:50%;border:2px solid rgba(var(--ring-rgb,0,255,255),0.25);box-shadow:0 0 24px rgba(var(--ring-rgb,0,255,255),0.15),inset 0 0 12px rgba(var(--ring-rgb,0,255,255),0.08);animation:cc-ring-pulse 3s ease-in-out infinite;z-index:1;pointer-events:none;}
-@keyframes cc-ring-pulse{0%,100%{box-shadow:0 0 24px rgba(var(--ring-rgb,0,255,255),0.15),inset 0 0 12px rgba(var(--ring-rgb,0,255,255),0.08);border-color:rgba(var(--ring-rgb,0,255,255),0.25)}50%{box-shadow:0 0 40px rgba(var(--ring-rgb,0,255,255),0.4),inset 0 0 16px rgba(var(--ring-rgb,0,255,255),0.15);border-color:rgba(var(--ring-rgb,0,255,255),0.5)}}
+#cc-portrait-bg-ring{position:absolute;inset:-8px;border-radius:50%;border:2px solid rgba(var(--ring-rgb,0,255,255),0.4);box-shadow:0 0 16px rgba(var(--ring-rgb,0,255,255),0.3),0 0 32px rgba(var(--ring-rgb,0,255,255),0.15),inset 0 0 16px rgba(var(--ring-rgb,0,255,255),0.1);animation:cc-ring-pulse 3s ease-in-out infinite;z-index:1;pointer-events:none;}
+@keyframes cc-ring-pulse{0%,100%{box-shadow:0 0 16px rgba(var(--ring-rgb,0,255,255),0.3),0 0 32px rgba(var(--ring-rgb,0,255,255),0.15),inset 0 0 16px rgba(var(--ring-rgb,0,255,255),0.1);border-color:rgba(var(--ring-rgb,0,255,255),0.4)}50%{box-shadow:0 0 24px rgba(var(--ring-rgb,0,255,255),0.6),0 0 48px rgba(var(--ring-rgb,0,255,255),0.3),inset 0 0 20px rgba(var(--ring-rgb,0,255,255),0.2);border-color:rgba(var(--ring-rgb,0,255,255),0.7)}}
 #cc-portrait-frame-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:2;}
 #cc-sprite-wrap{position:absolute;inset:20px;z-index:3;display:flex;align-items:center;justify-content:center;}
 #cc-sprite-crop{width:140px;height:140px;overflow:hidden;position:relative;animation:cc-sprite-bob 2s ease-in-out infinite;}
@@ -1384,12 +1384,12 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
 .cc-diff-name{font-size:11px;letter-spacing:2px;color:var(--diff-color,#fff);font-weight:bold;}
 .cc-diff-sub{font-size:8px;color:#888;letter-spacing:1px;}
 /* Button bar */
-#cc-btn-bar{display:grid;grid-template-columns:120px 1fr 320px;gap:16px;align-items:center;padding:14px 20px;background:rgba(2,2,12,0.98);border-top:2px solid rgba(255,230,0,0.25);box-shadow:0 -8px 24px rgba(0,0,0,0.6);flex-shrink:0;}
+#cc-btn-bar{display:grid;grid-template-columns:minmax(110px,140px) 1fr minmax(260px,300px);gap:16px;align-items:center;padding:14px 16px;background:rgba(2,2,12,0.98);border-top:2px solid rgba(255,230,0,0.25);box-shadow:0 -8px 24px rgba(0,0,0,0.6);flex-shrink:0;box-sizing:border-box;width:100%;overflow:hidden;}
 .cc-footer-secondary{background:transparent;border:1px solid rgba(255,255,255,0.2);color:#888;font-family:'Courier New',monospace;font-size:11px;letter-spacing:2px;padding:10px 12px;cursor:pointer;transition:all 0.15s;}
 .cc-footer-secondary:hover{border-color:rgba(255,255,255,0.5);color:#fff;}
-.cc-footer-primary{position:relative;width:100%;height:56px;background:transparent;border:2px solid #9900FF;cursor:pointer;padding:0;overflow:hidden;transition:all 0.2s;box-shadow:0 0 0 1px rgba(153,0,255,0.3),0 0 16px rgba(153,0,255,0.4),inset 0 0 12px rgba(153,0,255,0.15);}
+.cc-footer-primary{position:relative;width:100%;min-width:0;height:56px;background:transparent;border:2px solid #9900FF;cursor:pointer;padding:0;overflow:hidden;transition:all 0.2s;box-shadow:0 0 0 1px rgba(153,0,255,0.3),0 0 16px rgba(153,0,255,0.4),inset 0 0 12px rgba(153,0,255,0.15);}
 .cc-footer-primary img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.6;z-index:0;}
-.cc-footer-primary span{position:relative;z-index:2;color:#fff;font-family:'Courier New',monospace;font-size:15px;font-weight:bold;letter-spacing:4px;text-shadow:0 0 8px #CC88FF,0 0 16px rgba(153,0,255,0.8);display:flex;align-items:center;justify-content:center;height:100%;}
+.cc-footer-primary span{position:relative;z-index:2;color:#fff;font-family:'Courier New',monospace;font-size:13px;font-weight:bold;letter-spacing:2px;text-shadow:0 0 8px #CC88FF,0 0 16px rgba(153,0,255,0.8);display:flex;align-items:center;justify-content:center;height:100%;padding:0 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .cc-footer-primary::before{content:'';position:absolute;top:0;left:-100%;width:50%;height:100%;background:linear-gradient(90deg,transparent,rgba(204,136,255,0.4),transparent);animation:cc-cta-sweep 3s linear infinite;z-index:1;}
 @keyframes cc-cta-sweep{0%{left:-50%}100%{left:150%}}
 .cc-footer-primary:hover{border-color:#CC88FF;box-shadow:0 0 0 2px #9900FF,0 0 32px rgba(204,136,255,0.8),inset 0 0 20px rgba(153,0,255,0.3);transform:translateY(-1px);}
@@ -1416,9 +1416,29 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
 #cc-ready-status.cc-not-ready{color:#FF6600;text-shadow:0 0 8px #FF6600;}
 /* Name hint */
 #cc-name-hint{font-size:8px;color:#FF6600;letter-spacing:1px;margin-top:2px;}
+/* Info panel */
+#cc-info-panel{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:rgba(0,255,255,0.08);border:1px solid rgba(0,255,255,0.15);overflow:hidden;min-height:120px;}
+.cc-info-section{background:rgba(4,8,24,0.92);padding:10px 12px;display:flex;flex-direction:column;gap:6px;}
+.cc-info-header{font-size:10px;color:#00FFFF;letter-spacing:3px;font-family:'Courier New',monospace;display:flex;align-items:center;gap:6px;padding-bottom:4px;border-bottom:1px solid rgba(0,255,255,0.15);}
+.cc-info-icon{font-size:12px;}
+#cc-info-lore{font-size:9px;color:#aaa;line-height:1.5;font-family:'Courier New',monospace;margin:0;}
+#cc-loadout-slots{display:flex;flex-direction:column;gap:6px;}
+.cc-loadout-slot{display:flex;align-items:flex-start;gap:8px;}
+.cc-loadout-icon{width:28px;height:28px;border:1px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:14px;color:#00FFFF;flex-shrink:0;background:rgba(0,255,255,0.06);}
+.cc-loadout-name{font-size:9px;color:#fff;letter-spacing:1px;font-family:'Courier New',monospace;}
+.cc-loadout-desc{font-size:8px;color:#888;font-family:'Courier New',monospace;margin-top:1px;line-height:1.3;}
+#cc-info-stats{position:relative;overflow:hidden;}
+#cc-info-statbars{display:flex;flex-direction:column;gap:5px;position:relative;z-index:2;}
+.cc-istat-row{display:flex;align-items:center;gap:5px;}
+.cc-istat-icon{font-size:9px;width:12px;flex-shrink:0;}
+.cc-istat-label{font-size:8px;color:#888;letter-spacing:1px;width:28px;font-family:'Courier New',monospace;flex-shrink:0;}
+.cc-istat-bar{flex:1;height:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);overflow:hidden;padding:1px;}
+.cc-istat-fill{height:100%;background:#00FFFF;box-shadow:0 0 4px currentColor;transition:width 0.3s ease,background 0.3s ease;width:60%;}
+#cc-info-city{position:absolute;bottom:0;right:0;width:60%;height:70%;overflow:hidden;opacity:0.35;z-index:1;}
+#cc-city-thumb{width:200%;height:auto;position:absolute;bottom:0;right:0;object-fit:cover;object-position:bottom right;image-rendering:pixelated;}
 /* Responsive */
 @media(max-width:1100px){#cc-body{grid-template-columns:1fr;}#cc-preview-panel{display:none;}}
-@media(max-width:700px){#cc-class-grid{grid-template-columns:repeat(2,1fr);}#cc-bottom-grid{grid-template-columns:1fr;}#cc-btn-bar{grid-template-columns:1fr;gap:8px;}#cc-readiness{display:none;}.cc-footer-primary{width:100%;}}
+@media(max-width:700px){#cc-class-grid{grid-template-columns:repeat(2,1fr);}#cc-bottom-grid{grid-template-columns:1fr;}#cc-info-panel{grid-template-columns:1fr;}#cc-btn-bar{grid-template-columns:1fr;gap:8px;}#cc-readiness{display:none;}.cc-footer-primary{width:100%;}}
 </style>
 </head>
 <body>
@@ -13517,12 +13537,12 @@ document.getElementById('ebtn').addEventListener('click',()=>Game.enterDungeon()
 
 // === CHARACTER CREATION SCREEN ===
 window.CLASS_DEFINITIONS = {
-  ARIA:   { archetype:'Psi-Lancer',     color:'#00FFFF', lore:'A rogue netrunner who channels psychic energy into plasma rings. Fragile but lethal at range.', startingSysMem:4, statMods:{hp:-10,hackBonus:0.15,attackBonus:-0.10}, passiveName:'PLASMA RESONANCE', passiveDesc:'QUICKHACK costs 0 SYS_MEM on first use each fight.' },
-  GLITCH: { archetype:'Decker',          color:'#FF00FF', lore:'A street hacker who weaponizes code. Deploys ICE, spawns malware constructs, rewrites the fight.', startingSysMem:5, statMods:{hp:-20,hackBonus:0.25,attackBonus:-0.20}, passiveName:'ICE WEAVE', passiveDesc:'DAEMON effects last 1 extra turn.' },
-  KRON:   { archetype:'Enforcer',        color:'#FF6600', lore:'Former corpo heavy with demon-rig implants. Absorbs punishment and hits like a freight locomotive.', startingSysMem:2, statMods:{hp:30,hackBonus:-0.15,attackBonus:0.20}, passiveName:'CHROME SHELL', passiveDesc:'IRON WALL damage reduction increased to 75%.' },
-  SHADE:  { archetype:'Shadow Blade',    color:'#9900FF', lore:'A ghost from the underground fight circuit. Dual mono-blades and zero hesitation.', startingSysMem:3, statMods:{hp:0,hackBonus:0,attackBonus:0.15}, passiveName:'GHOST STEP', passiveDesc:'GHOST PROTOCOL costs 0 SYS_MEM.' },
-  KIRA:   { archetype:'Street Samurai',  color:'#FF0066', lore:'Corporate defector turned merc. Plasma katanas and a neural combat chip make her a killswitch.', startingSysMem:3, statMods:{hp:10,hackBonus:-0.10,attackBonus:0.10}, passiveName:'NEURAL BLADE', passiveDesc:'BLEED WIRE ticks at 12% instead of 8%.' },
-  NYX:    { archetype:'Techno-Mage',     color:'#00FF99', lore:'Void-touched street artist who graffitis reality. Summons glitch orbs and rides the signal.', startingSysMem:5, statMods:{hp:-15,hackBonus:0.20,attackBonus:-0.05}, passiveName:'SIGNAL RIDE', passiveDesc:'CONTAGION applies GLITCH for 3 turns instead of 2.' }
+  ARIA:   { archetype:'Psi-Lancer',     color:'#00FFFF', lore:'A rogue netrunner who channels psychic energy into plasma rings. Fragile but lethal at range.', startingSysMem:4, statMods:{hp:-10,hackBonus:0.15,attackBonus:-0.10}, passiveName:'PLASMA RESONANCE', passiveDesc:'QUICKHACK costs 0 SYS_MEM on first use each fight.', ability1:'PLASMA RESONANCE', ability2:'MIND SPIKE' },
+  GLITCH: { archetype:'Decker',          color:'#FF00FF', lore:'A street hacker who weaponizes code. Deploys ICE, spawns malware constructs, rewrites the fight.', startingSysMem:5, statMods:{hp:-20,hackBonus:0.25,attackBonus:-0.20}, passiveName:'ICE WEAVE', passiveDesc:'DAEMON effects last 1 extra turn.', ability1:'ICE WEAVE', ability2:'PACKET SURGE' },
+  KRON:   { archetype:'Enforcer',        color:'#FF6600', lore:'Former corpo heavy with demon-rig implants. Absorbs punishment and hits like a freight locomotive.', startingSysMem:2, statMods:{hp:30,hackBonus:-0.15,attackBonus:0.20}, passiveName:'CHROME SHELL', passiveDesc:'IRON WALL damage reduction increased to 75%.', ability1:'CHROME SHELL', ability2:'SHOCK RAM' },
+  SHADE:  { archetype:'Shadow Blade',    color:'#9900FF', lore:'A ghost from the underground fight circuit. Dual mono-blades and zero hesitation.', startingSysMem:3, statMods:{hp:0,hackBonus:0,attackBonus:0.15}, passiveName:'GHOST STEP', passiveDesc:'GHOST PROTOCOL costs 0 SYS_MEM.', ability1:'GHOST STEP', ability2:'VOID SLASH' },
+  KIRA:   { archetype:'Street Samurai',  color:'#FF0066', lore:'Corporate defector turned merc. Plasma katanas and a neural combat chip make her a killswitch.', startingSysMem:3, statMods:{hp:10,hackBonus:-0.10,attackBonus:0.10}, passiveName:'NEURAL BLADE', passiveDesc:'BLEED WIRE ticks at 12% instead of 8%.', ability1:'NEURAL BLADE', ability2:'KATANA RUSH' },
+  NYX:    { archetype:'Techno-Mage',     color:'#00FF99', lore:'Void-touched street artist who graffitis reality. Summons glitch orbs and rides the signal.', startingSysMem:5, statMods:{hp:-15,hackBonus:0.20,attackBonus:-0.05}, passiveName:'SIGNAL RIDE', passiveDesc:'CONTAGION applies GLITCH for 3 turns instead of 2.', ability1:'SIGNAL RIDE', ability2:'GLITCH ORB' }
 };
 window.selectedClass = 'ARIA';
 window.selectedAccentColor = '#00FFFF';
@@ -13536,6 +13556,14 @@ window.activeClassDef = null;
   const SHORT_DESC = {ARIA:"Psychic netrunner. Plasma rings. Lethal at range.",GLITCH:"Street hacker. Weaponizes code. Rewrites fights.",KRON:"Corpo enforcer. Demon-rig implants. Takes a hit.",SHADE:"Underground blade. Dual mono-blades. Zero mercy.",KIRA:"Corp defector. Plasma katanas. Neural kill chip.",NYX:"Void artist. Graffitis reality. Rides the signal."};
   const ABILITIES = {ARIA:['PLASMA RESONANCE','MIND SPIKE'],GLITCH:['ICE WEAVE','PACKET SURGE'],KRON:['CHROME SHELL','SHOCK RAM'],SHADE:['GHOST STEP','VOID SLASH'],KIRA:['NEURAL BLADE','KATANA RUSH'],NYX:['SIGNAL RIDE','GLITCH ORB']};
   const CC_ALIASES = ['GHOSTBYTE','NEONWRAITH','ZEROHEX','VOIDPULSE','CHROMEFANG','STATICBLEED','NULLRUNNER','PHASECRYPT','IRONGLITCH','DARKPARSE'];
+  const CLASS_UI_DATA = {
+    ARIA:{lore:'A psionic prodigy who bends plasma rings with surgical precision. Control the flow of battle from beyond the veil.',ability1Desc:'Damage in an area. Pierces armor.',ability2Desc:'Psychic spike that shreds defenses.'},
+    GLITCH:{lore:'A ghost in the machine. Deploys ICE constructs and rewrites enemy code mid-combat. Never seen. Always felt.',ability1Desc:'Digital ice that disables enemy EXPLOIT for 2 turns.',ability2Desc:'Data burst that overloads enemy systems.'},
+    KRON:{lore:'Former corpo enforcer rebuilt with demon-rig implants. Absorbs everything. Hits harder. Never stops.',ability1Desc:'Chrome plating absorbs 75% damage on IRON WALL.',ability2Desc:'Electric ram staggers and applies OVERLOAD.'},
+    SHADE:{lore:'An underground blade artist. Zero hesitation. Dual mono-blades cut through armor and bone alike.',ability1Desc:'GHOST PROTOCOL costs 0 SYS_MEM to execute.',ability2Desc:'Void slash bypasses all BLOCK variants.'},
+    KIRA:{lore:'Corporate defector. Neural combat chip synced to plasma katanas. Fastest draw in the Neon Nexus.',ability1Desc:'BLEED WIRE ticks at 12% instead of 8%.',ability2Desc:'Rapid katana rush hits twice per turn.'},
+    NYX:{lore:'Void-touched signal rider. Graffitis reality itself. Summons glitch orbs and bends causality.',ability1Desc:'CONTAGION applies GLITCH for 3 turns instead of 2.',ability2Desc:'Glitch orb applies GLITCH and OVERLOAD simultaneously.'}
+  };
   const classKeys = Object.keys(CD);
   const _a = CD.ARIA;
 
@@ -13594,6 +13622,11 @@ window.activeClassDef = null;
               <button class="cc-diff-btn" data-diff="NIGHTMARE"><span class="cc-diff-name">NIGHTMARE</span><span class="cc-diff-sub">Double HP.</span></button>
             </div>
           </div>
+        </div>
+        <div id="cc-info-panel">
+          <div class="cc-info-section" id="cc-info-profile"><div class="cc-info-header"><span class="cc-info-icon">▣</span>RUNNER PROFILE</div><p id="cc-info-lore"></p></div>
+          <div class="cc-info-section" id="cc-info-loadout"><div class="cc-info-header"><span class="cc-info-icon">◈</span>LOADOUT PREVIEW</div><div id="cc-loadout-slots"><div class="cc-loadout-slot"><div class="cc-loadout-icon">◉</div><div class="cc-loadout-text"><div class="cc-loadout-name" id="cc-loadout-1-name"></div><div class="cc-loadout-desc" id="cc-loadout-1-desc"></div></div></div><div class="cc-loadout-slot"><div class="cc-loadout-icon">◈</div><div class="cc-loadout-text"><div class="cc-loadout-name" id="cc-loadout-2-name"></div><div class="cc-loadout-desc" id="cc-loadout-2-desc"></div></div></div></div></div>
+          <div class="cc-info-section" id="cc-info-stats"><div class="cc-info-header"><span class="cc-info-icon">◆</span>STATS PREVIEW</div><div id="cc-info-statbars"><div class="cc-istat-row"><span class="cc-istat-icon">♦</span><span class="cc-istat-label">HP</span><div class="cc-istat-bar"><div class="cc-istat-fill" data-istat="hp"></div></div></div><div class="cc-istat-row"><span class="cc-istat-icon">★</span><span class="cc-istat-label">ATK</span><div class="cc-istat-bar"><div class="cc-istat-fill" data-istat="atk"></div></div></div><div class="cc-istat-row"><span class="cc-istat-icon">◈</span><span class="cc-istat-label">HACK</span><div class="cc-istat-bar"><div class="cc-istat-fill" data-istat="hack"></div></div></div></div><div id="cc-info-city"><img src="/assets/ui/cc_bg.png" id="cc-city-thumb" onerror="this.style.display='none'"></div></div>
         </div>
       </div>
     </div>
@@ -13713,6 +13746,7 @@ window.activeClassDef = null;
   _ccUpdateStats('ARIA');
   _ccUpdateReadiness();
   _ccUpdateEnterBtn();
+  _ccUpdateInfoPanel('ARIA');
 
   // ── HELPERS ──
   function _ccSelectClass(key){
@@ -13746,6 +13780,7 @@ window.activeClassDef = null;
     });
     _ccUpdateReadiness();
     _ccUpdateEnterBtn();
+    _ccUpdateInfoPanel(key);
   }
 
   function _ccUpdateStats(cls){
@@ -13769,6 +13804,31 @@ window.activeClassDef = null;
     const name=window.runnerName;
     const valid=name&&name!=='ANONYMOUS'&&name.trim().length>=3&&window.selectedClass;
     btn.classList.toggle('cc-disabled',!valid);
+  }
+
+  var _ccInfoNodes=null;
+  function _ccGetInfoNodes(){
+    if(_ccInfoNodes)return _ccInfoNodes;
+    _ccInfoNodes={panel:document.getElementById('cc-info-panel'),lore:document.getElementById('cc-info-lore'),l1name:document.getElementById('cc-loadout-1-name'),l1desc:document.getElementById('cc-loadout-1-desc'),l2name:document.getElementById('cc-loadout-2-name'),l2desc:document.getElementById('cc-loadout-2-desc'),icons:document.querySelectorAll('.cc-loadout-icon'),istatFills:document.querySelectorAll('#cc-info-statbars .cc-istat-fill'),istatIcons:document.querySelectorAll('.cc-istat-icon'),headers:document.querySelectorAll('.cc-info-header')};
+    return _ccInfoNodes;
+  }
+
+  function _ccUpdateInfoPanel(className){
+    const n=_ccGetInfoNodes();if(!n.panel)return;
+    const def=CD[className],ui=CLASS_UI_DATA[className]||{};
+    const rgb=_hexToRgb(def.color);
+    if(n.lore)n.lore.textContent=ui.lore||'';
+    if(n.l1name)n.l1name.textContent=def.ability1||def.passiveName||'';
+    if(n.l1desc)n.l1desc.textContent=ui.ability1Desc||def.passiveDesc||'';
+    if(n.l2name)n.l2name.textContent=def.ability2||'';
+    if(n.l2desc)n.l2desc.textContent=ui.ability2Desc||'';
+    n.icons.forEach(el=>{el.style.color=def.color;el.style.borderColor='rgba('+rgb+',0.4)';el.style.background='rgba('+rgb+',0.06)';});
+    const stats={hp:Math.max(20,Math.min(100,70+def.statMods.hp)),atk:Math.max(20,Math.min(100,50+def.statMods.attackBonus*100)),hack:Math.max(20,Math.min(100,50+def.statMods.hackBonus*100))};
+    n.istatFills.forEach(fill=>{const s=fill.dataset.istat;fill.style.width=(stats[s]||50)+'%';fill.style.background=def.color;});
+    n.istatIcons.forEach(el=>{el.style.color=def.color;});
+    n.headers.forEach(el=>{el.style.borderBottomColor='rgba('+rgb+',0.3)';});
+    n.panel.style.borderColor='rgba('+rgb+',0.2)';
+    n.panel.style.background='rgba('+rgb+',0.03)';
   }
 
   function _ccSaveToStorage(){
