@@ -1307,7 +1307,7 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
 #characterCreationScreen{position:fixed;inset:0;width:100vw;height:100vh;display:none;flex-direction:column;overflow:hidden;z-index:1000;font-family:'Courier New',monospace;image-rendering:pixelated;}
 #characterCreationScreen *{box-sizing:border-box;}
 #cc-bg-layer{position:absolute;inset:0;background-image:url('/assets/ui/cc_bg.png');background-size:cover;background-position:center;background-color:#05050f;z-index:0;}
-#cc-scanlines{position:absolute;inset:0;z-index:1;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.08) 2px,rgba(0,0,0,0.08) 4px);}
+#cc-scanlines{position:fixed;inset:0;z-index:1;pointer-events:none;background-image:repeating-linear-gradient(0deg,transparent 0px,transparent 2px,rgba(0,0,0,0.18) 2px,rgba(0,0,0,0.18) 3px);mix-blend-mode:multiply;}
 #cc-header,#cc-body,#cc-btn-bar{position:relative;z-index:2;}
 #cc-header{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;border-bottom:1px solid rgba(255,230,0,0.25);background:rgba(4,4,16,0.85);flex-shrink:0;}
 #cc-header-left{display:flex;align-items:center;}
@@ -1322,12 +1322,13 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
 /* Preview panel */
 #cc-preview-panel{background:rgba(4,4,20,0.92);border-right:1px solid rgba(255,230,0,0.2);display:flex;flex-direction:column;align-items:center;padding:16px 10px;gap:6px;overflow:hidden;}
 #cc-portrait-container{position:relative;width:160px;height:160px;flex-shrink:0;}
-#cc-portrait-bg-ring{position:absolute;inset:10px;border-radius:50%;border:2px solid rgba(0,255,255,0.15);box-shadow:0 0 20px rgba(0,255,255,0.1);animation:cc-ring-pulse 3s ease-in-out infinite;}
-@keyframes cc-ring-pulse{0%,100%{box-shadow:0 0 20px rgba(0,255,255,0.1)}50%{box-shadow:0 0 40px rgba(0,255,255,0.3)}}
+#cc-portrait-bg-ring{position:absolute;inset:-4px;border-radius:50%;border:2px solid rgba(var(--ring-rgb,0,255,255),0.25);box-shadow:0 0 24px rgba(var(--ring-rgb,0,255,255),0.15),inset 0 0 12px rgba(var(--ring-rgb,0,255,255),0.08);animation:cc-ring-pulse 3s ease-in-out infinite;z-index:1;pointer-events:none;}
+@keyframes cc-ring-pulse{0%,100%{box-shadow:0 0 24px rgba(var(--ring-rgb,0,255,255),0.15),inset 0 0 12px rgba(var(--ring-rgb,0,255,255),0.08);border-color:rgba(var(--ring-rgb,0,255,255),0.25)}50%{box-shadow:0 0 40px rgba(var(--ring-rgb,0,255,255),0.4),inset 0 0 16px rgba(var(--ring-rgb,0,255,255),0.15);border-color:rgba(var(--ring-rgb,0,255,255),0.5)}}
 #cc-portrait-frame-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:2;}
-#cc-sprite-wrap{position:absolute;inset:15px;z-index:1;overflow:hidden;display:flex;align-items:center;justify-content:center;}
-#cc-sprite-img{width:130px;height:auto;object-fit:contain;image-rendering:pixelated;}
-#cc-sprite-fallback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:#00FFFF;letter-spacing:2px;z-index:1;}
+#cc-sprite-wrap{position:absolute;inset:20px;z-index:3;display:flex;align-items:center;justify-content:center;}
+#cc-sprite-crop{width:100px;height:100px;overflow:hidden;position:relative;}
+#cc-sprite-img{width:400px;height:auto;position:absolute;left:0;top:50%;transform:translateY(-50%);image-rendering:pixelated;image-rendering:crisp-edges;}
+#cc-sprite-fallback{display:none;position:absolute;inset:0;align-items:center;justify-content:center;color:#00FFFF;font-size:10px;letter-spacing:2px;z-index:3;}
 #cc-preview-name{font-size:18px;font-weight:bold;letter-spacing:3px;text-align:center;}
 #cc-preview-arch{font-size:10px;color:#fff;letter-spacing:2px;text-align:center;}
 #cc-preview-divider{width:80%;height:1px;background:rgba(255,255,255,0.1);margin:4px 0;}
@@ -1344,7 +1345,7 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
 .cc-card{position:relative;min-height:130px;max-height:150px;cursor:pointer;border-radius:3px;overflow:hidden;transition:transform 0.15s,border-color 0.15s;border:1px solid rgba(255,255,255,0.1);}
 .cc-card:hover{transform:scale(1.03);}
 .cc-card-frame{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;}
-.cc-card-overlay{position:absolute;inset:0;background:rgba(6,6,18,0.80);z-index:1;}
+.cc-card-overlay{position:absolute;inset:0;background:rgba(6,6,18,0.93);z-index:1;}
 .cc-card-content{position:relative;z-index:2;padding:10px 12px;height:100%;display:flex;flex-direction:column;gap:4px;}
 .cc-card-top{display:flex;justify-content:space-between;align-items:baseline;}
 .cc-card-name{font-size:13px;font-weight:bold;letter-spacing:2px;}
@@ -1353,12 +1354,16 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
 .cc-card-abilities{display:flex;gap:4px;margin-top:2px;}
 .cc-ability-chip{font-size:8px;padding:2px 6px;border-radius:2px;letter-spacing:1px;}
 .cc-card-passive{font-size:8px;letter-spacing:1px;margin-top:auto;padding-top:6px;border-top:1px solid rgba(255,255,255,0.08);}
-.cc-card-selected-overlay{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:3;pointer-events:none;display:none;}
-.cc-card.selected .cc-card-selected-overlay{display:block;}
+.cc-card-selected-overlay{display:none !important;}
+.cc-card.selected{box-shadow:0 0 0 2px var(--card-color) inset,0 0 20px rgba(var(--card-color-rgb,0,255,255),0.4);}
+.cc-card.selected::before,.cc-card.selected::after{content:'';position:absolute;width:14px;height:14px;z-index:5;pointer-events:none;}
+.cc-card.selected::before{top:4px;left:4px;border-top:2px solid var(--card-color);border-left:2px solid var(--card-color);}
+.cc-card.selected::after{bottom:4px;right:4px;border-bottom:2px solid var(--card-color);border-right:2px solid var(--card-color);}
 /* Bottom sections grid */
-#cc-bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+#cc-bottom-grid{display:grid;grid-template-columns:auto 1fr auto;gap:20px;align-items:start;}
+.cc-bottom-col{display:flex;flex-direction:column;gap:6px;}
 /* Swatches */
-#cc-swatches{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
+#cc-swatches{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;max-width:220px;}
 .cc-swatch{width:26px;height:26px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform 0.1s;}
 .cc-swatch.selected{border-color:#fff;transform:scale(1.2);}
 /* Name input */
@@ -1369,7 +1374,7 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
 #cc-name-gen:hover{background:rgba(255,230,0,0.25);}
 /* Difficulty */
 #cc-difficulty-row{display:flex;gap:6px;}
-.cc-diff-btn{flex:1;background:rgba(10,10,20,0.8);border:1px solid rgba(255,255,255,0.2);color:#fff;cursor:pointer;padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:2px;font-family:'Courier New',monospace;transition:all 0.15s;}
+.cc-diff-btn{flex:1;min-width:110px;background:rgba(10,10,20,0.8);border:1px solid rgba(255,255,255,0.2);color:#fff;cursor:pointer;padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:2px;font-family:'Courier New',monospace;transition:all 0.15s;position:relative;overflow:visible;}
 .cc-diff-btn[data-diff="NORMAL"]{--diff-color:#00FF44;--diff-color-rgb:0,255,68;}
 .cc-diff-btn[data-diff="HARD"]{--diff-color:#FFE600;--diff-color-rgb:255,230,0;}
 .cc-diff-btn[data-diff="NIGHTMARE"]{--diff-color:#FF0066;--diff-color-rgb:255,0,102;}
@@ -1385,10 +1390,27 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
 #cc-btn-continue img,#cc-btn-enter img{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;}
 #cc-btn-continue span{position:relative;z-index:1;color:#00FF44;font-family:'Courier New',monospace;font-size:13px;letter-spacing:3px;text-shadow:0 0 8px #00FF44;}
 #cc-btn-enter span{position:relative;z-index:1;color:#CC88FF;font-family:'Courier New',monospace;font-size:13px;letter-spacing:3px;text-shadow:0 0 8px #9900FF;}
-#cc-cta-hint{font-size:9px;color:#555;letter-spacing:2px;}
+/* Recommended tag */
+.cc-diff-rec-tag{position:absolute;top:-7px;left:50%;transform:translateX(-50%);background:#00FF44;color:#000;font-size:7px;padding:1px 5px;letter-spacing:1.5px;font-weight:bold;z-index:2;white-space:nowrap;}
+/* Stat bars */
+#cc-preview-stats{width:100%;padding:8px 4px 0;margin-top:6px;border-top:1px solid rgba(255,255,255,0.08);display:flex;flex-direction:column;gap:4px;}
+.cc-stat-row{display:flex;align-items:center;gap:6px;}
+.cc-stat-label{font-size:8px;color:#888;letter-spacing:1px;width:28px;flex-shrink:0;}
+.cc-stat-bar{flex:1;height:6px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);overflow:hidden;}
+.cc-stat-fill{height:100%;width:50%;background:#00FFFF;box-shadow:0 0 4px currentColor;transition:width 0.3s ease,background 0.3s ease;}
+/* Readiness footer */
+#cc-readiness{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;}
+#cc-readiness-summary{font-size:10px;letter-spacing:3px;color:#aaa;}
+#cc-ready-class{color:#00FFFF;text-shadow:0 0 6px currentColor;font-weight:bold;}
+.cc-ready-sep{color:#444;margin:0 8px;}
+#cc-ready-status{font-size:9px;color:#00FF44;letter-spacing:3px;text-shadow:0 0 6px #00FF44;}
+#cc-ready-status.cc-not-ready{color:#FF6600;text-shadow:0 0 6px #FF6600;}
+/* Enter disabled */
+#cc-btn-enter.cc-disabled{opacity:0.4;cursor:not-allowed;animation:none;}
+#cc-btn-enter.cc-disabled span{color:#666;text-shadow:none;}
 /* Responsive */
 @media(max-width:1100px){#cc-body{grid-template-columns:1fr;}#cc-preview-panel{display:none;}}
-@media(max-width:700px){#cc-class-grid{grid-template-columns:repeat(2,1fr);}#cc-bottom-grid{grid-template-columns:1fr;}#cc-btn-bar{flex-direction:column;gap:8px;}#cc-btn-continue,#cc-btn-enter{width:100%;}}
+@media(max-width:700px){#cc-class-grid{grid-template-columns:repeat(2,1fr);}#cc-bottom-grid{grid-template-columns:1fr;}#cc-btn-bar{flex-direction:column;gap:8px;}#cc-btn-continue,#cc-btn-enter{width:100%;}#cc-readiness{display:none;}}
 </style>
 </head>
 <body>
@@ -13525,8 +13547,7 @@ window.activeClassDef = null;
         <div id="cc-portrait-container">
           <div id="cc-portrait-bg-ring"></div>
           <img id="cc-portrait-frame-img" src="/assets/ui/cc_portrait_frame.png" onerror="this.style.display='none'">
-          <div id="cc-sprite-wrap"><img id="cc-sprite-img" src="/assets/row0_idle.png" onerror="this.style.display='none'"></div>
-          <div id="cc-sprite-fallback">[ SELECT ]</div>
+          <div id="cc-sprite-wrap"><div id="cc-sprite-crop"><img id="cc-sprite-img" src="/assets/row0_idle.png" onerror="document.getElementById('cc-sprite-fallback').style.display='flex';this.style.display='none'"></div><div id="cc-sprite-fallback">[ RUNNER ]</div></div>
         </div>
         <div id="cc-preview-name" style="color:${_a.color};text-shadow:0 0 10px ${_a.color}"><span id="cc-l-classname">ARIA</span></div>
         <div id="cc-preview-arch">${_a.archetype}</div>
@@ -13536,6 +13557,11 @@ window.activeClassDef = null;
         <div id="cc-preview-passive-desc">${_a.passiveDesc}</div>
         <div id="cc-preview-sysmem-label" class="cc-preview-label">SYS_MEM START</div>
         <div id="cc-preview-sysmem-val">${_a.startingSysMem}</div>
+        <div id="cc-preview-stats">
+          <div class="cc-stat-row"><span class="cc-stat-label">HP</span><div class="cc-stat-bar"><div class="cc-stat-fill" data-stat="hp"></div></div></div>
+          <div class="cc-stat-row"><span class="cc-stat-label">ATK</span><div class="cc-stat-bar"><div class="cc-stat-fill" data-stat="atk"></div></div></div>
+          <div class="cc-stat-row"><span class="cc-stat-label">HACK</span><div class="cc-stat-bar"><div class="cc-stat-fill" data-stat="hack"></div></div></div>
+        </div>
       </div>
       <div id="cc-config-panel">
         <div id="cc-section-classes">
@@ -13543,16 +13569,18 @@ window.activeClassDef = null;
           <div id="cc-class-grid"></div>
         </div>
         <div id="cc-bottom-grid">
-          <div id="cc-bottom-left">
+          <div class="cc-bottom-col">
             <div class="cc-section-label">ACCENT COLOR</div>
             <div id="cc-swatches"></div>
+          </div>
+          <div class="cc-bottom-col">
             <div class="cc-section-label">RUNNER NAME</div>
             <div id="cc-name-row"><input id="cc-name-input" type="text" maxlength="14" placeholder="ANONYMOUS" autocomplete="off" spellcheck="false"><button id="cc-name-gen" title="Generate alias">⟳</button></div>
           </div>
-          <div id="cc-bottom-right">
+          <div class="cc-bottom-col">
             <div class="cc-section-label">DIFFICULTY</div>
             <div id="cc-difficulty-row">
-              <button class="cc-diff-btn selected" data-diff="NORMAL"><span class="cc-diff-name">NORMAL</span><span class="cc-diff-sub">Standard run.</span></button>
+              <button class="cc-diff-btn selected" data-diff="NORMAL"><span class="cc-diff-rec-tag">RECOMMENDED</span><span class="cc-diff-name">NORMAL</span><span class="cc-diff-sub">Standard run.</span></button>
               <button class="cc-diff-btn" data-diff="HARD"><span class="cc-diff-name">HARD</span><span class="cc-diff-sub">Enemies +30%</span></button>
               <button class="cc-diff-btn" data-diff="NIGHTMARE"><span class="cc-diff-name">NIGHTMARE</span><span class="cc-diff-sub">Double HP.</span></button>
             </div>
@@ -13562,7 +13590,7 @@ window.activeClassDef = null;
     </div>
     <div id="cc-btn-bar">
       <button id="cc-btn-continue"><img src="/assets/ui/cc_btn_continue.png" onerror="this.style.display='none'"><span>CONTINUE</span></button>
-      <div id="cc-cta-hint">Select a class to begin</div>
+      <div id="cc-readiness"><div id="cc-readiness-summary"><span id="cc-ready-class" style="color:${_a.color}">ARIA</span><span class="cc-ready-sep">//</span><span id="cc-ready-name">ANONYMOUS</span><span class="cc-ready-sep">//</span><span id="cc-ready-diff">NORMAL</span></div><div id="cc-ready-status" class="cc-not-ready">ENTER ALIAS TO CONTINUE</div></div>
       <button id="cc-btn-enter"><img src="/assets/ui/cc_btn_dungeon.png" onerror="this.style.display='none'"><span>ENTER DUNGEON</span></button>
     </div>`;
   document.body.appendChild(scr);
@@ -13579,6 +13607,8 @@ window.activeClassDef = null;
     const card = document.createElement('div');
     card.className = 'cc-card' + (sel?' selected':'');
     card.dataset.classKey = key;
+    card.style.setProperty('--card-color', c.color);
+    card.style.setProperty('--card-color-rgb', rgb);
     card.style.borderColor = sel ? c.color : 'rgba('+rgb+',0.3)';
     if(sel) card.style.boxShadow = '0 0 14px rgba('+rgb+',0.5)';
     card.setAttribute('tabindex','0');
@@ -13589,12 +13619,10 @@ window.activeClassDef = null;
         <div class="cc-card-top"><div class="cc-card-name" style="color:${c.color};text-shadow:0 0 8px ${c.color}">${key}</div><div class="cc-card-arch">${c.archetype}</div></div>
         <div class="cc-card-desc">${SHORT_DESC[key]}</div>
         <div class="cc-card-abilities">
-          <div class="cc-ability-chip" style="background:rgba(${rgb},0.12);border-color:rgba(${rgb},0.35);color:rgba(${rgb},0.8)">${ab[0]}</div>
-          <div class="cc-ability-chip" style="background:rgba(${rgb},0.12);border-color:rgba(${rgb},0.35);color:rgba(${rgb},0.8)">${ab[1]}</div>
+          <div class="cc-ability-chip" style="background:rgba(${rgb},0.12);border:1px solid rgba(${rgb},0.35);color:rgba(${rgb},0.8)">${ab[0]}</div>
+          <div class="cc-ability-chip" style="background:rgba(${rgb},0.12);border:1px solid rgba(${rgb},0.35);color:rgba(${rgb},0.8)">${ab[1]}</div>
         </div>
-        <div class="cc-card-passive" style="color:${c.color};border-top-color:rgba(${rgb},0.2)">${c.passiveName}</div>
-      </div>
-      <img class="cc-card-selected-overlay" src="/assets/ui/cc_card_selected.png" onerror="this.style.display='none'">`;
+      </div>`;
     card.addEventListener('click', () => _ccSelectClass(key));
     card.addEventListener('keydown', e => { if(e.key==='Enter') _ccSelectClass(key); });
     cardGrid.appendChild(card);
@@ -13618,10 +13646,10 @@ window.activeClassDef = null;
 
   // ── Name input + alias gen ──
   const nameInput = document.getElementById('cc-name-input');
-  nameInput.addEventListener('input', () => { window.runnerName = nameInput.value.trim() || 'ANONYMOUS'; });
+  nameInput.addEventListener('input', () => { window.runnerName = nameInput.value.trim() || 'ANONYMOUS'; _ccUpdateReadiness(); _ccUpdateEnterBtn(); });
   document.getElementById('cc-name-gen').addEventListener('click', () => {
     const alias = CC_ALIASES[Math.floor(Math.random()*CC_ALIASES.length)];
-    nameInput.value = alias; window.runnerName = alias;
+    nameInput.value = alias; window.runnerName = alias; _ccUpdateReadiness(); _ccUpdateEnterBtn();
   });
 
   // ── Difficulty buttons ──
@@ -13630,12 +13658,14 @@ window.activeClassDef = null;
       window.selectedDifficulty = btn.dataset.diff;
       document.querySelectorAll('.cc-diff-btn').forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
+      _ccUpdateReadiness();
     });
   });
 
   // ── Button bar ──
   document.getElementById('cc-btn-continue').addEventListener('click', () => { _ccSaveToStorage(); scr.style.display='none'; });
-  document.getElementById('cc-btn-enter').addEventListener('click', () => {
+  document.getElementById('cc-btn-enter').addEventListener('click', function() {
+    if(this.classList.contains('cc-disabled')) return;
     const classKey = window.selectedClass.toUpperCase();
     window.activeClassDef = window.CLASS_DEFINITIONS[classKey];
     console.log('CLASS LOADED:', classKey, window.activeClassDef.archetype, 'SYS_MEM:', window.activeClassDef.startingSysMem);
@@ -13662,6 +13692,11 @@ window.activeClassDef = null;
   const origConnect = document.getElementById('menuConnectBtn');
   if(origConnect) origConnect.addEventListener('click', () => { scr.style.display='flex'; });
 
+  // ── INITIAL STATE ──
+  _ccUpdateStats('ARIA');
+  _ccUpdateReadiness();
+  _ccUpdateEnterBtn();
+
   // ── HELPERS ──
   function _ccSelectClass(key){
     const c = CD[key]; if(!c) return;
@@ -13681,14 +13716,42 @@ window.activeClassDef = null;
     const lp=document.getElementById('cc-preview-passive-name'); if(lp) lp.textContent=c.passiveName;
     const lpd=document.getElementById('cc-preview-passive-desc'); if(lpd) lpd.textContent=c.passiveDesc;
     const lsm=document.getElementById('cc-preview-sysmem-val'); if(lsm) lsm.textContent=c.startingSysMem;
+    // Ring color
     const ring=document.getElementById('cc-portrait-bg-ring');
-    if(ring){ring.style.borderColor='rgba('+_hexToRgb(c.color)+',0.3)';ring.style.boxShadow='0 0 20px rgba('+_hexToRgb(c.color)+',0.15)';}
+    if(ring) ring.style.setProperty('--ring-rgb', _hexToRgb(c.color));
     const dot=document.getElementById('cc-runner-dot'); if(dot) dot.style.color=c.color;
+    // Stat bars
+    _ccUpdateStats(key);
     // Swatches — auto-select matching
     swatchEl.querySelectorAll('.cc-swatch').forEach(sw=>{
       const match=_rgbToHex(sw.style.backgroundColor)===c.color.toUpperCase();
       sw.classList.toggle('selected',match);sw.style.boxShadow=match?'0 0 8px '+c.color:'none';
     });
+    _ccUpdateReadiness();
+    _ccUpdateEnterBtn();
+  }
+
+  function _ccUpdateStats(cls){
+    const def=CD[cls];if(!def)return;
+    const stats={hp:Math.max(20,Math.min(100,70+def.statMods.hp)),atk:Math.max(20,Math.min(100,50+def.statMods.attackBonus*100)),hack:Math.max(20,Math.min(100,50+def.statMods.hackBonus*100))};
+    document.querySelectorAll('#cc-preview-stats .cc-stat-fill').forEach(fill=>{const s=fill.dataset.stat;if(stats[s]!==undefined){fill.style.width=stats[s]+'%';fill.style.background=def.color;}});
+  }
+
+  function _ccUpdateReadiness(){
+    const cls=window.selectedClass||'ARIA',name=window.runnerName||'',diff=window.selectedDifficulty||'NORMAL';
+    const isReady=name&&name!=='ANONYMOUS'&&name.trim().length>=3;
+    const rc=document.getElementById('cc-ready-class');if(rc){rc.textContent=cls;rc.style.color=CD[cls]?.color||'#0ff';}
+    const rn=document.getElementById('cc-ready-name');if(rn)rn.textContent=name||'ANONYMOUS';
+    const rd=document.getElementById('cc-ready-diff');if(rd)rd.textContent=diff;
+    const rs=document.getElementById('cc-ready-status');
+    if(rs){rs.textContent=isReady?'READY TO JACK IN':'ENTER ALIAS TO CONTINUE';rs.classList.toggle('cc-not-ready',!isReady);}
+  }
+
+  function _ccUpdateEnterBtn(){
+    const btn=document.getElementById('cc-btn-enter');if(!btn)return;
+    const name=window.runnerName;
+    const valid=name&&name!=='ANONYMOUS'&&name.trim().length>=3&&window.selectedClass;
+    btn.classList.toggle('cc-disabled',!valid);
   }
 
   function _ccSaveToStorage(){
@@ -13766,6 +13829,20 @@ window.CC_TEST3 = function(){
     if(!stored) return 'CC_TEST3: FAIL - localStorage not set';
     return 'CC_TEST3: PASS';
   } catch(e){ return 'CC_TEST3: FAIL - ' + e.message; }
+};
+window.CC_TEST4 = function(){
+  try {
+    const spriteImg = document.getElementById('cc-sprite-img');
+    const spriteFb = document.getElementById('cc-sprite-fallback');
+    if(!spriteImg&&!spriteFb) return 'CC_TEST4: FAIL - no sprite element';
+    const statBars = document.querySelectorAll('#cc-preview-stats .cc-stat-fill');
+    if(statBars.length!==3) return 'CC_TEST4: FAIL - expected 3 stat bars, got '+statBars.length;
+    if(!document.getElementById('cc-ready-class')) return 'CC_TEST4: FAIL - no readiness summary';
+    const normalBtn = document.querySelector('.cc-diff-btn[data-diff="NORMAL"]');
+    if(!normalBtn||!normalBtn.querySelector('.cc-diff-rec-tag')) return 'CC_TEST4: FAIL - no recommended tag';
+    if(!document.getElementById('cc-btn-enter')) return 'CC_TEST4: FAIL - no enter button';
+    return 'CC_TEST4: PASS';
+  } catch(e){ return 'CC_TEST4: FAIL - '+e.message; }
 };
 // === END CHARACTER CREATION SCREEN ===
 
