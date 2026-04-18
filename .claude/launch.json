@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "game",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["http-server", "C:\\Users\\CarlosGrajales\\OneDrive - Cook County Government\\game\\.claude\\worktrees\\sharp-thompson", "-p", "9777", "-c-1"],
+      "runtimeExecutable": "C:\\Program Files\\nodejs\\npx.cmd",
+      "runtimeArgs": ["http-server", "C:\\game", "-p", "9777", "-c-1"],
       "port": 9777,
       "autoPort": false
     }
