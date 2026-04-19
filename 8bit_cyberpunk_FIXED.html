@@ -5470,6 +5470,16 @@ const ENEMY_PERSONALITIES = {
     exampleLines:['The regulations I enforce have not been updated since the corporations rewrote them. I am aware.','You think you are the first runner to challenge the order? You are the first I have allowed to speak.','Tell me something true. I am... tired of processing lies.']
   }
 };
+// Runtime en.name aliases — DEX uses CAPS gameplay names that share visual/persona themes
+// via sprite mapping (_GEN_IMG_MAP at top of file). Multiple DEX enemies per persona is
+// intentional (e.g. GLITCH DRONE + CORP DRONE both wear the slime sprite).
+Object.entries({
+  'Glitch Slime':['GLITCH DRONE','CORP DRONE'],
+  'Neon Wraith': ['NETRUNNER','VOID SPECTER','DATA WRAITH','GHOST HACKER'],
+  'Cyber Beast': ['CYBER OGRE','CHROME BEAST'],
+  'Rogue Drone': ['PULSE HOUND','NEON SPIDER'],
+  'Data Golem':  ['NEON GOLEM','CIRCUIT LICH']
+}).forEach(([canon,aliases])=>aliases.forEach(k=>{if(ENEMY_PERSONALITIES[canon])ENEMY_PERSONALITIES[k]=ENEMY_PERSONALITIES[canon];}));
 // Lookup helper — case-insensitive fallback to DEFAULT
 function getEnemyPersonality(enemy){
   const p=ENEMY_PERSONALITIES[enemy.name]||ENEMY_PERSONALITIES[
