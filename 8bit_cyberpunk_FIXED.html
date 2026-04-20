@@ -1298,11 +1298,6 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
 #lore-crawl{position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:9998;overflow:hidden;opacity:1;transition:opacity 0.8s;}
 #lore-text{width:60%;max-width:600px;margin:0 auto;font-family:monospace;font-size:14px;color:#AAAAAA;line-height:2;animation:lore-scroll 8s linear forwards;}
 #lore-text p{margin:0;}
-#zone-entry{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);z-index:9997;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;opacity:1;transition:opacity 0.8s;}
-#zone-entry .ze-l1{color:#00FFFF;font-size:18px;font-family:monospace;}
-#zone-entry .ze-l2{color:#FF4444;font-size:14px;font-family:monospace;margin-top:12px;}
-#zone-entry .ze-l3{color:#FFFFFF;font-size:32px;font-weight:bold;font-family:monospace;margin-top:24px;}
-
 /* ═══ CHARACTER CREATION SCREEN ═══ */
 #characterCreationScreen{position:fixed;inset:0;width:100vw;height:100vh;display:none;flex-direction:column;overflow:hidden;z-index:1000;font-family:'Courier New',monospace;image-rendering:pixelated;}
 #characterCreationScreen *{box-sizing:border-box;}
@@ -1587,7 +1582,7 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
       <!-- Panel 2: Tall left — character -->
       <div class="manga-panel mp-2" id="mp2">
         <div class="mp-glow"></div><div class="mp-halftone"></div>
-        <div class="mp-char-wrap"><img class="mp-char-img" src="assets/player.png" alt="runner"></div>
+        <div class="mp-char-wrap"></div>
         <div class="manga-bubble" style="top:12%;right:8%;">Another runner jacked in...</div>
         <div class="manga-bubble" style="top:35%;left:8%;border-radius:16px 16px 4px 16px;">Let's see how long this one lasts.</div>
         <div class="mp-scanline"></div>
@@ -1645,16 +1640,8 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
       <!-- Left: zone name + room counter -->
       <span class="fb" id="fbadge">NEON NEXUS</span>
       <span class="fb" id="rbadge" style="color:var(--C)">ROOM 1/10</span>
-      <!-- Center: HP + MP bars -->
-      <div id="chdrBars" style="display:flex;flex-direction:column;gap:3px;align-items:center;flex:1;padding:0 8px;">
-        <div style="position:relative;width:200px;height:14px;background:#0a0a1a;border:1px solid #334455;overflow:hidden;">
-          <div id="chdrHpFill" style="position:absolute;left:0;top:0;bottom:0;width:100%;background:#00ff41;transition:width .25s;"></div>
-          <span id="chdrHpNum" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Press Start 2P',monospace;font-size:6px;color:#fff;pointer-events:none;z-index:1;letter-spacing:1px;">120/120</span>
-        </div>
-        <div style="width:120px;height:5px;background:#0a0a1a;border:1px solid #223344;overflow:hidden;">
-          <div id="chdrMpFill" style="height:100%;width:100%;background:#4488ff;transition:width .25s;"></div>
-        </div>
-      </div>
+      <!-- Spacer fills center — canonical HP/FLATLINE/SYS_MEM live in the RUNNER row (#phpf) and Phase 2E HUD (#hudHpFill / #hudFlatlineFill / #hudSysMemPips). -->
+      <div style="flex:1;"></div>
       <!-- Right: credits, speed, map -->
       <span class="fb" style="color:var(--GD)" id="goldbadge">⚡0 CR</span>
       <button id="speedBtn" onclick="Game.toggleSpeed();" style="font-family:'Share Tech Mono',monospace;font-size:clamp(7px,0.8vw,10px);padding:2px 6px;cursor:pointer;background:rgba(0,255,65,.15);border:1px solid var(--G);color:var(--G);">1x</button>
@@ -2265,33 +2252,11 @@ function drawPlayerSprite(ctx, x, y, dw, dh) {
   return true;
 }
 
-// ── UI Asset Preloader (Phase 3 — combat screen overlays) ──
-const _UI = {
-  bg: null, panelPlayer: null, panelEnemy: null,
-  topbar: null, actions: null, meters: null, log: null,
-  loaded: false
-};
-function _loadUIAssets() {
-  const map = {
-    bg:          'assets/ui/combat_bg.png',
-    panelPlayer: 'assets/ui/panel_player.png',
-    panelEnemy:  'assets/ui/panel_enemy.png',
-    topbar:      'assets/ui/hud_topbar.png',
-    actions:     'assets/ui/hud_actions.png',
-    meters:      'assets/ui/hud_meters.png',
-    log:         'assets/ui/hud_log.png'
-  };
-  const promises = Object.entries(map).map(([key, src]) => new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => { _UI[key] = img; resolve(); };
-    img.onerror = () => { console.warn('[UI] Failed to load ' + src); resolve(); };
-    img.src = src;
-  }));
-  Promise.all(promises).then(() => {
-    _UI.loaded = true;
-    console.log('[UI] All assets loaded');
-  });
-}
+// ── UI Asset Preloader removed: Phase 3 HUD textures (combat_bg, panel_*,
+// hud_*) never shipped and caused 404s on every boot. Phase 2E HTML HUD
+// is the canonical chrome now. `_UI` stub retained so any straggling
+// `_UI.loaded && _UI.X` draw guards evaluate falsy and no-op cleanly.
+const _UI = { bg:null, panelPlayer:null, panelEnemy:null, topbar:null, actions:null, meters:null, log:null, loaded:false };
 
 // ── Generated enemy & player sprites (ComfyUI, dark bg removal) ──
 // Keys match canonical ENEMY_PERSONALITIES names for en.name lookup in render loop.
@@ -2321,7 +2286,6 @@ const _GEN_IMG_MAP = {
   'Cyber Beast':     'assets/enemies/cyber_beast.png',
   'Rogue Drone':     'assets/enemies/rogue_drone.png',
   'Data Golem':      'assets/enemies/data_golem.png',
-  gen_netrunner:     'assets/player.png',
 };
 Object.entries(_GEN_IMG_MAP).forEach(([name, src]) => {
   const img = new Image();
@@ -2579,7 +2543,6 @@ const Arena = {
     window.addEventListener('resize', () => this.resize());
     requestAnimationFrame(ts=>this.loop(ts));
     this._loadPlayerSprites();
-    _loadUIAssets();
     this.cv.addEventListener('click',e=>{
       if(NarrationBox.active){NarrationBox.skip();return;} // Phase 4.1 — click to skip/dismiss
       // 5.1 — Run history screen scroll + back
@@ -8599,19 +8562,7 @@ const Combat = {
     this._beginFight();
   },
   _beginFight(){
-    // ── Zone entry cinematic on first fight (Task 4) ──
-    if(!GameState._introShown){
-      GameState._introShown=true;
-      this._showZoneEntry(()=>this._startFight());
-      return;
-    }
     this._startFight();
-  },
-  _showZoneEntry(cb){
-    const ov=document.createElement('div');ov.id='zone-entry';
-    ov.innerHTML=`<div class="ze-l1">// SECTOR 9 \u2014 NEON DUNGEON //</div><div class="ze-l2">PURGE PROTOCOL ACTIVE</div><div class="ze-l3">SURVIVE.</div>`;
-    document.body.appendChild(ov);
-    setTimeout(()=>{ov.style.opacity='0';setTimeout(()=>{ov.remove();if(cb)cb();},800);},3000);
   },
   _startFight(){
     this._endingCombat=false;
@@ -10192,15 +10143,6 @@ const UI={
       else hpEl.classList.add('hp-low');
     }
     const hpN=document.getElementById('phpn');if(hpN)hpN.textContent=`${Math.max(0,p.hp)}/${p.maxHp}`;
-    // Chdr HP bar
-    const chf=document.getElementById('chdrHpFill');
-    const chn=document.getElementById('chdrHpNum');
-    if(chf){
-      const hc=hpPct>0.5?'#00ff41':hpPct>0.25?'#ffaa00':'#ff4444';
-      chf.style.width=(hpPct*100)+'%';chf.style.background=hc;
-    }
-    if(chn)chn.textContent=`${Math.max(0,p.hp)}/${p.maxHp}`;
-    // [P2E] MP removed: console.warn('[P2E] MP removed here - was: chdrMpFill update')
     if(typeof HUD!=='undefined'&&HUD._active)HUD.render();
   },
   updateSpells(){
@@ -15005,23 +14947,6 @@ window.PS_TEST1 = function() {
     setTimeout(next, 1000);
   }
   next();
-};
-
-// ── P3_TEST1: UI asset integration regression test ──
-window.P3_TEST1 = function() {
-  const failed = [];
-  const assert = (id, cond, desc) => { if (!cond) { failed.push(id + ': ' + desc); console.error('FAIL ' + id + ': ' + desc); } else { console.log('PASS ' + id + ': ' + desc); } };
-  assert('UI_1', typeof _UI === 'object' && _UI !== null, '_UI object exists');
-  assert('UI_2', _UI.loaded === true, '_UI.loaded === true');
-  assert('UI_3', _UI.bg instanceof HTMLImageElement, '_UI.bg is HTMLImageElement');
-  assert('UI_4', _UI.panelPlayer instanceof HTMLImageElement, '_UI.panelPlayer is HTMLImageElement');
-  assert('UI_5', _UI.panelEnemy instanceof HTMLImageElement, '_UI.panelEnemy is HTMLImageElement');
-  assert('UI_6', _UI.topbar instanceof HTMLImageElement, '_UI.topbar is HTMLImageElement');
-  assert('UI_7', _UI.actions instanceof HTMLImageElement, '_UI.actions is HTMLImageElement');
-  assert('UI_8', _UI.meters instanceof HTMLImageElement, '_UI.meters is HTMLImageElement');
-  assert('UI_9', _UI.log instanceof HTMLImageElement, '_UI.log is HTMLImageElement');
-  if (failed.length === 0) { console.log('✅ P3_TEST1 PASS'); return 'PASS'; }
-  else { console.error('❌ P3_TEST1 FAIL:', failed); return failed; }
 };
 
 // Single init on load — boot first, then Game.init
