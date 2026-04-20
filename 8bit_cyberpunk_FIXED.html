@@ -2861,17 +2861,19 @@ const Arena = {
       if (pDead) ctx.globalAlpha = 0.35;
       // Try spritesheet first (screen blend removes black bg), then fall back
       if (!drawPlayerSprite(ctx, dx, dy, imgW, imgH)) {
-        // Shadow only for non-spritesheet fallback (spritesheet uses screen blend)
-        ctx.shadowColor = 'rgba(0,0,0,0.55)';
-        ctx.shadowBlur = 16; ctx.shadowOffsetX = 4; ctx.shadowOffsetY = 8;
         const spriteName = this._resolvePlayerSpriteName(p);
         const img = this._sprites[spriteName];
         if (img && img.complete && img.naturalWidth > 0) {
+          // Screen blend drops the black PNG background; shadow would trace that rect, so skip it here.
+          ctx.globalCompositeOperation = 'screen';
           ctx.drawImage(img, dx, dy, imgW, imgH);
+          ctx.globalCompositeOperation = 'source-over';
         } else if (SPR[p.sprite]) {
+          ctx.shadowColor = 'rgba(0,0,0,0.55)';
+          ctx.shadowBlur = 16; ctx.shadowOffsetX = 4; ctx.shadowOffsetY = 8;
           SPR[p.sprite](ctx, px2 + lunge + idleExtraX, py2 + bob, false, t);
+          ctx.shadowBlur = 0; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0; ctx.shadowColor = 'transparent';
         }
-        ctx.shadowBlur = 0; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0; ctx.shadowColor = 'transparent';
       }
       ctx.restore();
       if (pWasHurt) ctx.restore();
@@ -14169,6 +14171,10 @@ const BootScreen = {
 function IM_TEST1(){
   console.group('[TEST 1] Regular enemy — Intent Mirror only');
   let pass=true;
+  // Reset state so stale flags from prior combat/tests can't block beginRound
+  IntentMirror.waitingForPlayer=false;
+  IntentMirror._pendingEnemies=[];
+  if(GameState.combatInterval){clearInterval(GameState.combatInterval);GameState.combatInterval=null;}
   // Check buttons exist
   const ab=document.getElementById('imAttack'),bb=document.getElementById('imBlock'),eb=document.getElementById('imExploit');
   if(!ab||!bb||!eb){console.error('FAIL: IM buttons not found in DOM');pass=false;}
@@ -14443,7 +14449,7 @@ const HUD = {
 
     // ── Zone A: Player ──
     const nm=document.getElementById('hudPlayerName');
-    if(nm)nm.textContent=p.name||'RUNNER';
+    if(nm)nm.textContent=GameState.runnerName||p.className||p.name||'RUNNER';
     const pt=document.getElementById('hudPlayerTrait');
     if(pt)pt.textContent=p.passive?.name||'';
     const hpFill=document.getElementById('hudHpFill');
