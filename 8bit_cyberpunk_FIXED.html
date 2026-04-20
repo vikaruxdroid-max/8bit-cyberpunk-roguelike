@@ -210,16 +210,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:#060618;font-family:
 .dn.phit{color:var(--RD);text-shadow:0 0 8px var(--RD);}
 @keyframes floUp{0%{transform:translateY(0) scale(1);opacity:1}50%{opacity:1}85%{transform:translateY(-80px) scale(.85);opacity:.6}100%{transform:translateY(-95px) scale(.75);opacity:0}}
 
-/* Player HUD — compact single row */
-.phud{
-  flex-shrink:0;
-  background:linear-gradient(180deg,rgba(10,0,0,.96),rgba(6,3,20,.98));
-  border-top:1px solid rgba(0,255,255,0.55);
-  padding:clamp(4px,0.6vh,8px) clamp(8px,1vw,14px);z-index:5;
-  display:flex;align-items:center;
-  gap:clamp(6px,0.7vw,12px);
-  flex-wrap:wrap;
-}
+/* [Phase 2E] Legacy compact player HUD row — hidden unconditionally.
+   The canonical combat HUD is #combatHUD (ATTACK/BLOCK/EXPLOIT tabs +
+   HP/FLATLINE/SYS_MEM meters). The .phud DOM is retained so UI.updateBars,
+   UI.updateBuffs, and other legacy getElementById calls do not null-throw. */
+.phud{display:none !important;}
 .pnm{font-size:clamp(9px,1vw,14px);text-shadow:0 0 8px currentColor;font-weight:bold;white-space:nowrap;}
 .br{display:flex;align-items:center;gap:clamp(3px,0.4vw,6px);}
 .bl2{font-size:clamp(7px,0.8vw,11px);flex-shrink:0;font-weight:bold;}
@@ -842,19 +837,6 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
 .records-close{align-self:flex-end;background:rgba(40,20,0,.9);border:2px solid var(--GD);color:var(--GD);font-family:'Press Start 2P',monospace;font-size:clamp(7px,0.8vw,10px);padding:8px 16px;cursor:pointer;transition:all .15s;margin-top:4px;}
 .records-close:hover{background:var(--GD);color:#000;}
 
-/* ══ QUEST NOTIFICATION BANNER ══ */
-#questBanner{
-  position:fixed;top:-80px;left:50%;transform:translateX(-50%);
-  z-index:350;background:rgba(0,30,0,.97);border:2px solid var(--G);
-  padding:10px 20px;min-width:320px;max-width:520px;text-align:center;
-  box-shadow:0 0 28px rgba(57,255,20,.4);transition:top .35s ease;
-  pointer-events:none;
-}
-#questBanner.show{top:12px;}
-#questBanner-title{font-size:clamp(9px,1vw,14px);color:var(--G);text-shadow:0 0 10px var(--G);letter-spacing:2px;}
-#questBanner-desc{font-size:clamp(7px,0.8vw,11px);color:#aaffaa;margin-top:4px;}
-#questBanner-reward{font-size:clamp(7px,0.75vw,10px);color:var(--GD);margin-top:3px;}
-
 /* ══ ENHANCED GAME OVER ══ */
 #sGO{flex-direction:column;padding:clamp(16px,2.5vh,32px);}
 .go-flatlined{
@@ -1443,12 +1425,6 @@ button:disabled{filter:saturate(0.2);pointer-events:none;}
   <div id="fl"></div>
   <!-- Screen wipe transition overlay -->
   <div id="screenWipe"></div>
-  <!-- Quest completion banner -->
-  <div id="questBanner">
-    <div id="questBanner-title">QUEST COMPLETE</div>
-    <div id="questBanner-desc"></div>
-    <div id="questBanner-reward"></div>
-  </div>
   <!-- Pause Menu -->
   <div id="pauseMenu">
     <div class="pause-box">
@@ -2570,23 +2546,8 @@ const Arena = {
         handleMiniGameClick(e,e.clientX-rect.left,e.clientY-rect.top);
         return;
       }
-      // COMBAT-UI-2 — canvas spell bar click detection
-      if(GameState.currentScreen==='sCM'&&GameState.player){
-        const rect=this.cv.getBoundingClientRect();
-        const mx=e.clientX-rect.left, my=e.clientY-rect.top;
-        const slot=getSpellSlotAt(mx,my,this.W,this.H);
-        if(slot>=0){
-          const sp=GameState.player.spells[slot];
-          if(sp){
-            if(GameState._reactionPhase&&GameState._reactionPhase.active&&!GameState._reactionPhase.playerResponded){
-              handleReactionSpellClick(sp);
-            } else if(GameState.combatRunning){
-              Combat.castSpell(GameState.player,sp,GameState.enemies);
-            }
-          }
-          return;
-        }
-      }
+      // [Phase 2E] Canvas spell bar click detection removed — action input
+      // now goes through the ATTACK/BLOCK/EXPLOIT tabs in #combatHUD.
     });
   },
 
@@ -3570,10 +3531,6 @@ const Arena = {
     // UI actions background (behind spell bar) — only in non-IntentMirror mode
     if(_UI.loaded&&_UI.actions&&GameState.currentScreen==='sCM'&&!IntentMirror?.active){
       ctx.save();ctx.drawImage(_UI.actions,0,H-120,W,120);ctx.restore();
-    }
-    // COMBAT-UI-2 — canvas spell bar (only when IntentMirror is NOT active)
-    if(GameState.currentScreen==='sCM'&&GameState.player&&!IntentMirror?.active){
-      renderSpellBar(ctx,GameState.player.spells,W,H);
     }
     // Phase 5.4 — endless floor HUD
     if(GameState.endlessMode&&GameState.currentScreen==='sCM'){
@@ -7045,106 +7002,10 @@ function renderRoomProgress(ctx, currentRoom, totalRooms, rightX, y) {
   ctx.restore();
 }
 
-// ============================================================
-// COMBAT-UI-2: CANVAS SPELL BAR
-// ============================================================
-function renderSpellBar(ctx, spells, cw, ch) {
-  // Intent Mirror active — suppress canvas spell slots, HTML buttons take over
-  if (IntentMirror?.active) return;
-  if (!spells || !spells.length) return;
-  const slotW = 90, slotH = 72, gap = 10;
-  const totalW = 4 * slotW + 3 * gap;
-  const startX = cw/2 - totalW/2;
-  const startY = ch - slotH - 72;
-
-  // Terminal panel background (Theme 5)
-  const barTotalW = totalW + 24;
-  const barX = cw/2 - barTotalW/2;
-  const barY = startY - 8;
-  const barH = slotH + 16;
-  ctx.save();
-  ctx.fillStyle='rgba(2,2,15,0.92)';ctx.fillRect(barX,barY,barTotalW,barH);
-  ctx.strokeStyle='#00ffff';ctx.lineWidth=1;ctx.shadowColor='#00ffff';ctx.shadowBlur=6;
-  ctx.beginPath();ctx.moveTo(barX,barY);ctx.lineTo(barX+barTotalW,barY);ctx.stroke();
-  ctx.shadowBlur=0;
-  const cl=10;
-  ctx.beginPath();ctx.moveTo(barX,barY+cl);ctx.lineTo(barX,barY);ctx.lineTo(barX+cl,barY);ctx.stroke();
-  ctx.beginPath();ctx.moveTo(barX+barTotalW-cl,barY);ctx.lineTo(barX+barTotalW,barY);ctx.lineTo(barX+barTotalW,barY+cl);ctx.stroke();
-  ctx.font='6px "Press Start 2P"';ctx.fillStyle='#223344';ctx.textAlign='left';
-  ctx.fillText('SPELLS',barX+4,barY+8);
-  ctx.restore();
-
-  spells.forEach((spell, i) => {
-    if (!spell) return;
-    const x = startX + i * (slotW + gap);
-    const y = startY;
-    const onCD = (spell.cd || 0) > 0;
-    const isEX = spell.evolved;
-
-    ctx.fillStyle = onCD ? 'rgba(10,5,5,0.92)' : 'rgba(5,5,20,0.94)';
-    ctx.fillRect(x, y, slotW, slotH);
-
-    const borderColor = onCD ? '#221122' :
-      isEX ? '#ffd700' :
-      spell.tags && spell.tags.includes('attack')  ? '#ff4444' :
-      spell.tags && spell.tags.includes('defense') ? '#00aaff' :
-      spell.tags && spell.tags.includes('potion')  ? '#00ff41' : '#555577';
-
-    ctx.strokeStyle = borderColor;
-    ctx.lineWidth = isEX ? 2 : 1;
-    ctx.strokeRect(x, y, slotW, slotH);
-
-    if (isEX) {
-      ctx.save(); ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 8;
-      ctx.strokeRect(x, y, slotW, slotH);
-      ctx.shadowBlur = 0; ctx.restore();
-    }
-
-    const name = (spell.name || '').toUpperCase();
-    const displayName = name.length > 10 ? name.substring(0, 9) + '.' : name;
-    ctx.font = '7px "Press Start 2P"';
-    ctx.fillStyle = onCD ? '#333344' : '#ffffff';
-    ctx.textAlign = 'center';
-    ctx.fillText(displayName, x + slotW/2, y + 18);
-
-    ctx.font = '7px "Share Tech Mono"';
-    ctx.fillStyle = onCD ? '#223' : '#4488ff';
-    ctx.fillText(`MP:${spell.mp || 0}`, x + slotW/2, y + 34);
-
-    if (onCD) {
-      ctx.font = '14px "Press Start 2P"';
-      ctx.fillStyle = '#ff4444';
-      ctx.fillText(spell.cd, x + slotW/2, y + slotH/2 + 6);
-    } else {
-      ctx.font = '6px "Share Tech Mono"';
-      ctx.fillStyle = '#334455';
-      ctx.fillText(`CD:${spell.maxCd || 0}`, x + slotW/2, y + 50);
-    }
-
-    ctx.font = '5px "Share Tech Mono"';
-    ctx.fillStyle = '#222233';
-    ctx.fillText(`[${i+1}]`, x + 4, y + slotH - 4);
-
-    if (isEX) {
-      ctx.font = '6px "Press Start 2P"';
-      ctx.fillStyle = '#ffd700';
-      ctx.fillText('EX', x + slotW - 18, y + 10);
-    }
-    ctx.textAlign = 'left';
-  });
-}
-
-function getSpellSlotAt(mx, my, cw, ch) {
-  const slotW = 90, slotH = 72, gap = 10;
-  const totalW = 4 * slotW + 3 * gap;
-  const startX = cw/2 - totalW/2;
-  const startY = ch - slotH - 72;
-  for (let i = 0; i < 4; i++) {
-    const x = startX + i * (slotW + gap);
-    if (mx >= x && mx <= x + slotW && my >= startY && my <= startY + slotH) return i;
-  }
-  return -1;
-}
+// [Phase 2E] Canvas SPELLS bar (renderSpellBar + getSpellSlotAt) removed.
+// The mid-screen 4-slot spell card row drew the legacy BLACK ICE / PROTON /
+// THORNS / NANO VIAL cards over the arena. Phase 2E replaces it with the
+// ATTACK / BLOCK / EXPLOIT tab bar in #combatHUD.
 
 // ============================================================
 // COMBAT-UI-2: ENEMY HP BAR (thicker, with shield + phase)
@@ -10327,19 +10188,10 @@ const UI={
       ov.textContent=cd>0?`${cd}CD`:'';
     }
   },
-  // Quest notification banner
+  // [Phase 2E] Quest completion banner replaced with slim DM toast.
+  // The old full-width top banner clobbered the arena at combat start.
   showQuestBanner(q){
-    const b=document.getElementById('questBanner');
-    const t=document.getElementById('questBanner-title');
-    const d=document.getElementById('questBanner-desc');
-    const r=document.getElementById('questBanner-reward');
-    if(!b)return;
-    if(t)t.textContent=`✓ QUEST: ${q.title}`;
-    if(d)d.textContent=q.desc;
-    if(r)r.textContent=`REWARD: ${q.rTxt}`;
-    b.classList.add('show');
-    clearTimeout(b._timer);
-    b._timer=setTimeout(()=>b.classList.remove('show'),3500);
+    if(typeof DM!=='undefined' && DM.say) DM.say(`✓ QUEST: ${q.title} — ${q.rTxt}`);
   },
   showLevelUp(){
     const p=GameState.player;
@@ -11588,14 +11440,8 @@ const Achievements={
   },
   _notify(a){
     Audio.play('levelUp');
-    const banner=document.getElementById('questBanner');
-    if(banner){
-      document.getElementById('questBanner-title').textContent='ACHIEVEMENT UNLOCKED';
-      document.getElementById('questBanner-desc').textContent=a.icon+' '+a.name;
-      document.getElementById('questBanner-reward').textContent=a.desc;
-      banner.classList.add('show');
-      setTimeout(()=>banner.classList.remove('show'),3500);
-    }
+    // [Phase 2E] Routed through DM toast; full quest banner removed.
+    if(typeof DM!=='undefined' && DM.say) DM.say(`ACHIEVEMENT UNLOCKED — ${a.icon} ${a.name}`);
   }
 };
 
@@ -14451,8 +14297,7 @@ const HUD = {
   show(){
     const el=document.getElementById('combatHUD');
     if(el)el.style.display='block';
-    const phud=document.querySelector('.phud');
-    if(phud)phud.style.display='none';
+    // [Phase 2E] Legacy .phud row is now CSS-hidden permanently; no toggle needed.
     this._active=true;
     this.selectTab('attack');
     this.render();
@@ -14461,8 +14306,6 @@ const HUD = {
   hide(){
     const el=document.getElementById('combatHUD');
     if(el)el.style.display='none';
-    const phud=document.querySelector('.phud');
-    if(phud)phud.style.display='';
     this._active=false;
   },
 
