@@ -5,3 +5,12 @@ PRE_PHASE*.md
 SESSION_STATE*.md
 GAME_DESIGN_BRIEF.md
 NEON_DUNGEON_CLAUDE_CODE_SPEC.md
+
+# Local launcher script (machine-specific, not tracked)
+start.bat
+
+# Backup zips
+*.zip
+
+# Editor placeholders
+New Text Document.txt
